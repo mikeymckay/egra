@@ -1,4 +1,4 @@
-var JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, Template, Timer;
+var JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, Scorer, Template, Timer;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 Template = function() {
   function Template() {}
@@ -14,7 +14,10 @@ Template.JQueryLogin = function() {
   return "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
 };
 Template.Timer = function() {
-  return "<div style='position:fixed;right:5px;'>  <span id='{{id}}'>{{seconds}}</span>  <button>start</button>  <button>stop</button></div>";
+  return "<div>  <span id='{{id}}'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+};
+Template.Scorer = function() {
+  return "<div>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
 };
 JQueryMobilePage = function() {
   function JQueryMobilePage() {}
@@ -36,7 +39,7 @@ JQueryCheckboxGroup = function() {
   function JQueryCheckboxGroup() {}
   JQueryCheckboxGroup.prototype.render = function() {
     var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 5;
+    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 10;
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
     fieldset_close = "</fieldset>";
     fieldsets = "";
@@ -72,6 +75,10 @@ Timer = function() {
   function Timer() {}
   Timer.prototype.start = function() {
     var decrement;
+    if (this.running) {
+      return;
+    }
+    this.running = true;
     this.tick_value = 1;
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
@@ -83,14 +90,45 @@ Timer = function() {
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
+    this.running = false;
     return clearInterval(this.intervalId);
+  };
+  Timer.prototype.reset = function() {
+    this.seconds = 60;
+    return $(this.element_location).html(this.seconds);
   };
   Timer.prototype.render = function() {
     this.id = "timer";
     this.element_location = "#" + this.id;
     this.seconds = 60;
-    this.start();
     return Mustache.to_html(Template.Timer(), this);
   };
   return Timer;
+}();
+Scorer = function() {
+  function Scorer() {}
+  Scorer.prototype.update = function() {
+    var completed, element, wrong, _i, _len, _ref;
+    completed = wrong = 0;
+    _ref = $('.ui-page-active .ui-checkbox label.ui-btn');
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      element = _ref[_i];
+      element = $(element);
+      if (element.is('.first_click')) {
+        wrong++;
+      }
+      completed++;
+      if (element.is('.second_click')) {
+        break;
+      }
+    }
+    $('#completed').html(completed);
+    return $('#wrong').html(wrong);
+  };
+  Scorer.prototype.render = function() {
+    this.id = "scorer";
+    setInterval(this.update, 500);
+    return Mustache.to_html(Template.Scorer(), this);
+  };
+  return Scorer;
 }();

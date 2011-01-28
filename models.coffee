@@ -33,10 +33,20 @@ Template.JQueryLogin = () -> "
 "
 
 Template.Timer = () -> "
-<div style='position:fixed;right:5px;'>
+<div>
   <span id='{{id}}'>{{seconds}}</span>
-  <button>start</button>
-  <button>stop</button>
+  <a href='#' data-role='button'>start</a>
+  <a href='#' data-role='button'>stop</a>
+  <a href='#' data-role='button'>reset</a>
+</div>
+"
+
+Template.Scorer = () -> "
+<div>
+  <small>
+  Completed:<span id='completed'></span>
+  Wrong:<span id='wrong'></span>
+  </small>
 </div>
 "
 
@@ -51,7 +61,7 @@ class JQueryCheckbox
 
 class JQueryCheckboxGroup
   render: ->
-    @fieldset_size ?= 5
+    @fieldset_size ?= 10
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>"
     fieldset_close = "</fieldset>"
     fieldsets = ""
@@ -116,6 +126,8 @@ class JQueryLogin
 
 class Timer
   start: ->
+    return if @running
+    @running = true
     @tick_value = 1
 # Note that we are using => not ->. This lets the decrement function have access @seconds.
     decrement = =>
@@ -125,11 +137,32 @@ class Timer
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
+    @running = false
     clearInterval(@intervalId)
+
+  reset: ->
+    @seconds = 60
+    $(@element_location).html(@seconds)
 
   render: ->
     @id = "timer"
     @element_location = "##{@id}"
     @seconds = 60
-    this.start()
     Mustache.to_html(Template.Timer(),this)
+
+ 
+class Scorer
+  update: ->
+    completed = wrong = 0
+    for element in $('.ui-page-active .ui-checkbox label.ui-btn')
+      element = $(element)
+      wrong++ if element.is('.first_click')
+      completed++
+      break if element.is('.second_click')
+    $('#completed').html(completed)
+    $('#wrong').html(wrong)
+
+  render: ->
+    @id = "scorer"
+    setInterval( this.update, 500)
+    Mustache.to_html(Template.Scorer(),this)
