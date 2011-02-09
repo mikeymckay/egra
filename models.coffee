@@ -63,7 +63,6 @@ Util.generateGUID = () -> `'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/
     var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
     return v.toString(16);
   }).toUpperCase();
-}
 `
 
 class Test
@@ -95,7 +94,8 @@ class Test
         @pages.push(JQueryMobilePage.load(pageIndex))
 
     render: (callback) ->
-      render_when_ready: =>
+     
+      render_when_ready = =>
         for page in @pages
           if page.loading
             setTimeout(render_when_ready, 1000)
@@ -103,7 +103,7 @@ class Test
         result = for page in @pages
           page.render()
         callback(result.join())
-      render_when_ready()
+      return render_when_ready()
 
 class JQueryMobilePage
   constructor: ->
