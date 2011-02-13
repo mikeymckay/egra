@@ -113,7 +113,7 @@ Test = (function() {
         }
         return _results;
       }).call(this);
-      return callback(result.join());
+      return callback(result.join(""));
     }, this);
     return render_when_ready();
   };

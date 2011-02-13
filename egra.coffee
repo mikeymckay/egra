@@ -23,7 +23,7 @@ test.setPages([login, instructions, letters])
 test.save()
 test.render (result) ->
   $("body").html(result)
-  $.mobile.initializePage()
+#  $.mobile.initializePage()
 
 $('a:contains("start")').click ->
   lettersTimer.start()

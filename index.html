@@ -8,11 +8,15 @@
     <script type="text/javascript" src="mustache.js"></script>
     <script type="text/javascript" src="models.js"></script>
     <script type="text/javascript" src="google-spreadsheet-javascript/google-spreadsheet.js"></script>
-    <script type="text/javascript" src="jquery-mobile/jquery.mobile-1.0a3.min.js"></script>
+    <script type="text/javascript" src="jquery-mobile/jquery.mobile-1.0a3.js"></script>
     <script type="text/javascript" src="egra.js"></script>
     <script>
       $(document).bind("mobileinit", function(){
         $.mobile.autoInitialize = false;
+      });
+      $(document).ready(function(){
+        console.log($("body").html());
+        $.mobile.initializePage()
       });
     </script>
   </head> 

@@ -18,8 +18,7 @@ letters.updateFromGoogle();
 test.setPages([login, instructions, letters]);
 test.save();
 test.render(function(result) {
-  $("body").html(result);
-  return $.mobile.initializePage();
+  return $("body").html(result);
 });
 $('a:contains("start")').click(function() {
   return lettersTimer.start();

@@ -102,7 +102,7 @@ class Test
             return
         result = for page in @pages
           page.render()
-        callback(result.join())
+        callback(result.join(""))
       return render_when_ready()
 
 class JQueryMobilePage
