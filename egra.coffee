@@ -1,48 +1,37 @@
-login = new JQueryMobilePage()
-instructions = new JQueryMobilePage()
-letters = new JQueryMobilePage()
 
-login.page_id = "Login"
-login.header = "<h1>EGRA</h1>"
-login.next_page = instructions
-login.content = (new JQueryLogin()).render()
+class EarlyGradeReadingAssessment
 
-instructions.page_id = "Instructions"
-instructions.header = "<h1>EGRA</h1>"
-instructions.next_page = letters
+EarlyGradeReadingAssessment.loadFromGoogle = ->
 
-url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
-googleSpreadsheet = new GoogleSpreadsheet()
-googleSpreadsheet.url(url)
-googleSpreadsheet.load (result) ->
-  instructions.content = result.data[0].replace(/\n/g,"<br/>")
+  console.log(localStorage["Test.EGRA Prototype"])
 
-letters.page_id = "Letters"
-letters.header = "<h1>EGRA</h1>"
-lettersCheckboxes = new JQueryCheckboxGroup()
-lettersCheckboxes.checkboxes = []
+  test= new Test()
+  test.name= "EGRA Prototype"
 
-url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
-googleSpreadsheet = new GoogleSpreadsheet()
-googleSpreadsheet.url(url)
-googleSpreadsheet.load (result) ->
+  login= new JQueryMobilePage()
+  instructions= new InstructionsPage()
+  letters= new LettersPage()
 
-  for letter,index in result.data
-    checkbox = new JQueryCheckbox()
-    checkbox.unique_name = "checkbox_#{index}"
-    checkbox.content = letter
-    lettersCheckboxes.checkboxes.push checkbox
+  login.page_id= "Login"
+  login.header= "<h1>EGRA</h1>"
+  login.content= (new JQueryLogin()).render()
 
-  lettersTimer = new Timer()
-  letters.content = "
-    <div style='width: 100px;position:fixed;right:5px;'>" +
-      lettersTimer.render() + (new Scorer()).render() + "
-    </div>" +
-    lettersCheckboxes.three_way_render()
+  instructions.page_id= "Instructions"
+  instructions.header= "<h1>EGRA</h1>"
+  instructions.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
+  instructions.updateFromGoogle()
 
-  body = (page.render() for page in [login, instructions, letters]).join()
+  letters.page_id= "Letters"
+  letters.header= "<h1>EGRA</h1>"
+  letters.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
+  letters.updateFromGoogle()
 
-  $("body").html(body)
+  test.setPages([login, instructions, letters])
+  test.onReady ->
+    test.save()
+  test.render (result) ->
+    $("body").html(result)
+    $.mobile.initializePage()
 
   $('a:contains("start")').click ->
     lettersTimer.start()
@@ -52,3 +41,16 @@ googleSpreadsheet.load (result) ->
 
   $('a:contains("reset")').click ->
     lettersTimer.reset()
+
+EarlyGradeReadingAssessment.loadFromLocalStorage = (testName) ->
+  test = new Test()
+  test.name = testName
+  test.load()
+  test.render (result) ->
+    $("body").html(result)
+    $.mobile.initializePage()
+
+$(document).ready ->
+  #EarlyGradeReadingAssessment.loadFromGoogle()
+  EarlyGradeReadingAssessment.loadFromLocalStorage('EGRA Prototype')
+
