@@ -7,6 +7,7 @@ $(document).ready ->
 
   QUnit.testStart = (name) ->
     console.log name
+    localStorage.clear()
 
   test "JQueryMobilePage", ->
     expect(1)
@@ -73,9 +74,9 @@ $(document).ready ->
     expected_result = "
 <div>  <span id='timer'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
     equals(test_object.render(), expected_result)
-# TODO test start / stop
 
   test "Serialization", ->
+    expect(3)
     test = new Test()
     test.name = "EGRA Prototype"
     login = new JQueryMobilePage()
@@ -98,10 +99,21 @@ $(document).ready ->
 
     test.setPages([login, instructions,letters])
 
-    test.render (result) ->
-      console.log result
+    stop()
+    test.onReady ->
+      index = letters.index()
+      letters.save()
+      result = JQueryMobilePage.load(index)
+      equals(result.render(), letters.render())
+      equals(result.content, letters.content)
 
-    index = letters.index()
-    letters.save()
-    result = JQueryMobilePage.load(index)
-    equals(result.render(), letters.render())
+      anotherTest = new Test()
+      anotherTest.name = "EGRA Prototype"
+      test.save()
+      # Since name is same, it will deserialize from test
+      anotherTest.load()
+      anotherTest.onReady ->
+      anotherTest.render (anotherTestResult) ->
+        test.render (testResult) ->
+          equals(anotherTestResult, testResult)
+          start()

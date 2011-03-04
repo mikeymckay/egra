@@ -1,5 +1,3 @@
-#TODO add QUNIT tests
-
 class Template
 
 Template.JQueryMobilePage = () ->  "
@@ -94,17 +92,20 @@ class Test
       for pageIndex in result.indexesForPages
         @pages.push(JQueryMobilePage.load(pageIndex))
 
-    render: (callback) ->
-     
-      render_when_ready = =>
+    onReady: (callback) ->
+      check_if_loading = =>
         for page in @pages
           if page.loading
-            setTimeout(render_when_ready, 1000)
+            setTimeout(check_if_loading, 1000)
             return
+        callback()
+      return check_if_loading()
+
+    render: (callback) ->
+      @onReady =>
         result = for page in @pages
           page.render()
         callback(result.join(""))
-      return render_when_ready()
 
 class JQueryMobilePage
   constructor: ->
@@ -125,6 +126,7 @@ JQueryMobilePage.load = (index) ->
   result = new window[pageObject.pageType]()
   for key,value of pageObject
     result[key] = value
+  result.loading = false
   return result
 
 class InstructionsPage extends JQueryMobilePage
@@ -149,8 +151,8 @@ class LettersPage extends JQueryMobilePage
         checkbox.unique_name = "checkbox_" + index
         checkbox.content = letter
         checkbox
-      @loading = false
       @content =  "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render()
+      @loading = false
 
 class JQueryCheckbox
   render: ->

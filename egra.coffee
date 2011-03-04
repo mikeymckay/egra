@@ -1,4 +1,9 @@
-#$(document).ready ->
+
+class EarlyGradeReadingAssessment
+
+EarlyGradeReadingAssessment.loadFromGoogle = ->
+
+  console.log(localStorage["Test.EGRA Prototype"])
 
   test= new Test()
   test.name= "EGRA Prototype"
@@ -22,10 +27,11 @@
   letters.updateFromGoogle()
 
   test.setPages([login, instructions, letters])
-  test.save()
+  test.onReady ->
+    test.save()
   test.render (result) ->
     $("body").html(result)
-#    $.mobile.initializePage()
+    $.mobile.initializePage()
 
   $('a:contains("start")').click ->
     lettersTimer.start()
@@ -35,3 +41,16 @@
 
   $('a:contains("reset")').click ->
     lettersTimer.reset()
+
+EarlyGradeReadingAssessment.loadFromLocalStorage = (testName) ->
+  test = new Test()
+  test.name = testName
+  test.load()
+  test.render (result) ->
+    $("body").html(result)
+    $.mobile.initializePage()
+
+$(document).ready ->
+  #EarlyGradeReadingAssessment.loadFromGoogle()
+  EarlyGradeReadingAssessment.loadFromLocalStorage('EGRA Prototype')
+

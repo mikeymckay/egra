@@ -99,18 +99,25 @@ Test = (function() {
     }
     return _results;
   };
-  Test.prototype.render = function(callback) {
-    var render_when_ready;
-    render_when_ready = __bind(function() {
-      var page, result, _i, _len, _ref;
+  Test.prototype.onReady = function(callback) {
+    var check_if_loading;
+    check_if_loading = __bind(function() {
+      var page, _i, _len, _ref;
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         page = _ref[_i];
         if (page.loading) {
-          setTimeout(render_when_ready, 1000);
+          setTimeout(check_if_loading, 1000);
           return;
         }
       }
+      return callback();
+    }, this);
+    return check_if_loading();
+  };
+  Test.prototype.render = function(callback) {
+    return this.onReady(__bind(function() {
+      var page, result;
       result = (function() {
         var _i, _len, _ref, _results;
         _ref = this.pages;
@@ -122,8 +129,7 @@ Test = (function() {
         return _results;
       }).call(this);
       return callback(result.join(""));
-    }, this);
-    return render_when_ready();
+    }, this));
   };
   return Test;
 })();
@@ -152,6 +158,7 @@ JQueryMobilePage.load = function(index) {
     value = pageObject[key];
     result[key] = value;
   }
+  result.loading = false;
   return result;
 };
 InstructionsPage = (function() {
@@ -198,8 +205,8 @@ LettersPage = (function() {
         }
         return _results;
       }).call(this);
-      this.loading = false;
-      return this.content = "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render();
+      this.content = "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render();
+      return this.loading = false;
     }, this));
   };
   return LettersPage;

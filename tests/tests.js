@@ -6,7 +6,8 @@ $(document).ready(function() {
   });
   module("EGRA");
   QUnit.testStart = function(name) {
-    return console.log(name);
+    console.log(name);
+    return localStorage.clear();
   };
   test("JQueryMobilePage", function() {
     var expected_result, test_object;
@@ -55,7 +56,8 @@ $(document).ready(function() {
     return equals(test_object.render(), expected_result);
   });
   return test("Serialization", function() {
-    var index, instructions, letters, login, result, test;
+    var instructions, letters, login, test;
+    expect(3);
     test = new Test();
     test.name = "EGRA Prototype";
     login = new JQueryMobilePage();
@@ -73,12 +75,25 @@ $(document).ready(function() {
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
     test.setPages([login, instructions, letters]);
-    test.render(function(result) {
-      return console.log(result);
+    stop();
+    return test.onReady(function() {
+      var anotherTest, index, result;
+      index = letters.index();
+      letters.save();
+      result = JQueryMobilePage.load(index);
+      equals(result.render(), letters.render());
+      equals(result.content, letters.content);
+      anotherTest = new Test();
+      anotherTest.name = "EGRA Prototype";
+      test.save();
+      anotherTest.load();
+      anotherTest.onReady(function() {});
+      return anotherTest.render(function(anotherTestResult) {
+        return test.render(function(testResult) {
+          equals(anotherTestResult, testResult);
+          return start();
+        });
+      });
     });
-    index = letters.index();
-    letters.save();
-    result = JQueryMobilePage.load(index);
-    return equals(result.render(), letters.render());
   });
 });
