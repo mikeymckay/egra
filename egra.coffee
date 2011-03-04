@@ -1,35 +1,37 @@
-test= new Test()
-test.name= "EGRA Prototype"
+#$(document).ready ->
 
-login= new JQueryMobilePage()
-instructions= new InstructionsPage()
-letters= new LettersPage()
+  test= new Test()
+  test.name= "EGRA Prototype"
 
-login.page_id= "Login"
-login.header= "<h1>EGRA</h1>"
-login.content= (new JQueryLogin()).render()
+  login= new JQueryMobilePage()
+  instructions= new InstructionsPage()
+  letters= new LettersPage()
 
-instructions.page_id= "Instructions"
-instructions.header= "<h1>EGRA</h1>"
-instructions.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
-instructions.updateFromGoogle()
+  login.page_id= "Login"
+  login.header= "<h1>EGRA</h1>"
+  login.content= (new JQueryLogin()).render()
 
-letters.page_id= "Letters"
-letters.header= "<h1>EGRA</h1>"
-letters.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
-letters.updateFromGoogle()
+  instructions.page_id= "Instructions"
+  instructions.header= "<h1>EGRA</h1>"
+  instructions.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
+  instructions.updateFromGoogle()
 
-test.setPages([login, instructions, letters])
-test.save()
-test.render (result) ->
-  $("body").html(result)
-#  $.mobile.initializePage()
+  letters.page_id= "Letters"
+  letters.header= "<h1>EGRA</h1>"
+  letters.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
+  letters.updateFromGoogle()
 
-$('a:contains("start")').click ->
-  lettersTimer.start()
+  test.setPages([login, instructions, letters])
+  test.save()
+  test.render (result) ->
+    $("body").html(result)
+#    $.mobile.initializePage()
 
-$('a:contains("stop")').click ->
-  lettersTimer.stop()
+  $('a:contains("start")').click ->
+    lettersTimer.start()
 
-$('a:contains("reset")').click ->
-  lettersTimer.reset()
+  $('a:contains("stop")').click ->
+    lettersTimer.stop()
+
+  $('a:contains("reset")').click ->
+    lettersTimer.reset()

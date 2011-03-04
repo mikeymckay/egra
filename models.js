@@ -77,7 +77,15 @@ Test = (function() {
     });
   };
   Test.prototype.save = function() {
-    return localStorage[this.index()] = this.toJSON();
+    var page, _i, _len, _ref, _results;
+    localStorage[this.index()] = this.toJSON();
+    _ref = this.pages;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      _results.push(page.save());
+    }
+    return _results;
   };
   Test.prototype.load = function() {
     var pageIndex, result, _i, _len, _ref, _results;
@@ -129,7 +137,7 @@ JQueryMobilePage = (function() {
     return Mustache.to_html(Template.JQueryMobilePage(), this);
   };
   JQueryMobilePage.prototype.index = function() {
-    return this.test.index() + "." + this.name;
+    return this.test.index() + "." + this.page_id;
   };
   JQueryMobilePage.prototype.save = function() {
     return localStorage[this.index()] = JSON.stringify(this);

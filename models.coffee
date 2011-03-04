@@ -86,6 +86,7 @@ class Test
 
     save: ->
       localStorage[@index()] = @toJSON()
+      page.save() for page in @pages
 
     load: ->
       result = JSON.parse(localStorage[@index()])
@@ -114,7 +115,7 @@ class JQueryMobilePage
     Mustache.to_html(Template.JQueryMobilePage(),this)
 
   index: ->
-    this.test.index() + "." + this.name
+    this.test.index() + "." + this.page_id
 
   save: ->
     localStorage[this.index()] = JSON.stringify(this)
