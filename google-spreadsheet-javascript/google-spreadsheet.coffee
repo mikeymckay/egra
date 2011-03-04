@@ -21,14 +21,13 @@ class GoogleUrl
 
 class GoogleSpreadsheet
   load: (callback) ->
-    
     url = @googleUrl.jsonCellsUrl + "&callback=GoogleSpreadsheet.callbackCells"
     $('body').append("<script src='" +url+ "'/>")
     jsonUrl = @jsonUrl
     safetyCounter = 0
     waitUntilLoaded = ->
       result = GoogleSpreadsheet.find({jsonUrl:jsonUrl})
-      if safetyCounter++ > 20 or (result? and result.data?)
+      if safetyCounter++ > 30 or (result? and result.data?)
         clearInterval(intervalId)
         callback(result)
     intervalId = setInterval( waitUntilLoaded, 200)
@@ -45,7 +44,7 @@ class GoogleSpreadsheet
     @googleUrl = googleUrl
 
   save: ->
-    localStorage["GoogleSpreadsheet."+@type] = JSON.stringify(this)
+    localStorage["GoogleSpreadsheet."+@key] = JSON.stringify(this)
 
 GoogleSpreadsheet.bless = (object) ->
   result = new GoogleSpreadsheet()

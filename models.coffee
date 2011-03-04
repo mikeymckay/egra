@@ -1,5 +1,3 @@
-#TODO add QUNIT tests
-
 class Template
 
 Template.JQueryMobilePage = () ->  "
@@ -50,10 +48,111 @@ Template.Scorer = () -> "
 </div>
 "
 
+Template.Store = () ->
+  for template of Template
+    localStorage["template." + template] = Template[template]() unless template == "Store"
+
+class Util
+###
+http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript
+###
+
+Util.generateGUID = () -> `'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  }).toUpperCase();
+`
+
+class Test
+  setPages: (pages) ->
+    @pages = pages
+    @indexesForPages = []
+    for page, index in @pages
+      page.test = this
+      page.pageNumber = index
+      page.nextPage = @pages[index + 1].page_id unless pages.length == index + 1
+      @indexesForPages.push(page.index())
+
+   index: ->
+    "Test." + @name
+
+   toJSON: ->
+     JSON.stringify {
+       name: this.name,
+       indexesForPages: this.indexesForPages
+     }
+
+    save: ->
+      localStorage[@index()] = @toJSON()
+      page.save() for page in @pages
+
+    load: ->
+      result = JSON.parse(localStorage[@index()])
+      @pages = []
+      for pageIndex in result.indexesForPages
+        @pages.push(JQueryMobilePage.load(pageIndex))
+
+    onReady: (callback) ->
+      check_if_loading = =>
+        for page in @pages
+          if page.loading
+            setTimeout(check_if_loading, 1000)
+            return
+        callback()
+      return check_if_loading()
+
+    render: (callback) ->
+      @onReady =>
+        result = for page in @pages
+          page.render()
+        callback(result.join(""))
+
 class JQueryMobilePage
+  constructor: ->
+    @pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]
+
   render: ->
-    @footer_text = @footer ? ("<a href='##{@next_page.page_id}'>#{@next_page.page_id}</a>" if @next_page?)
+    @footer_text = @footer ? ("<a href='##{@nextPage}'>#{@nextPage}</a>" if @nextPage?)
     Mustache.to_html(Template.JQueryMobilePage(),this)
+
+  index: ->
+    this.test.index() + "." + this.page_id
+
+  save: ->
+    localStorage[this.index()] = JSON.stringify(this)
+
+JQueryMobilePage.load = (index) ->
+  pageObject = JSON.parse(localStorage[index])
+  result = new window[pageObject.pageType]()
+  for key,value of pageObject
+    result[key] = value
+  result.loading = false
+  return result
+
+class InstructionsPage extends JQueryMobilePage
+  updateFromGoogle: ->
+    @loading = true
+    googleSpreadsheet = new GoogleSpreadsheet()
+    googleSpreadsheet.url(@url)
+    googleSpreadsheet.load (result) =>
+      @content = result.data[0].replace(/\n/g, "<br/>")
+      @loading = false
+
+class LettersPage extends JQueryMobilePage
+  updateFromGoogle: ->
+    @loading = true
+    googleSpreadsheet = new GoogleSpreadsheet()
+    googleSpreadsheet.url(@url)
+    googleSpreadsheet.load (result) =>
+      @letters = result.data
+      lettersCheckboxes = new JQueryCheckboxGroup()
+      lettersCheckboxes.checkboxes = for letter,index in @letters
+        checkbox = new JQueryCheckbox()
+        checkbox.unique_name = "checkbox_" + index
+        checkbox.content = letter
+        checkbox
+      @content =  "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render()
+      @loading = false
 
 class JQueryCheckbox
   render: ->
