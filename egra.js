@@ -5,7 +5,6 @@ EarlyGradeReadingAssessment = (function() {
 })();
 EarlyGradeReadingAssessment.loadFromGoogle = function() {
   var instructions, letters, login, test;
-  console.log(localStorage["Test.EGRA Prototype"]);
   test = new Test();
   test.name = "EGRA Prototype";
   login = new JQueryMobilePage();
