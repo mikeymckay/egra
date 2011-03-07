@@ -1,9 +1,6 @@
-
 class EarlyGradeReadingAssessment
 
 EarlyGradeReadingAssessment.loadFromGoogle = ->
-
-  console.log(localStorage["Test.EGRA Prototype"])
 
   test= new Test()
   test.name= "EGRA Prototype"
