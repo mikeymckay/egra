@@ -25,7 +25,7 @@ EarlyGradeReadingAssessment.loadFromGoogle = ->
 
   test.setPages([login, instructions, letters])
   test.onReady ->
-    test.save()
+    test.saveToCouchDB()
   test.render (result) ->
     $("body").html(result)
     $.mobile.initializePage()
@@ -42,12 +42,12 @@ EarlyGradeReadingAssessment.loadFromGoogle = ->
 EarlyGradeReadingAssessment.loadFromLocalStorage = (testName) ->
   test = new Test()
   test.name = testName
-  test.load()
+  test.loadFromLocalStorage()
   test.render (result) ->
     $("body").html(result)
     $.mobile.initializePage()
 
 $(document).ready ->
-  #EarlyGradeReadingAssessment.loadFromGoogle()
-  EarlyGradeReadingAssessment.loadFromLocalStorage('EGRA Prototype')
+  EarlyGradeReadingAssessment.loadFromGoogle()
+  #EarlyGradeReadingAssessment.loadFromLocalStorage('EGRA Prototype')
 

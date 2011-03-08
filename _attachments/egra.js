@@ -23,7 +23,7 @@ EarlyGradeReadingAssessment.loadFromGoogle = function() {
   letters.updateFromGoogle();
   test.setPages([login, instructions, letters]);
   test.onReady(function() {
-    return test.save();
+    return test.saveToCouchDB();
   });
   test.render(function(result) {
     $("body").html(result);
@@ -43,12 +43,12 @@ EarlyGradeReadingAssessment.loadFromLocalStorage = function(testName) {
   var test;
   test = new Test();
   test.name = testName;
-  test.load();
+  test.loadFromLocalStorage();
   return test.render(function(result) {
     $("body").html(result);
     return $.mobile.initializePage();
   });
 };
 $(document).ready(function() {
-  return EarlyGradeReadingAssessment.loadFromLocalStorage('EGRA Prototype');
+  return EarlyGradeReadingAssessment.loadFromGoogle();
 });

@@ -76,18 +76,34 @@ Test = (function() {
       indexesForPages: this.indexesForPages
     });
   };
-  Test.prototype.save = function() {
+  Test.prototype.saveToLocalStorage = function() {
     var page, _i, _len, _ref, _results;
     localStorage[this.index()] = this.toJSON();
     _ref = this.pages;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       page = _ref[_i];
-      _results.push(page.save());
+      _results.push(page.saveToLocalStorage());
     }
     return _results;
   };
-  Test.prototype.load = function() {
+  Test.prototype.saveToCouchDB = function() {
+    var page, _i, _len, _ref, _results;
+    $.ajax({
+      url: '/egra/' + this.index(),
+      type: 'PUT',
+      data: this.toJSON(),
+      success: function(result) {}
+    });
+    _ref = this.pages;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      _results.push(page.saveToCouchDB());
+    }
+    return _results;
+  };
+  Test.prototype.loadFromLocalStorage = function() {
     var pageIndex, result, _i, _len, _ref, _results;
     result = JSON.parse(localStorage[this.index()]);
     this.pages = [];
@@ -95,9 +111,30 @@ Test = (function() {
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       pageIndex = _ref[_i];
-      _results.push(this.pages.push(JQueryMobilePage.load(pageIndex)));
+      _results.push(this.pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex)));
     }
     return _results;
+  };
+  Test.prototype.loadFromCouchDB = function(callback) {
+    var result;
+    result = JSON.parse(localStorage[this.index()]);
+    return $.ajax({
+      url: '/egra/' + this.index(),
+      type: 'GET',
+      success: __bind(function(result) {
+        var pageIndex, _i, _len, _ref, _results;
+        this.pages = [];
+        _ref = result.indexesForPages;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          pageIndex = _ref[_i];
+          _results.push(JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
+            return this.pages.push(result);
+          }, this)));
+        }
+        return _results;
+      }, this)
+    });
   };
   Test.prototype.onReady = function(callback) {
     var check_if_loading;
@@ -145,14 +182,22 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.index = function() {
     return this.test.index() + "." + this.page_id;
   };
-  JQueryMobilePage.prototype.save = function() {
+  JQueryMobilePage.prototype.saveToLocalStorage = function() {
     return localStorage[this.index()] = JSON.stringify(this);
+  };
+  JQueryMobilePage.prototype.saveToCouchDB = function() {
+    return $.ajax({
+      url: '/egra/' + this.index(),
+      type: 'PUT',
+      data: JSON.stringify(this),
+      success: function(result) {}
+    });
   };
   return JQueryMobilePage;
 })();
-JQueryMobilePage.load = function(index) {
+JQueryMobilePage.deserialize = function(pageAsJSON) {
   var key, pageObject, result, value;
-  pageObject = JSON.parse(localStorage[index]);
+  pageObject = JSON.parse(pageAsJSON);
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
@@ -160,6 +205,22 @@ JQueryMobilePage.load = function(index) {
   }
   result.loading = false;
   return result;
+};
+JQueryMobilePage.loadFromLocalStorage = function(index) {
+  return JQueryMobilePage.deserialize(localStorage[index]);
+};
+JQueryMobilePage.loadFromCouchDB = function(index, callback) {
+  console.log("asa");
+  console.log(callback);
+  return $.ajax({
+    url: '/egra/' + index,
+    type: 'GET',
+    success: function(result) {
+      console.log("BB");
+      console.log(callback);
+      return callback(JQueryMobilePage.deserialize(JSON.parse(result)));
+    }
+  });
 };
 InstructionsPage = (function() {
   function InstructionsPage() {

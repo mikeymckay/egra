@@ -82,15 +82,39 @@ class Test
        indexesForPages: this.indexesForPages
      }
 
-    save: ->
+    saveToLocalStorage: ->
       localStorage[@index()] = @toJSON()
-      page.save() for page in @pages
+      page.saveToLocalStorage() for page in @pages
 
-    load: ->
+    saveToCouchDB: ->
+      #localStorage[@index()] = @toJSON()
+      $.ajax({
+        url: '/egra/'+@index(),
+        type: 'PUT',
+        data: @toJSON(),
+        success: (result) ->
+        }
+      )
+      page.saveToCouchDB() for page in @pages
+
+    loadFromLocalStorage: ->
       result = JSON.parse(localStorage[@index()])
       @pages = []
       for pageIndex in result.indexesForPages
-        @pages.push(JQueryMobilePage.load(pageIndex))
+        @pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex))
+
+    loadFromCouchDB: (callback) ->
+      result = JSON.parse(localStorage[@index()])
+      $.ajax({
+        url: '/egra/' + @index(),
+        type: 'GET',
+        success: (result) =>
+          @pages = []
+          for pageIndex in result.indexesForPages
+            JQueryMobilePage.loadFromCouchDB(pageIndex, (result) =>
+              @pages.push result
+            )
+      })
 
     onReady: (callback) ->
       check_if_loading = =>
@@ -118,16 +142,40 @@ class JQueryMobilePage
   index: ->
     this.test.index() + "." + this.page_id
 
-  save: ->
-    localStorage[this.index()] = JSON.stringify(this)
+  saveToLocalStorage: ->
+    localStorage[@index()] = JSON.stringify(this)
 
-JQueryMobilePage.load = (index) ->
-  pageObject = JSON.parse(localStorage[index])
+  saveToCouchDB: ->
+    $.ajax({
+      url: '/egra/'+@index(),
+      type: 'PUT',
+      data: JSON.stringify(this),
+      success: (result) ->
+      }
+    )
+
+JQueryMobilePage.deserialize = (pageAsJSON) ->
+  pageObject = JSON.parse(pageAsJSON)
   result = new window[pageObject.pageType]()
   for key,value of pageObject
     result[key] = value
   result.loading = false
   return result
+
+JQueryMobilePage.loadFromLocalStorage = (index) ->
+  return JQueryMobilePage.deserialize(localStorage[index])
+
+JQueryMobilePage.loadFromCouchDB = (index, callback) ->
+  console.log "asa"
+  console.log callback
+  $.ajax({
+    url: '/egra/'+index,
+    type: 'GET',
+    success: (result) ->
+      console.log "BB"
+      console.log callback
+      callback(JQueryMobilePage.deserialize(JSON.parse(result)))
+  })
 
 class InstructionsPage extends JQueryMobilePage
   updateFromGoogle: ->

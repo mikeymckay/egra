@@ -55,7 +55,7 @@ $(document).ready(function() {
     expected_result = "<div>  <span id='timer'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
     return equals(test_object.render(), expected_result);
   });
-  return test("Serialization", function() {
+  test("LocalStorage Serialization", function() {
     var instructions, letters, login, test;
     expect(3);
     test = new Test();
@@ -79,14 +79,57 @@ $(document).ready(function() {
     return test.onReady(function() {
       var anotherTest, index, result;
       index = letters.index();
-      letters.save();
-      result = JQueryMobilePage.load(index);
+      letters.saveToLocalStorage();
+      result = JQueryMobilePage.loadFromLocalStorage(index);
       equals(result.render(), letters.render());
       equals(result.content, letters.content);
       anotherTest = new Test();
       anotherTest.name = "EGRA Prototype";
-      test.save();
-      anotherTest.load();
+      test.saveToLocalStorage();
+      anotherTest.loadFromLocalStorage();
+      anotherTest.onReady(function() {});
+      return anotherTest.render(function(anotherTestResult) {
+        return test.render(function(testResult) {
+          equals(anotherTestResult, testResult);
+          return start();
+        });
+      });
+    });
+  });
+  return test("CouchDB Serialization", function() {
+    var instructions, letters, login, test;
+    expect(3);
+    test = new Test();
+    test.name = "TEST EGRA Prototype";
+    login = new JQueryMobilePage();
+    instructions = new InstructionsPage();
+    letters = new LettersPage();
+    login.page_id = "Login";
+    login.header = "<h1>EGRA</h1>";
+    login.content = (new JQueryLogin()).render();
+    instructions.page_id = "Instructions";
+    instructions.header = "<h1>EGRA</h1>";
+    instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html";
+    instructions.updateFromGoogle();
+    letters.page_id = "Letters";
+    letters.header = "<h1>EGRA</h1>";
+    letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
+    letters.updateFromGoogle();
+    test.setPages([login, instructions, letters]);
+    stop();
+    return test.onReady(function() {
+      var anotherTest, index;
+      index = letters.index();
+      letters.saveToCouchDB();
+      JQueryMobilePage.loadFromCouchDB(index, function(result) {
+        console.log("assa");
+        equals(result.render(), letters.render());
+        return equals(result.content, letters.content);
+      });
+      anotherTest = new Test();
+      anotherTest.name = "TEST EGRA Prototype";
+      test.saveToCouchDB();
+      anotherTest.loadFromCouchDB();
       anotherTest.onReady(function() {});
       return anotherTest.render(function(anotherTestResult) {
         return test.render(function(testResult) {

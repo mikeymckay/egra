@@ -75,7 +75,7 @@ $(document).ready ->
 <div>  <span id='timer'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
     equals(test_object.render(), expected_result)
 
-  test "Serialization", ->
+  test "LocalStorage Serialization", ->
     expect(3)
     test = new Test()
     test.name = "EGRA Prototype"
@@ -102,16 +102,61 @@ $(document).ready ->
     stop()
     test.onReady ->
       index = letters.index()
-      letters.save()
-      result = JQueryMobilePage.load(index)
+      letters.saveToLocalStorage()
+      result = JQueryMobilePage.loadFromLocalStorage(index)
       equals(result.render(), letters.render())
       equals(result.content, letters.content)
 
       anotherTest = new Test()
       anotherTest.name = "EGRA Prototype"
-      test.save()
+      test.saveToLocalStorage()
       # Since name is same, it will deserialize from test
-      anotherTest.load()
+      anotherTest.loadFromLocalStorage()
+      anotherTest.onReady ->
+      anotherTest.render (anotherTestResult) ->
+        test.render (testResult) ->
+          equals(anotherTestResult, testResult)
+          start()
+
+  test "CouchDB Serialization", ->
+    expect(3)
+    test = new Test()
+    test.name = "TEST EGRA Prototype"
+    login = new JQueryMobilePage()
+    instructions = new InstructionsPage()
+    letters = new LettersPage()
+
+    login.page_id = "Login"
+    login.header = "<h1>EGRA</h1>"
+    login.content = (new JQueryLogin()).render()
+
+    instructions.page_id = "Instructions"
+    instructions.header = "<h1>EGRA</h1>"
+    instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
+    instructions.updateFromGoogle()
+
+    letters.page_id = "Letters"
+    letters.header = "<h1>EGRA</h1>"
+    letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
+    letters.updateFromGoogle()
+
+    test.setPages([login, instructions,letters])
+
+    stop()
+    test.onReady ->
+      index = letters.index()
+      letters.saveToCouchDB()
+      JQueryMobilePage.loadFromCouchDB(index, (result) ->
+        console.log "assa"
+        equals(result.render(), letters.render())
+        equals(result.content, letters.content)
+      )
+
+      anotherTest = new Test()
+      anotherTest.name = "TEST EGRA Prototype"
+      test.saveToCouchDB()
+      # Since name is same, it will deserialize from test
+      anotherTest.loadFromCouchDB()
       anotherTest.onReady ->
       anotherTest.render (anotherTestResult) ->
         test.render (testResult) ->
