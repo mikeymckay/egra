@@ -5,7 +5,7 @@
 # run once on start
 watch=`pwd`
 interval="1"
-verbose="1"
+verbose="0"
 if [ $verbose -eq "1" ] ;then echo "Watching: $watch"; fi
 
 echo "" > "/tmp/coffee.watch.base"
