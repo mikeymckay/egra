@@ -3,7 +3,7 @@ EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
-EarlyGradeReadingAssessment.loadFromGoogle = function() {
+EarlyGradeReadingAssessment.createFromGoogle = function() {
   var assessment, instructions, letters, login;
   assessment = new Assessment();
   assessment.name = "EGRA Prototype";
@@ -22,9 +22,11 @@ EarlyGradeReadingAssessment.loadFromGoogle = function() {
   letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
   letters.updateFromGoogle();
   assessment.setPages([login, instructions, letters]);
-  assessment.onReady(function() {
-    return assessment.saveToCouchDB();
-  });
+  return assessment;
+};
+$(document).ready(function() {
+  var assessment;
+  assessment = Assessment.loadFromCouchDB("EGRA Prototype");
   assessment.render(function(result) {
     $("body").html(result);
     return $.mobile.initializePage();
@@ -38,17 +40,4 @@ EarlyGradeReadingAssessment.loadFromGoogle = function() {
   return $('a:contains("reset")').click(function() {
     return lettersTimer.reset();
   });
-};
-EarlyGradeReadingAssessment.loadFromLocalStorage = function(assessmentName) {
-  var assessment;
-  assessment = new Assessment();
-  assessment.name = assessmentName;
-  assessment.loadFromLocalStorage();
-  return assessment.render(function(result) {
-    $("body").html(result);
-    return $.mobile.initializePage();
-  });
-};
-$(document).ready(function() {
-  return EarlyGradeReadingAssessment.loadFromGoogle();
 });

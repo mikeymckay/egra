@@ -88,36 +88,38 @@ Assessment = (function() {
     return _results;
   };
   Assessment.prototype.saveToCouchDB = function() {
-    var page, _i, _len, _ref, _results;
-    $.ajax({
-      url: '/egra/' + this.index(),
-      type: 'PUT',
-      data: this.toJSON(),
-      success: function(result) {}
-    });
-    _ref = this.pages;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      _results.push(page.saveToCouchDB());
-    }
-    return _results;
+    this.onReady(__bind(function() {
+      var page, _i, _len, _ref, _results;
+      $.ajax({
+        url: '/egra/' + this.index(),
+        type: 'PUT',
+        data: this.toJSON(),
+        success: function(result) {}
+      });
+      _ref = this.pages;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        page = _ref[_i];
+        _results.push(page.saveToCouchDB());
+      }
+      return _results;
+    }, this));
+    return this;
   };
   Assessment.prototype.loadFromLocalStorage = function() {
-    var pageIndex, result, _i, _len, _ref, _results;
+    var pageIndex, result, _i, _len, _ref;
     result = JSON.parse(localStorage[this.index()]);
     this.pages = [];
     _ref = result.indexesForPages;
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       pageIndex = _ref[_i];
-      _results.push(this.pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex)));
+      this.pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex));
     }
-    return _results;
+    return this;
   };
   Assessment.prototype.loadFromCouchDB = function(callback) {
     this.loading = true;
-    return $.ajax({
+    $.ajax({
       url: '/egra/' + this.index(),
       type: 'GET',
       dataType: 'json',
@@ -134,6 +136,7 @@ Assessment = (function() {
         return this.loading = false;
       }, this)
     });
+    return this;
   };
   Assessment.prototype.onReady = function(callback) {
     var checkIfLoading;
@@ -173,6 +176,18 @@ Assessment = (function() {
   };
   return Assessment;
 })();
+Assessment.loadFromLocalStorage = function(name) {
+  var assessment;
+  assessment = new Assessment();
+  assessment.name = name;
+  return assessment.loadFromLocalStorage();
+};
+Assessment.loadFromCouchDB = function(name) {
+  var assessment;
+  assessment = new Assessment();
+  assessment.name = name;
+  return assessment.loadFromCouchDB();
+};
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
     this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1];

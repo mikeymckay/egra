@@ -87,21 +87,23 @@ class Assessment
       page.saveToLocalStorage() for page in @pages
 
     saveToCouchDB: ->
-      #localStorage[@index()] = @toJSON()
-      $.ajax({
-        url: '/egra/'+@index(),
-        type: 'PUT',
-        data: @toJSON(),
-        success: (result) ->
-        }
-      )
-      page.saveToCouchDB() for page in @pages
+      @onReady =>
+        $.ajax({
+          url: '/egra/'+@index(),
+          type: 'PUT',
+          data: @toJSON(),
+          success: (result) ->
+          }
+        )
+        page.saveToCouchDB() for page in @pages
+      return this
 
     loadFromLocalStorage: ->
       result = JSON.parse(localStorage[@index()])
       @pages = []
       for pageIndex in result.indexesForPages
         @pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex))
+      return this
 
     loadFromCouchDB: (callback) ->
       @loading = true
@@ -117,6 +119,7 @@ class Assessment
             )
           @loading = false
       })
+      return this
 
     onReady: (callback) ->
       checkIfLoading = =>
@@ -135,6 +138,18 @@ class Assessment
         result = for page in @pages
           page.render()
         callback(result.join(""))
+
+Assessment.loadFromLocalStorage = (name) ->
+  assessment = new Assessment()
+  assessment.name = name
+  assessment.loadFromLocalStorage()
+
+Assessment.loadFromCouchDB = (name) ->
+  assessment = new Assessment()
+  assessment.name = name
+  assessment.loadFromCouchDB()
+
+
 
 class JQueryMobilePage
   constructor: ->
