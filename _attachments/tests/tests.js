@@ -56,10 +56,10 @@ $(document).ready(function() {
     return equals(test_object.render(), expected_result);
   });
   test("LocalStorage Serialization", function() {
-    var instructions, letters, login, test;
+    var assessment, instructions, letters, login;
     expect(3);
-    test = new Test();
-    test.name = "EGRA Prototype";
+    assessment = new Assessment();
+    assessment.name = "EGRA Prototype";
     login = new JQueryMobilePage();
     instructions = new InstructionsPage();
     letters = new LettersPage();
@@ -74,33 +74,33 @@ $(document).ready(function() {
     letters.header = "<h1>EGRA</h1>";
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
-    test.setPages([login, instructions, letters]);
+    assessment.setPages([login, instructions, letters]);
     stop();
-    return test.onReady(function() {
-      var anotherTest, index, result;
+    return assessment.onReady(function() {
+      var anotherAssessment, index, result;
       index = letters.index();
       letters.saveToLocalStorage();
       result = JQueryMobilePage.loadFromLocalStorage(index);
       equals(result.render(), letters.render());
       equals(result.content, letters.content);
-      anotherTest = new Test();
-      anotherTest.name = "EGRA Prototype";
-      test.saveToLocalStorage();
-      anotherTest.loadFromLocalStorage();
-      anotherTest.onReady(function() {});
-      return anotherTest.render(function(anotherTestResult) {
-        return test.render(function(testResult) {
-          equals(anotherTestResult, testResult);
+      anotherAssessment = new Assessment();
+      anotherAssessment.name = "EGRA Prototype";
+      assessment.saveToLocalStorage();
+      anotherAssessment.loadFromLocalStorage();
+      anotherAssessment.onReady(function() {});
+      return anotherAssessment.render(function(anotherAssessmentResult) {
+        return assessment.render(function(assessmentResult) {
+          equals(anotherAssessmentResult, assessmentResult);
           return start();
         });
       });
     });
   });
   return test("CouchDB Serialization", function() {
-    var instructions, letters, login, test;
+    var assessment, instructions, letters, login;
     expect(3);
-    test = new Test();
-    test.name = "TEST EGRA Prototype";
+    assessment = new Assessment();
+    assessment.name = "TEST EGRA Prototype";
     login = new JQueryMobilePage();
     instructions = new InstructionsPage();
     letters = new LettersPage();
@@ -115,25 +115,22 @@ $(document).ready(function() {
     letters.header = "<h1>EGRA</h1>";
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
-    test.setPages([login, instructions, letters]);
+    assessment.setPages([login, instructions, letters]);
     stop();
-    return test.onReady(function() {
-      var anotherTest, index;
-      index = letters.index();
+    return assessment.onReady(function() {
+      var anotherAssessment;
       letters.saveToCouchDB();
-      JQueryMobilePage.loadFromCouchDB(index, function(result) {
-        console.log("assa");
+      JQueryMobilePage.loadFromCouchDB(letters.index(), function(result) {
         equals(result.render(), letters.render());
         return equals(result.content, letters.content);
       });
-      anotherTest = new Test();
-      anotherTest.name = "TEST EGRA Prototype";
-      test.saveToCouchDB();
-      anotherTest.loadFromCouchDB();
-      anotherTest.onReady(function() {});
-      return anotherTest.render(function(anotherTestResult) {
-        return test.render(function(testResult) {
-          equals(anotherTestResult, testResult);
+      anotherAssessment = new Assessment();
+      anotherAssessment.name = "TEST EGRA Prototype";
+      assessment.saveToCouchDB();
+      anotherAssessment.loadFromCouchDB();
+      return anotherAssessment.render(function(anotherAssessmentResult) {
+        return assessment.render(function(assessmentResult) {
+          equals(anotherAssessmentResult, assessmentResult);
           return start();
         });
       });

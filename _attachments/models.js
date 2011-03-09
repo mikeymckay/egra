@@ -1,4 +1,4 @@
-var InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, Scorer, Template, Test, Timer, Util;
+var Assessment, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, Scorer, Template, Timer, Util;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -48,9 +48,9 @@ Util.generateGUID = function() {
   }).toUpperCase();
 ;
 };
-Test = (function() {
-  function Test() {}
-  Test.prototype.setPages = function(pages) {
+Assessment = (function() {
+  function Assessment() {}
+  Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
     this.pages = pages;
     this.indexesForPages = [];
@@ -67,16 +67,16 @@ Test = (function() {
     }
     return _results;
   };
-  Test.prototype.index = function() {
-    return "Test." + this.name;
+  Assessment.prototype.index = function() {
+    return "Assessment." + this.name;
   };
-  Test.prototype.toJSON = function() {
+  Assessment.prototype.toJSON = function() {
     return JSON.stringify({
       name: this.name,
       indexesForPages: this.indexesForPages
     });
   };
-  Test.prototype.saveToLocalStorage = function() {
+  Assessment.prototype.saveToLocalStorage = function() {
     var page, _i, _len, _ref, _results;
     localStorage[this.index()] = this.toJSON();
     _ref = this.pages;
@@ -87,7 +87,7 @@ Test = (function() {
     }
     return _results;
   };
-  Test.prototype.saveToCouchDB = function() {
+  Assessment.prototype.saveToCouchDB = function() {
     var page, _i, _len, _ref, _results;
     $.ajax({
       url: '/egra/' + this.index(),
@@ -103,7 +103,7 @@ Test = (function() {
     }
     return _results;
   };
-  Test.prototype.loadFromLocalStorage = function() {
+  Assessment.prototype.loadFromLocalStorage = function() {
     var pageIndex, result, _i, _len, _ref, _results;
     result = JSON.parse(localStorage[this.index()]);
     this.pages = [];
@@ -115,44 +115,47 @@ Test = (function() {
     }
     return _results;
   };
-  Test.prototype.loadFromCouchDB = function(callback) {
-    var result;
-    result = JSON.parse(localStorage[this.index()]);
+  Assessment.prototype.loadFromCouchDB = function(callback) {
+    this.loading = true;
     return $.ajax({
       url: '/egra/' + this.index(),
       type: 'GET',
+      dataType: 'json',
       success: __bind(function(result) {
-        var pageIndex, _i, _len, _ref, _results;
+        var pageIndex, _i, _len, _ref;
         this.pages = [];
         _ref = result.indexesForPages;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           pageIndex = _ref[_i];
-          _results.push(JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
+          JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
             return this.pages.push(result);
-          }, this)));
+          }, this));
         }
-        return _results;
+        return this.loading = false;
       }, this)
     });
   };
-  Test.prototype.onReady = function(callback) {
-    var check_if_loading;
-    check_if_loading = __bind(function() {
+  Assessment.prototype.onReady = function(callback) {
+    var checkIfLoading;
+    checkIfLoading = __bind(function() {
       var page, _i, _len, _ref;
+      if (this.loading) {
+        setTimeout(checkIfLoading, 1000);
+        return;
+      }
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         page = _ref[_i];
         if (page.loading) {
-          setTimeout(check_if_loading, 1000);
+          setTimeout(checkIfLoading, 1000);
           return;
         }
       }
       return callback();
     }, this);
-    return check_if_loading();
+    return checkIfLoading();
   };
-  Test.prototype.render = function(callback) {
+  Assessment.prototype.render = function(callback) {
     return this.onReady(__bind(function() {
       var page, result;
       result = (function() {
@@ -168,7 +171,7 @@ Test = (function() {
       return callback(result.join(""));
     }, this));
   };
-  return Test;
+  return Assessment;
 })();
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
@@ -195,9 +198,8 @@ JQueryMobilePage = (function() {
   };
   return JQueryMobilePage;
 })();
-JQueryMobilePage.deserialize = function(pageAsJSON) {
-  var key, pageObject, result, value;
-  pageObject = JSON.parse(pageAsJSON);
+JQueryMobilePage.deserialize = function(pageObject) {
+  var key, result, value;
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
@@ -207,18 +209,18 @@ JQueryMobilePage.deserialize = function(pageAsJSON) {
   return result;
 };
 JQueryMobilePage.loadFromLocalStorage = function(index) {
-  return JQueryMobilePage.deserialize(localStorage[index]);
+  return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]));
 };
 JQueryMobilePage.loadFromCouchDB = function(index, callback) {
-  console.log("asa");
-  console.log(callback);
   return $.ajax({
     url: '/egra/' + index,
     type: 'GET',
+    dataType: 'json',
     success: function(result) {
-      console.log("BB");
-      console.log(callback);
-      return callback(JQueryMobilePage.deserialize(JSON.parse(result)));
+      return callback(JQueryMobilePage.deserialize(result));
+    },
+    error: function() {
+      return console.log("Failed to load: " + '/egra/' + index);
     }
   });
 };

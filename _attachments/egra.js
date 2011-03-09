@@ -4,9 +4,9 @@ EarlyGradeReadingAssessment = (function() {
   return EarlyGradeReadingAssessment;
 })();
 EarlyGradeReadingAssessment.loadFromGoogle = function() {
-  var instructions, letters, login, test;
-  test = new Test();
-  test.name = "EGRA Prototype";
+  var assessment, instructions, letters, login;
+  assessment = new Assessment();
+  assessment.name = "EGRA Prototype";
   login = new JQueryMobilePage();
   instructions = new InstructionsPage();
   letters = new LettersPage();
@@ -21,11 +21,11 @@ EarlyGradeReadingAssessment.loadFromGoogle = function() {
   letters.header = "<h1>EGRA</h1>";
   letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
   letters.updateFromGoogle();
-  test.setPages([login, instructions, letters]);
-  test.onReady(function() {
-    return test.saveToCouchDB();
+  assessment.setPages([login, instructions, letters]);
+  assessment.onReady(function() {
+    return assessment.saveToCouchDB();
   });
-  test.render(function(result) {
+  assessment.render(function(result) {
     $("body").html(result);
     return $.mobile.initializePage();
   });
@@ -39,12 +39,12 @@ EarlyGradeReadingAssessment.loadFromGoogle = function() {
     return lettersTimer.reset();
   });
 };
-EarlyGradeReadingAssessment.loadFromLocalStorage = function(testName) {
-  var test;
-  test = new Test();
-  test.name = testName;
-  test.loadFromLocalStorage();
-  return test.render(function(result) {
+EarlyGradeReadingAssessment.loadFromLocalStorage = function(assessmentName) {
+  var assessment;
+  assessment = new Assessment();
+  assessment.name = assessmentName;
+  assessment.loadFromLocalStorage();
+  return assessment.render(function(result) {
     $("body").html(result);
     return $.mobile.initializePage();
   });

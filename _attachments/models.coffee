@@ -63,7 +63,7 @@ Util.generateGUID = () -> `'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/
   }).toUpperCase();
 `
 
-class Test
+class Assessment
   setPages: (pages) ->
     @pages = pages
     @indexesForPages = []
@@ -74,7 +74,7 @@ class Test
       @indexesForPages.push(page.index())
 
    index: ->
-    "Test." + @name
+    "Assessment." + @name
 
    toJSON: ->
      JSON.stringify {
@@ -104,26 +104,31 @@ class Test
         @pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex))
 
     loadFromCouchDB: (callback) ->
-      result = JSON.parse(localStorage[@index()])
+      @loading = true
       $.ajax({
         url: '/egra/' + @index(),
         type: 'GET',
+        dataType: 'json',
         success: (result) =>
           @pages = []
           for pageIndex in result.indexesForPages
             JQueryMobilePage.loadFromCouchDB(pageIndex, (result) =>
               @pages.push result
             )
+          @loading = false
       })
 
     onReady: (callback) ->
-      check_if_loading = =>
+      checkIfLoading = =>
+        if @loading
+          setTimeout(checkIfLoading, 1000)
+          return
         for page in @pages
           if page.loading
-            setTimeout(check_if_loading, 1000)
+            setTimeout(checkIfLoading, 1000)
             return
         callback()
-      return check_if_loading()
+      return checkIfLoading()
 
     render: (callback) ->
       @onReady =>
@@ -154,8 +159,7 @@ class JQueryMobilePage
       }
     )
 
-JQueryMobilePage.deserialize = (pageAsJSON) ->
-  pageObject = JSON.parse(pageAsJSON)
+JQueryMobilePage.deserialize = (pageObject) ->
   result = new window[pageObject.pageType]()
   for key,value of pageObject
     result[key] = value
@@ -163,18 +167,17 @@ JQueryMobilePage.deserialize = (pageAsJSON) ->
   return result
 
 JQueryMobilePage.loadFromLocalStorage = (index) ->
-  return JQueryMobilePage.deserialize(localStorage[index])
+  return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]))
 
 JQueryMobilePage.loadFromCouchDB = (index, callback) ->
-  console.log "asa"
-  console.log callback
   $.ajax({
     url: '/egra/'+index,
     type: 'GET',
+    dataType: 'json',
     success: (result) ->
-      console.log "BB"
-      console.log callback
-      callback(JQueryMobilePage.deserialize(JSON.parse(result)))
+      callback(JQueryMobilePage.deserialize(result))
+    error: ->
+      console.log "Failed to load: " + '/egra/' + index
   })
 
 class InstructionsPage extends JQueryMobilePage

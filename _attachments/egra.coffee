@@ -2,8 +2,8 @@ class EarlyGradeReadingAssessment
 
 EarlyGradeReadingAssessment.loadFromGoogle = ->
 
-  test= new Test()
-  test.name= "EGRA Prototype"
+  assessment= new Assessment()
+  assessment.name= "EGRA Prototype"
 
   login= new JQueryMobilePage()
   instructions= new InstructionsPage()
@@ -23,10 +23,10 @@ EarlyGradeReadingAssessment.loadFromGoogle = ->
   letters.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
   letters.updateFromGoogle()
 
-  test.setPages([login, instructions, letters])
-  test.onReady ->
-    test.saveToCouchDB()
-  test.render (result) ->
+  assessment.setPages([login, instructions, letters])
+  assessment.onReady ->
+    assessment.saveToCouchDB()
+  assessment.render (result) ->
     $("body").html(result)
     $.mobile.initializePage()
 
@@ -39,11 +39,11 @@ EarlyGradeReadingAssessment.loadFromGoogle = ->
   $('a:contains("reset")').click ->
     lettersTimer.reset()
 
-EarlyGradeReadingAssessment.loadFromLocalStorage = (testName) ->
-  test = new Test()
-  test.name = testName
-  test.loadFromLocalStorage()
-  test.render (result) ->
+EarlyGradeReadingAssessment.loadFromLocalStorage = (assessmentName) ->
+  assessment = new Assessment()
+  assessment.name = assessmentName
+  assessment.loadFromLocalStorage()
+  assessment.render (result) ->
     $("body").html(result)
     $.mobile.initializePage()
 

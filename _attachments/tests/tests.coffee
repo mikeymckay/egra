@@ -77,8 +77,8 @@ $(document).ready ->
 
   test "LocalStorage Serialization", ->
     expect(3)
-    test = new Test()
-    test.name = "EGRA Prototype"
+    assessment = new Assessment()
+    assessment.name = "EGRA Prototype"
     login = new JQueryMobilePage()
     instructions = new InstructionsPage()
     letters = new LettersPage()
@@ -97,31 +97,31 @@ $(document).ready ->
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
     letters.updateFromGoogle()
 
-    test.setPages([login, instructions,letters])
+    assessment.setPages([login, instructions,letters])
 
     stop()
-    test.onReady ->
+    assessment.onReady ->
       index = letters.index()
       letters.saveToLocalStorage()
       result = JQueryMobilePage.loadFromLocalStorage(index)
       equals(result.render(), letters.render())
       equals(result.content, letters.content)
 
-      anotherTest = new Test()
-      anotherTest.name = "EGRA Prototype"
-      test.saveToLocalStorage()
-      # Since name is same, it will deserialize from test
-      anotherTest.loadFromLocalStorage()
-      anotherTest.onReady ->
-      anotherTest.render (anotherTestResult) ->
-        test.render (testResult) ->
-          equals(anotherTestResult, testResult)
+      anotherAssessment = new Assessment()
+      anotherAssessment.name = "EGRA Prototype"
+      assessment.saveToLocalStorage()
+      # Since name is same, it will deserialize from assessment
+      anotherAssessment.loadFromLocalStorage()
+      anotherAssessment.onReady ->
+      anotherAssessment.render (anotherAssessmentResult) ->
+        assessment.render (assessmentResult) ->
+          equals(anotherAssessmentResult, assessmentResult)
           start()
 
   test "CouchDB Serialization", ->
     expect(3)
-    test = new Test()
-    test.name = "TEST EGRA Prototype"
+    assessment = new Assessment()
+    assessment.name = "TEST EGRA Prototype"
     login = new JQueryMobilePage()
     instructions = new InstructionsPage()
     letters = new LettersPage()
@@ -140,25 +140,22 @@ $(document).ready ->
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
     letters.updateFromGoogle()
 
-    test.setPages([login, instructions,letters])
+    assessment.setPages([login, instructions,letters])
 
     stop()
-    test.onReady ->
-      index = letters.index()
+    assessment.onReady ->
       letters.saveToCouchDB()
-      JQueryMobilePage.loadFromCouchDB(index, (result) ->
-        console.log "assa"
+      JQueryMobilePage.loadFromCouchDB(letters.index(), (result) ->
         equals(result.render(), letters.render())
         equals(result.content, letters.content)
       )
 
-      anotherTest = new Test()
-      anotherTest.name = "TEST EGRA Prototype"
-      test.saveToCouchDB()
-      # Since name is same, it will deserialize from test
-      anotherTest.loadFromCouchDB()
-      anotherTest.onReady ->
-      anotherTest.render (anotherTestResult) ->
-        test.render (testResult) ->
-          equals(anotherTestResult, testResult)
+      anotherAssessment = new Assessment()
+      anotherAssessment.name = "TEST EGRA Prototype"
+      assessment.saveToCouchDB()
+      # Since name is same, it will deserialize from assessment
+      anotherAssessment.loadFromCouchDB()
+      anotherAssessment.render (anotherAssessmentResult) ->
+        assessment.render (assessmentResult) ->
+          equals(anotherAssessmentResult, assessmentResult)
           start()
