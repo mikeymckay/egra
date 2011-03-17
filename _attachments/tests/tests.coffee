@@ -12,23 +12,12 @@ $(document).ready ->
   test "JQueryMobilePage", ->
     expect(1)
     test_object = new JQueryMobilePage()
-    test_object.page_id = "page_id"
+    test_object.pageId = "page_id"
     test_object.footer = "footer_text"
     test_object.header = "header"
     test_object.content = "content"
-    expected_result = "
-<div data-role='page' id='page_id'>
-  <div data-role='header'>
-    header
-  </div><!-- /header -->
-  <div data-role='content'>	
-    content
-  </div><!-- /content -->
-  <div data-role='footer'>
-    footer_text
-  </div><!-- /header -->
-</div><!-- /page -->
-"
+    expected_result = "<div data-role='page' id='page_id'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->"
+
     equals(test_object.render(), expected_result)
 
 
@@ -71,12 +60,11 @@ $(document).ready ->
   test "Timer", ->
     expect(1)
     test_object = new Timer()
-    expected_result = "
-<div>  <span id='timer'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
+    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
     equals(test_object.render(), expected_result)
 
   test "LocalStorage Serialization", ->
-    expect(3)
+    expect(4)
     assessment = new Assessment()
     assessment.name = "EGRA Prototype"
     login = new JQueryMobilePage()
@@ -113,10 +101,10 @@ $(document).ready ->
       # Since name is same, it will deserialize from assessment
       anotherAssessment.loadFromLocalStorage()
       anotherAssessment.onReady ->
-      anotherAssessment.render (anotherAssessmentResult) ->
-        assessment.render (assessmentResult) ->
-          equals(anotherAssessmentResult, assessmentResult)
-          start()
+        console.log "AAAA"
+        equal(assessment.pages.length, anotherAssessment.pages.length)
+        equal(assessment.render(), anotherAssessment.render())
+        start()
 
   test "CouchDB Serialization", ->
     expect(3)
@@ -145,17 +133,22 @@ $(document).ready ->
     stop()
     assessment.onReady ->
       letters.saveToCouchDB()
-      JQueryMobilePage.loadFromCouchDB(letters.index(), (result) ->
-        equals(result.render(), letters.render())
-        equals(result.content, letters.content)
-      )
+      # Wait 1 second for the save to complete
+      loadFunction = ->
+        JQueryMobilePage.loadFromCouchDB letters.index(), (result) ->
+          equals(result.render(), letters.render())
+          equals(result.content, letters.content)
+      setTimeout(loadFunction,1000)
 
       anotherAssessment = new Assessment()
       anotherAssessment.name = "TEST EGRA Prototype"
       assessment.saveToCouchDB()
-      # Since name is same, it will deserialize from assessment
-      anotherAssessment.loadFromCouchDB()
-      anotherAssessment.render (anotherAssessmentResult) ->
-        assessment.render (assessmentResult) ->
-          equals(anotherAssessmentResult, assessmentResult)
-          start()
+      loadFunction = ->
+        # Since name is same, it will deserialize from assessment
+        console.log "Loading..."
+        anotherAssessment.loadFromCouchDB()
+        anotherAssessment.render (anotherAssessmentResult) ->
+          assessment.render (assessmentResult) ->
+            equals(anotherAssessmentResult, assessmentResult)
+            start()
+      setTimeout(loadFunction,1000)

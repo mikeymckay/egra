@@ -1,11 +1,15 @@
+# Global assessment object
+$.assessment = null
+
 class Template
 
 Template.JQueryMobilePage = () ->  "
-<div data-role='page' id='{{{page_id}}'>
+<div data-role='page' id='{{{pageId}}'>
   <div data-role='header'>
     {{{header}}}
   </div><!-- /header -->
   <div data-role='content'>	
+    {{{controls}}}
     {{{content}}}
   </div><!-- /content -->
   <div data-role='footer'>
@@ -31,8 +35,8 @@ Template.JQueryLogin = () -> "
 "
 
 Template.Timer = () -> "
-<div>
-  <span id='{{id}}'>{{seconds}}</span>
+<div class='timer'>
+  <span class='timer_seconds'>{{seconds}}</span>
   <a href='#' data-role='button'>start</a>
   <a href='#' data-role='button'>stop</a>
   <a href='#' data-role='button'>reset</a>
@@ -40,7 +44,7 @@ Template.Timer = () -> "
 "
 
 Template.Scorer = () -> "
-<div>
+<div class='scorer'>
   <small>
   Completed:<span id='completed'></span>
   Wrong:<span id='wrong'></span>
@@ -68,9 +72,9 @@ class Assessment
     @pages = pages
     @indexesForPages = []
     for page, index in @pages
-      page.test = this
+      page.assessment = this
       page.pageNumber = index
-      page.nextPage = @pages[index + 1].page_id unless pages.length == index + 1
+      page.nextPage = @pages[index + 1].pageId unless pages.length == index + 1
       @indexesForPages.push(page.index())
 
    index: ->
@@ -78,8 +82,8 @@ class Assessment
 
    toJSON: ->
      JSON.stringify {
-       name: this.name,
-       indexesForPages: this.indexesForPages
+       name: @name,
+       indexesForPages: @indexesForPages
      }
 
     saveToLocalStorage: ->
@@ -133,9 +137,22 @@ class Assessment
         callback()
       return checkIfLoading()
 
-    render: (callback) ->
+    render: (callback = =>) ->
       @onReady =>
-        result = for page in @pages
+        # Set the global assessment variable to this assessment
+        $.assessment = this
+
+        # Make sure that whenever a new page is shown we have access
+        # To the instantiated page object
+        $('div').live 'pageshow', (event,ui) =>
+          for page in @pages
+            if page.pageId is document.location.hash.substr(1)
+              @currentPage = page
+        result = for page,i in @pages
+          console.log page.render()
+          console.log page.index()
+          console.log "------------------------------"
+          console.log "------------------------------"
           page.render()
         callback(result.join(""))
 
@@ -153,6 +170,7 @@ Assessment.loadFromCouchDB = (name) ->
 
 class JQueryMobilePage
   constructor: ->
+    @pageId = @header = ""
     @pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
@@ -160,12 +178,17 @@ class JQueryMobilePage
     Mustache.to_html(Template.JQueryMobilePage(),this)
 
   index: ->
-    this.test.index() + "." + this.page_id
+    @assessment.index() + "." + this.pageId
+
+  couchdbURL: -> '/egra/'+@index()
 
   saveToLocalStorage: ->
     localStorage[@index()] = JSON.stringify(this)
 
-  saveToCouchDB: ->
+
+  putToCouchDB: (revision_to_replace = null) ->
+    if revision_to_replace
+      this._rev = revision_to_replace
     $.ajax({
       url: '/egra/'+@index(),
       type: 'PUT',
@@ -173,6 +196,27 @@ class JQueryMobilePage
       success: (result) ->
       }
     )
+
+  saveToCouchDB: (callback) ->
+    url = '/egra/'+@index()
+
+    # Check if there are any differences between stored version and this
+    $.ajax
+      url: url
+      type: 'GET',
+      datatype: 'json',
+      success: (result) =>
+        result = JSON.parse(result)
+        for property in ("content,header,nextPage,pageId".split(","))
+          if result[property] != this[property]
+#            console.log "Different #{property}"
+#            console.log this[property]
+#            console.log result[property]
+            @putToCouchDB(result._rev)
+            return
+      # document doesn't exist so just push it
+      error:
+        @putToCouchDB()
 
 JQueryMobilePage.deserialize = (pageObject) ->
   result = new window[pageObject.pageType]()
@@ -190,12 +234,23 @@ JQueryMobilePage.loadFromCouchDB = (index, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
+      console.log result
+      console.log "ASDASASDASAS"
       callback(JQueryMobilePage.deserialize(result))
     error: ->
       console.log "Failed to load: " + '/egra/' + index
   })
 
-class InstructionsPage extends JQueryMobilePage
+class AssessmentPage extends JQueryMobilePage
+  addTimer: ->
+    @timer = new Timer()
+    @timer.setPage(this)
+    @scorer = new Scorer()
+#    @scorer.setPage(this)
+
+    @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
+
+class InstructionsPage extends AssessmentPage
   updateFromGoogle: ->
     @loading = true
     googleSpreadsheet = new GoogleSpreadsheet()
@@ -204,7 +259,7 @@ class InstructionsPage extends JQueryMobilePage
       @content = result.data[0].replace(/\n/g, "<br/>")
       @loading = false
 
-class LettersPage extends JQueryMobilePage
+class LettersPage extends AssessmentPage
   updateFromGoogle: ->
     @loading = true
     googleSpreadsheet = new GoogleSpreadsheet()
@@ -217,7 +272,8 @@ class LettersPage extends JQueryMobilePage
         checkbox.unique_name = "checkbox_" + index
         checkbox.content = letter
         checkbox
-      @content =  "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render()
+      @addTimer()
+      @content = lettersCheckboxes.three_way_render()
       @loading = false
 
 class JQueryCheckbox
@@ -290,15 +346,26 @@ class JQueryLogin
     Mustache.to_html(Template.JQueryLogin(),this)
 
 class Timer
+  constructor: ->
+    @elementLocation = null
+
+  toJSON: ->
+    JSON.stringify {
+      seconds: @seconds,
+      elementLocation: @elementLocation
+    }
+
+  setPage: (@page) ->
+    @elementLocation = "div##{page.pageId} div.timer"
+
   start: ->
     return if @running
     @running = true
     @tick_value = 1
-# Note that we are using => not ->. This lets the decrement function have access @seconds.
     decrement = =>
       @seconds -= @tick_value
       clearInterval(@intervalId) if @seconds == 0
-      $(@element_location).html(@seconds)
+      @renderSeconds()
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
@@ -307,12 +374,20 @@ class Timer
 
   reset: ->
     @seconds = 60
-    $(@element_location).html(@seconds)
+    @renderSeconds()
+
+  renderSeconds: ->
+    $("#{@elementLocation} span.timer_seconds").html(@seconds)
 
   render: ->
     @id = "timer"
-    @element_location = "##{@id}"
     @seconds = 60
+    $("#{@elementLocation} a:contains('start')").live 'click', =>
+      @start()
+    $("#{@elementLocation} a:contains('stop')").live 'click', =>
+      @stop()
+    $("#{@elementLocation} a:contains('reset')").live 'click', =>
+      @reset()
     Mustache.to_html(Template.Timer(),this)
 
  

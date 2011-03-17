@@ -13,11 +13,11 @@ $(document).ready(function() {
     var expected_result, test_object;
     expect(1);
     test_object = new JQueryMobilePage();
-    test_object.page_id = "page_id";
+    test_object.pageId = "page_id";
     test_object.footer = "footer_text";
     test_object.header = "header";
     test_object.content = "content";
-    expected_result = "<div data-role='page' id='page_id'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	    content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->";
+    expected_result = "<div data-role='page' id='page_id'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->";
     return equals(test_object.render(), expected_result);
   });
   test("JQueryCheckbox", function() {
@@ -52,12 +52,12 @@ $(document).ready(function() {
     var expected_result, test_object;
     expect(1);
     test_object = new Timer();
-    expected_result = "<div>  <span id='timer'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
     return equals(test_object.render(), expected_result);
   });
   test("LocalStorage Serialization", function() {
     var assessment, instructions, letters, login;
-    expect(3);
+    expect(4);
     assessment = new Assessment();
     assessment.name = "EGRA Prototype";
     login = new JQueryMobilePage();
@@ -87,12 +87,11 @@ $(document).ready(function() {
       anotherAssessment.name = "EGRA Prototype";
       assessment.saveToLocalStorage();
       anotherAssessment.loadFromLocalStorage();
-      anotherAssessment.onReady(function() {});
-      return anotherAssessment.render(function(anotherAssessmentResult) {
-        return assessment.render(function(assessmentResult) {
-          equals(anotherAssessmentResult, assessmentResult);
-          return start();
-        });
+      return anotherAssessment.onReady(function() {
+        console.log("AAAA");
+        equal(assessment.pages.length, anotherAssessment.pages.length);
+        equal(assessment.render(), anotherAssessment.render());
+        return start();
       });
     });
   });
@@ -118,22 +117,29 @@ $(document).ready(function() {
     assessment.setPages([login, instructions, letters]);
     stop();
     return assessment.onReady(function() {
-      var anotherAssessment;
+      var anotherAssessment, loadFunction;
       letters.saveToCouchDB();
-      JQueryMobilePage.loadFromCouchDB(letters.index(), function(result) {
-        equals(result.render(), letters.render());
-        return equals(result.content, letters.content);
-      });
+      loadFunction = function() {
+        return JQueryMobilePage.loadFromCouchDB(letters.index(), function(result) {
+          equals(result.render(), letters.render());
+          return equals(result.content, letters.content);
+        });
+      };
+      setTimeout(loadFunction, 1000);
       anotherAssessment = new Assessment();
       anotherAssessment.name = "TEST EGRA Prototype";
       assessment.saveToCouchDB();
-      anotherAssessment.loadFromCouchDB();
-      return anotherAssessment.render(function(anotherAssessmentResult) {
-        return assessment.render(function(assessmentResult) {
-          equals(anotherAssessmentResult, assessmentResult);
-          return start();
+      loadFunction = function() {
+        console.log("Loading...");
+        anotherAssessment.loadFromCouchDB();
+        return anotherAssessment.render(function(anotherAssessmentResult) {
+          return assessment.render(function(assessmentResult) {
+            equals(anotherAssessmentResult, assessmentResult);
+            return start();
+          });
         });
-      });
+      };
+      return setTimeout(loadFunction, 1000);
     });
   });
 });

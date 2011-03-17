@@ -1,4 +1,4 @@
-var Assessment, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, Scorer, Template, Timer, Util;
+var Assessment, AssessmentPage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, Scorer, Template, Timer, Util;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -7,12 +7,13 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
+$.assessment = null;
 Template = (function() {
   function Template() {}
   return Template;
 })();
 Template.JQueryMobilePage = function() {
-  return "<div data-role='page' id='{{{page_id}}'>  <div data-role='header'>    {{{header}}}  </div><!-- /header -->  <div data-role='content'>	    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{{footer_text}}}  </div><!-- /header --></div><!-- /page -->";
+  return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    {{{header}}}  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{{footer_text}}}  </div><!-- /header --></div><!-- /page -->";
 };
 Template.JQueryCheckbox = function() {
   return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
@@ -21,10 +22,10 @@ Template.JQueryLogin = function() {
   return "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
 };
 Template.Timer = function() {
-  return "<div>  <span id='{{id}}'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+  return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
 };
 Template.Scorer = function() {
-  return "<div>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
+  return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
 };
 Template.Store = function() {
   var template, _results;
@@ -58,10 +59,10 @@ Assessment = (function() {
     _results = [];
     for (index = 0, _len = _ref.length; index < _len; index++) {
       page = _ref[index];
-      page.test = this;
+      page.assessment = this;
       page.pageNumber = index;
       if (pages.length !== index + 1) {
-        page.nextPage = this.pages[index + 1].page_id;
+        page.nextPage = this.pages[index + 1].pageId;
       }
       _results.push(this.indexesForPages.push(page.index()));
     }
@@ -159,14 +160,32 @@ Assessment = (function() {
     return checkIfLoading();
   };
   Assessment.prototype.render = function(callback) {
+    if (callback == null) {
+      callback = __bind(function() {}, this);
+    }
     return this.onReady(__bind(function() {
-      var page, result;
-      result = (function() {
-        var _i, _len, _ref, _results;
+      var i, page, result;
+      $.assessment = this;
+      $('div').live('pageshow', __bind(function(event, ui) {
+        var page, _i, _len, _ref, _results;
         _ref = this.pages;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
+          _results.push(page.pageId === document.location.hash.substr(1) ? this.currentPage = page : void 0);
+        }
+        return _results;
+      }, this));
+      result = (function() {
+        var _len, _ref, _results;
+        _ref = this.pages;
+        _results = [];
+        for (i = 0, _len = _ref.length; i < _len; i++) {
+          page = _ref[i];
+          console.log(page.render());
+          console.log(page.index());
+          console.log("------------------------------");
+          console.log("------------------------------");
           _results.push(page.render());
         }
         return _results;
@@ -190,6 +209,7 @@ Assessment.loadFromCouchDB = function(name) {
 };
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
+    this.pageId = this.header = "";
     this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
@@ -198,17 +218,48 @@ JQueryMobilePage = (function() {
     return Mustache.to_html(Template.JQueryMobilePage(), this);
   };
   JQueryMobilePage.prototype.index = function() {
-    return this.test.index() + "." + this.page_id;
+    return this.assessment.index() + "." + this.pageId;
+  };
+  JQueryMobilePage.prototype.couchdbURL = function() {
+    return '/egra/' + this.index();
   };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
     return localStorage[this.index()] = JSON.stringify(this);
   };
-  JQueryMobilePage.prototype.saveToCouchDB = function() {
+  JQueryMobilePage.prototype.putToCouchDB = function(revision_to_replace) {
+    if (revision_to_replace == null) {
+      revision_to_replace = null;
+    }
+    if (revision_to_replace) {
+      this._rev = revision_to_replace;
+    }
     return $.ajax({
       url: '/egra/' + this.index(),
       type: 'PUT',
       data: JSON.stringify(this),
       success: function(result) {}
+    });
+  };
+  JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
+    var url;
+    url = '/egra/' + this.index();
+    return $.ajax({
+      url: url,
+      type: 'GET',
+      datatype: 'json',
+      success: __bind(function(result) {
+        var property, _i, _len, _ref;
+        result = JSON.parse(result);
+        _ref = "content,header,nextPage,pageId".split(",");
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          property = _ref[_i];
+          if (result[property] !== this[property]) {
+            this.putToCouchDB(result._rev);
+            return;
+          }
+        }
+      }, this),
+      error: this.putToCouchDB()
     });
   };
   return JQueryMobilePage;
@@ -232,6 +283,8 @@ JQueryMobilePage.loadFromCouchDB = function(index, callback) {
     type: 'GET',
     dataType: 'json',
     success: function(result) {
+      console.log(result);
+      console.log("ASDASASDASAS");
       return callback(JQueryMobilePage.deserialize(result));
     },
     error: function() {
@@ -239,11 +292,24 @@ JQueryMobilePage.loadFromCouchDB = function(index, callback) {
     }
   });
 };
+AssessmentPage = (function() {
+  function AssessmentPage() {
+    AssessmentPage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(AssessmentPage, JQueryMobilePage);
+  AssessmentPage.prototype.addTimer = function() {
+    this.timer = new Timer();
+    this.timer.setPage(this);
+    this.scorer = new Scorer();
+    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render() + this.scorer.render()) + "</div>";
+  };
+  return AssessmentPage;
+})();
 InstructionsPage = (function() {
   function InstructionsPage() {
     InstructionsPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(InstructionsPage, JQueryMobilePage);
+  __extends(InstructionsPage, AssessmentPage);
   InstructionsPage.prototype.updateFromGoogle = function() {
     var googleSpreadsheet;
     this.loading = true;
@@ -260,7 +326,7 @@ LettersPage = (function() {
   function LettersPage() {
     LettersPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(LettersPage, JQueryMobilePage);
+  __extends(LettersPage, AssessmentPage);
   LettersPage.prototype.updateFromGoogle = function() {
     var googleSpreadsheet;
     this.loading = true;
@@ -283,7 +349,8 @@ LettersPage = (function() {
         }
         return _results;
       }).call(this);
-      this.content = "        <div style='width: 100px;position:fixed;right:5px;'>" + (new Timer()).render() + (new Scorer()).render() + "        </div>" + lettersCheckboxes.three_way_render();
+      this.addTimer();
+      this.content = lettersCheckboxes.three_way_render();
       return this.loading = false;
     }, this));
   };
@@ -333,7 +400,19 @@ JQueryLogin = (function() {
   return JQueryLogin;
 })();
 Timer = (function() {
-  function Timer() {}
+  function Timer() {
+    this.elementLocation = null;
+  }
+  Timer.prototype.toJSON = function() {
+    return JSON.stringify({
+      seconds: this.seconds,
+      elementLocation: this.elementLocation
+    });
+  };
+  Timer.prototype.setPage = function(page) {
+    this.page = page;
+    return this.elementLocation = "div#" + page.pageId + " div.timer";
+  };
   Timer.prototype.start = function() {
     var decrement;
     if (this.running) {
@@ -346,7 +425,7 @@ Timer = (function() {
       if (this.seconds === 0) {
         clearInterval(this.intervalId);
       }
-      return $(this.element_location).html(this.seconds);
+      return this.renderSeconds();
     }, this);
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
@@ -356,12 +435,23 @@ Timer = (function() {
   };
   Timer.prototype.reset = function() {
     this.seconds = 60;
-    return $(this.element_location).html(this.seconds);
+    return this.renderSeconds();
+  };
+  Timer.prototype.renderSeconds = function() {
+    return $("" + this.elementLocation + " span.timer_seconds").html(this.seconds);
   };
   Timer.prototype.render = function() {
     this.id = "timer";
-    this.element_location = "#" + this.id;
     this.seconds = 60;
+    $("" + this.elementLocation + " a:contains('start')").live('click', __bind(function() {
+      return this.start();
+    }, this));
+    $("" + this.elementLocation + " a:contains('stop')").live('click', __bind(function() {
+      return this.stop();
+    }, this));
+    $("" + this.elementLocation + " a:contains('reset')").live('click', __bind(function() {
+      return this.reset();
+    }, this));
     return Mustache.to_html(Template.Timer(), this);
   };
   return Timer;
