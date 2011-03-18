@@ -88,14 +88,24 @@ Assessment = (function() {
     }
     return _results;
   };
-  Assessment.prototype.saveToCouchDB = function() {
+  Assessment.prototype.saveToCouchDB = function(callback) {
+    if (callback == null) {
+      callback = null;
+    }
     this.onReady(__bind(function() {
       var page, _i, _len, _ref, _results;
       $.ajax({
         url: '/egra/' + this.index(),
         type: 'PUT',
         data: this.toJSON(),
-        success: function(result) {}
+        success: function(result) {
+          console.log("SSS");
+          console.log(result);
+          this.revision = result.rev;
+          if (callback) {
+            return callback;
+          }
+        }
       });
       _ref = this.pages;
       _results = [];
@@ -138,6 +148,43 @@ Assessment = (function() {
       }, this)
     });
     return this;
+  };
+  Assessment.prototype.deleteFromLocalStorage = function() {
+    var page, _i, _len, _ref;
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      page.deleteFromLocalStorage();
+    }
+    return localStorage.removeItem(this.index());
+  };
+  Assessment.prototype.deleteFromCouchDB = function() {
+    var page, _i, _len, _ref;
+    console.log("deleting");
+    console.log(this);
+    console.log("AAAAA");
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      page.deleteFromCouchDB();
+    }
+    return $.ajax({
+      url: '/egra/' + this.index(),
+      type: 'DELETE',
+      dataType: 'json',
+      success: __bind(function(result) {
+        var pageIndex, _i, _len, _ref;
+        this.pages = [];
+        _ref = result.indexesForPages;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          pageIndex = _ref[_i];
+          JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
+            return this.pages.push(result);
+          }, this));
+        }
+        return this.loading = false;
+      }, this)
+    });
   };
   Assessment.prototype.onReady = function(callback) {
     var checkIfLoading;
@@ -182,10 +229,6 @@ Assessment = (function() {
         _results = [];
         for (i = 0, _len = _ref.length; i < _len; i++) {
           page = _ref[i];
-          console.log(page.render());
-          console.log(page.index());
-          console.log("------------------------------");
-          console.log("------------------------------");
           _results.push(page.render());
         }
         return _results;
@@ -233,6 +276,7 @@ JQueryMobilePage = (function() {
     if (revision_to_replace) {
       this._rev = revision_to_replace;
     }
+    console.log(this);
     return $.ajax({
       url: '/egra/' + this.index(),
       type: 'PUT',
@@ -254,13 +298,20 @@ JQueryMobilePage = (function() {
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           property = _ref[_i];
           if (result[property] !== this[property]) {
+            console.log("differences found, putting " + url);
             this.putToCouchDB(result._rev);
             return;
           }
         }
       }, this),
-      error: this.putToCouchDB()
+      error: __bind(function() {
+        console.log("Error looking up existing document at " + url);
+        return this.putToCouchDB();
+      }, this)
     });
+  };
+  JQueryMobilePage.prototype.deleteFromLocalStorage = function() {
+    return localStorage.removeItem(this.index());
   };
   return JQueryMobilePage;
 })();
@@ -283,8 +334,6 @@ JQueryMobilePage.loadFromCouchDB = function(index, callback) {
     type: 'GET',
     dataType: 'json',
     success: function(result) {
-      console.log(result);
-      console.log("ASDASASDASAS");
       return callback(JQueryMobilePage.deserialize(result));
     },
     error: function() {

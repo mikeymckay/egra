@@ -90,13 +90,17 @@ class Assessment
       localStorage[@index()] = @toJSON()
       page.saveToLocalStorage() for page in @pages
 
-    saveToCouchDB: ->
+    saveToCouchDB: (callback = null) ->
       @onReady =>
         $.ajax({
           url: '/egra/'+@index(),
           type: 'PUT',
           data: @toJSON(),
           success: (result) ->
+            console.log "SSS"
+            console.log result
+            @revision = result.rev
+            callback if callback
           }
         )
         page.saveToCouchDB() for page in @pages
@@ -125,6 +129,30 @@ class Assessment
       })
       return this
 
+    deleteFromLocalStorage: ->
+      for page in @pages
+        page.deleteFromLocalStorage()
+      localStorage.removeItem(@index())
+
+    deleteFromCouchDB: ->
+      console.log "deleting"
+      console.log this
+      console.log "AAAAA"
+      for page in @pages
+        page.deleteFromCouchDB()
+      $.ajax({
+        url: '/egra/' + @index(),
+        type: 'DELETE',
+        dataType: 'json',
+        success: (result) =>
+          @pages = []
+          for pageIndex in result.indexesForPages
+            JQueryMobilePage.loadFromCouchDB(pageIndex, (result) =>
+              @pages.push result
+            )
+          @loading = false
+      })
+
     onReady: (callback) ->
       checkIfLoading = =>
         if @loading
@@ -149,10 +177,6 @@ class Assessment
             if page.pageId is document.location.hash.substr(1)
               @currentPage = page
         result = for page,i in @pages
-          console.log page.render()
-          console.log page.index()
-          console.log "------------------------------"
-          console.log "------------------------------"
           page.render()
         callback(result.join(""))
 
@@ -178,7 +202,7 @@ class JQueryMobilePage
     Mustache.to_html(Template.JQueryMobilePage(),this)
 
   index: ->
-    @assessment.index() + "." + this.pageId
+    @assessment.index() + "." + @pageId
 
   couchdbURL: -> '/egra/'+@index()
 
@@ -189,6 +213,7 @@ class JQueryMobilePage
   putToCouchDB: (revision_to_replace = null) ->
     if revision_to_replace
       this._rev = revision_to_replace
+    console.log this
     $.ajax({
       url: '/egra/'+@index(),
       type: 'PUT',
@@ -209,14 +234,16 @@ class JQueryMobilePage
         result = JSON.parse(result)
         for property in ("content,header,nextPage,pageId".split(","))
           if result[property] != this[property]
-#            console.log "Different #{property}"
-#            console.log this[property]
-#            console.log result[property]
+            console.log "differences found, putting #{url}"
             @putToCouchDB(result._rev)
             return
       # document doesn't exist so just push it
-      error:
+      error: =>
+        console.log "Error looking up existing document at #{url}"
         @putToCouchDB()
+
+  deleteFromLocalStorage: ->
+    localStorage.removeItem(@index())
 
 JQueryMobilePage.deserialize = (pageObject) ->
   result = new window[pageObject.pageType]()
@@ -234,8 +261,6 @@ JQueryMobilePage.loadFromCouchDB = (index, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      console.log result
-      console.log "ASDASASDASAS"
       callback(JQueryMobilePage.deserialize(result))
     error: ->
       console.log "Failed to load: " + '/egra/' + index

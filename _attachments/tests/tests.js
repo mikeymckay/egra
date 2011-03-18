@@ -13,11 +13,11 @@ $(document).ready(function() {
     var expected_result, test_object;
     expect(1);
     test_object = new JQueryMobilePage();
-    test_object.pageId = "page_id";
+    test_object.pageId = "pageId";
     test_object.footer = "footer_text";
     test_object.header = "header";
     test_object.content = "content";
-    expected_result = "<div data-role='page' id='page_id'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->";
+    expected_result = "<div data-role='page' id='pageId'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->";
     return equals(test_object.render(), expected_result);
   });
   test("JQueryCheckbox", function() {
@@ -55,22 +55,38 @@ $(document).ready(function() {
     expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
     return equals(test_object.render(), expected_result);
   });
+  test("LocalStorage Create/Delete", function() {
+    var assessment, login;
+    assessment = new Assessment();
+    assessment.name = "Test EGRA Prototype";
+    login = new JQueryMobilePage();
+    login.pageId = "Login";
+    assessment.setPages([login]);
+    equals(localStorage["Assessment.Test EGRA Prototype"], null);
+    equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
+    assessment.saveToLocalStorage();
+    notEqual(localStorage["Assessment.Test EGRA Prototype"], null);
+    notEqual(localStorage["Assessment.Test EGRA Prototype.Login"], null);
+    assessment.deleteFromLocalStorage();
+    equals(localStorage["Assessment.Test EGRA Prototype"], null);
+    return equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
+  });
   test("LocalStorage Serialization", function() {
     var assessment, instructions, letters, login;
     expect(4);
     assessment = new Assessment();
-    assessment.name = "EGRA Prototype";
+    assessment.name = "Test EGRA Prototype";
     login = new JQueryMobilePage();
     instructions = new InstructionsPage();
     letters = new LettersPage();
-    login.page_id = "Login";
+    login.pageId = "Login";
     login.header = "<h1>EGRA</h1>";
     login.content = (new JQueryLogin()).render();
-    instructions.page_id = "Instructions";
+    instructions.pageId = "Instructions";
     instructions.header = "<h1>EGRA</h1>";
     instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html";
     instructions.updateFromGoogle();
-    letters.page_id = "Letters";
+    letters.pageId = "Letters";
     letters.header = "<h1>EGRA</h1>";
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
@@ -84,16 +100,39 @@ $(document).ready(function() {
       equals(result.render(), letters.render());
       equals(result.content, letters.content);
       anotherAssessment = new Assessment();
-      anotherAssessment.name = "EGRA Prototype";
+      anotherAssessment.name = assessment.name;
       assessment.saveToLocalStorage();
       anotherAssessment.loadFromLocalStorage();
       return anotherAssessment.onReady(function() {
-        console.log("AAAA");
         equal(assessment.pages.length, anotherAssessment.pages.length);
         equal(assessment.render(), anotherAssessment.render());
         return start();
       });
     });
+  });
+  test("CouchDB Create/Delete", function() {
+    var assessment, login, waitForDelete, waitForSave;
+    assessment = new Assessment();
+    assessment.name = "Test EGRA Prototype";
+    login = new JQueryMobilePage();
+    login.pageId = "Login";
+    assessment.setPages([login]);
+    equals(localStorage["Assessment.Test EGRA Prototype"], null);
+    equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
+    console.log("Saving");
+    assessment.saveToCouchDB();
+    stop();
+    waitForSave = function() {
+      console.log(assessment.revision);
+      notEqual(assessment.revision, null);
+      return start();
+    };
+    setTimeout(waitForSave, 1000);
+    stop();
+    waitForDelete = function() {
+      return start();
+    };
+    return setTimeout(waitForDelete, 1000);
   });
   return test("CouchDB Serialization", function() {
     var assessment, instructions, letters, login;
@@ -103,14 +142,14 @@ $(document).ready(function() {
     login = new JQueryMobilePage();
     instructions = new InstructionsPage();
     letters = new LettersPage();
-    login.page_id = "Login";
+    login.pageId = "Login";
     login.header = "<h1>EGRA</h1>";
     login.content = (new JQueryLogin()).render();
-    instructions.page_id = "Instructions";
+    instructions.pageId = "Instructions";
     instructions.header = "<h1>EGRA</h1>";
     instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html";
     instructions.updateFromGoogle();
-    letters.page_id = "Letters";
+    letters.pageId = "Letters";
     letters.header = "<h1>EGRA</h1>";
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
@@ -127,13 +166,14 @@ $(document).ready(function() {
       };
       setTimeout(loadFunction, 1000);
       anotherAssessment = new Assessment();
-      anotherAssessment.name = "TEST EGRA Prototype";
+      anotherAssessment.name = assessment.name;
       assessment.saveToCouchDB();
       loadFunction = function() {
-        console.log("Loading...");
         anotherAssessment.loadFromCouchDB();
         return anotherAssessment.render(function(anotherAssessmentResult) {
           return assessment.render(function(assessmentResult) {
+            $.a = assessment;
+            $.b = anotherAssessment;
             equals(anotherAssessmentResult, assessmentResult);
             return start();
           });
