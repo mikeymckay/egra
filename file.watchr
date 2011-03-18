@@ -3,6 +3,7 @@ watch( '.html$') {|match_data|
 }
 watch( '(.*\.coffee$)' ) {|match_data|
   puts match_data[0]
-  `coffee --bare --compile #{match_data[0]} | /home/crazy/coffee-notify.sh`
+  `coffee --bare --compile #{match_data[0]}`
+  #`coffee --bare --compile #{match_data[0]} 2>&1 | /home/crazy/coffee-notify.sh`
   `couchapp push`
 }
