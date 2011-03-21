@@ -1,9 +1,41 @@
+var CouchDB;
+CouchDB = (function() {
+  function CouchDB() {}
+  return CouchDB;
+})();
+CouchDB["delete"] = function(documents) {
+  var couchdb_url, document, _i, _len, _results;
+  _results = [];
+  for (_i = 0, _len = documents.length; _i < _len; _i++) {
+    document = documents[_i];
+    couchdb_url = $.couchDBDesignDocumentPath + document.index();
+    _results.push($.ajax({
+      url: couchdb_url,
+      type: 'GET',
+      dataType: 'json',
+      async: false,
+      success: function(result) {
+        couchdb_url = "" + couchdb_url + "?rev=" + result._rev;
+        return $.ajax({
+          url: couchdb_url,
+          data: {
+            rev: result._rev
+          },
+          type: 'DELETE',
+          async: false,
+          success: function() {
+            return console.log("Deleted " + couchdb_url);
+          },
+          error: function() {
+            return console.log("Nothing to delete at " + couchdb_url);
+          }
+        });
+      }
+    }));
+  }
+  return _results;
+};
 $(document).ready(function() {
-  module("Basic Unit Test");
-  test("Sample test", function() {
-    expect(1);
-    return equals(4 / 2, 2);
-  });
   module("EGRA");
   QUnit.testStart = function(name) {
     console.log(name);
@@ -111,31 +143,41 @@ $(document).ready(function() {
     });
   });
   test("CouchDB Create/Delete", function() {
-    var assessment, login, waitForDelete, waitForSave;
+    var assessment, login;
     assessment = new Assessment();
     assessment.name = "Test EGRA Prototype";
     login = new JQueryMobilePage();
     login.pageId = "Login";
     assessment.setPages([login]);
-    equals(localStorage["Assessment.Test EGRA Prototype"], null);
-    equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
-    console.log("Saving");
-    assessment.saveToCouchDB();
+    CouchDB["delete"]([assessment, login]);
     stop();
-    waitForSave = function() {
-      console.log(assessment.revision);
+    return assessment.saveToCouchDB(function() {
+      console.log("Now check");
       notEqual(assessment.revision, null);
-      return start();
-    };
-    setTimeout(waitForSave, 1000);
-    stop();
-    waitForDelete = function() {
-      return start();
-    };
-    return setTimeout(waitForDelete, 1000);
+      notEqual(login.revision, null);
+      start();
+      return;
+      stop();
+      return assessment.deleteFromCouchDB(function() {
+        return $.ajax({
+          url: $.couchDBDesignDocumentPath + assessment.index(),
+          type: 'GET',
+          dataType: 'json',
+          success: function(result) {
+            equal(true, false);
+            return start();
+          },
+          error: function() {
+            equal(true, true);
+            return start();
+          }
+        });
+      });
+    });
   });
   return test("CouchDB Serialization", function() {
     var assessment, instructions, letters, login;
+    return;
     expect(3);
     assessment = new Assessment();
     assessment.name = "TEST EGRA Prototype";

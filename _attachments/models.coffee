@@ -1,6 +1,8 @@
 # Global assessment object
 $.assessment = null
 
+$.couchDBDesignDocumentPath = '/egra/'
+
 class Template
 
 Template.JQueryMobilePage = () ->  "
@@ -90,20 +92,25 @@ class Assessment
       localStorage[@index()] = @toJSON()
       page.saveToLocalStorage() for page in @pages
 
-    saveToCouchDB: (callback = null) ->
+    saveToCouchDB: (callback) ->
       @onReady =>
-        $.ajax({
-          url: '/egra/'+@index(),
+        @loading = true
+        url = $.couchDBDesignDocumentPath + @index()
+        $.ajax
+          url: url,
           type: 'PUT',
+          dataType: 'json',
           data: @toJSON(),
-          success: (result) ->
-            console.log "SSS"
-            console.log result
+          success: (result) =>
             @revision = result.rev
-            callback if callback
-          }
-        )
+          fail: ->
+            throw "Could not PUT to #{url}"
+          complete: =>
+            @loading = false
+
         page.saveToCouchDB() for page in @pages
+        @onReady =>
+          callback() if callback
       return this
 
     loadFromLocalStorage: ->
@@ -116,7 +123,7 @@ class Assessment
     loadFromCouchDB: (callback) ->
       @loading = true
       $.ajax({
-        url: '/egra/' + @index(),
+        url: $.couchDBDesignDocumentPath + @index(),
         type: 'GET',
         dataType: 'json',
         success: (result) =>
@@ -134,32 +141,30 @@ class Assessment
         page.deleteFromLocalStorage()
       localStorage.removeItem(@index())
 
-    deleteFromCouchDB: ->
-      console.log "deleting"
-      console.log this
-      console.log "AAAAA"
-      for page in @pages
-        page.deleteFromCouchDB()
-      $.ajax({
-        url: '/egra/' + @index(),
+    deleteFromCouchDB: (callback) ->
+      url = $.couchDBDesignDocumentPath + @index() + "?rev=#{@revision}"
+      if @pages
+        for page in @pages
+          page.deleteFromCouchDB()
+      $.ajax
+        url: url
         type: 'DELETE',
-        dataType: 'json',
-        success: (result) =>
-          @pages = []
-          for pageIndex in result.indexesForPages
-            JQueryMobilePage.loadFromCouchDB(pageIndex, (result) =>
-              @pages.push result
-            )
-          @loading = false
-      })
+        success: callback(),
+        fail: throw "Error deleting #{url}"
+
 
     onReady: (callback) ->
+      maxTries = 10
+      timesTried = 0
       checkIfLoading = =>
+        timesTried++
         if @loading
+          throw "Timeout error while waiting for assessment: #{assessment.name}" if timesTried >= maxTries
           setTimeout(checkIfLoading, 1000)
           return
         for page in @pages
           if page.loading
+            throw "Timeout error while waiting for page: #{page.pageId}" if timesTried >= maxTries
             setTimeout(checkIfLoading, 1000)
             return
         callback()
@@ -204,46 +209,32 @@ class JQueryMobilePage
   index: ->
     @assessment.index() + "." + @pageId
 
-  couchdbURL: -> '/egra/'+@index()
-
   saveToLocalStorage: ->
     localStorage[@index()] = JSON.stringify(this)
 
-
-  putToCouchDB: (revision_to_replace = null) ->
-    if revision_to_replace
-      this._rev = revision_to_replace
-    console.log this
-    $.ajax({
-      url: '/egra/'+@index(),
-      type: 'PUT',
-      data: JSON.stringify(this),
-      success: (result) ->
-      }
-    )
-
   saveToCouchDB: (callback) ->
-    url = '/egra/'+@index()
-
-    # Check if there are any differences between stored version and this
+    @loading = true
+    url = $.couchDBDesignDocumentPath + @index()
     $.ajax
-      url: url
-      type: 'GET',
-      datatype: 'json',
+      url: url,
+      type: 'PUT',
+      dataType: 'json',
+      data: JSON.stringify(this),
       success: (result) =>
-        result = JSON.parse(result)
-        for property in ("content,header,nextPage,pageId".split(","))
-          if result[property] != this[property]
-            console.log "differences found, putting #{url}"
-            @putToCouchDB(result._rev)
-            return
-      # document doesn't exist so just push it
-      error: =>
-        console.log "Error looking up existing document at #{url}"
-        @putToCouchDB()
+        @revision = result.rev
+      fail: ->
+        throw "Could not PUT to #{url}"
+      complete: =>
+        @loading = false
+        callback() if callback
 
   deleteFromLocalStorage: ->
     localStorage.removeItem(@index())
+
+  deleteFromCouchDB: ->
+    $.ajax
+      url: $.couchDBDesignDocumentPath + @index(),
+      type: 'DELETE',
 
 JQueryMobilePage.deserialize = (pageObject) ->
   result = new window[pageObject.pageType]()
@@ -257,13 +248,14 @@ JQueryMobilePage.loadFromLocalStorage = (index) ->
 
 JQueryMobilePage.loadFromCouchDB = (index, callback) ->
   $.ajax({
-    url: '/egra/'+index,
+    url: $.couchDBDesignDocumentPath + index,
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      callback(JQueryMobilePage.deserialize(result))
+      jqueryMobilePage = JQueryMobilePage.deserialize(result)
+      callback(jqueryMobilePage)
     error: ->
-      console.log "Failed to load: " + '/egra/' + index
+      throw "Failed to load: #{$.couchDBDesignDocumentPath} + #{index}"
   })
 
 class AssessmentPage extends JQueryMobilePage

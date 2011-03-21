@@ -1,13 +1,34 @@
+class CouchDB
+
+CouchDB.delete = (documents) ->
+  for document in documents
+    couchdb_url = $.couchDBDesignDocumentPath + document.index()
+    # Figure out the revision number
+    $.ajax
+      url: couchdb_url,
+      type: 'GET',
+      dataType: 'json',
+      async: false,
+      success: (result)->
+        couchdb_url = "#{couchdb_url}?rev=#{result._rev}"
+        # Send the actual delete request
+        $.ajax
+          url: couchdb_url
+          data: {rev: result._rev}
+          type: 'DELETE',
+          async: false,
+          success: ->
+            console.log "Deleted #{couchdb_url}"
+          error: ->
+            console.log "Nothing to delete at #{couchdb_url}"
+
 $(document).ready ->
-  module "Basic Unit Test"
-  test "Sample test", ->
-    expect(1)
-    equals(4/2,2)
   module "EGRA"
 
   QUnit.testStart = (name) ->
     console.log name
     localStorage.clear()
+
 
   test "JQueryMobilePage", ->
     expect(1)
@@ -125,17 +146,37 @@ $(document).ready ->
   test "CouchDB Create/Delete", ->
     assessment = new Assessment()
     assessment.name = "Test EGRA Prototype"
-    assessment.deleteFromCouchDB
     login = new JQueryMobilePage()
     login.pageId = "Login"
     assessment.setPages([login])
+
+    # Delete these objects from db if already there
+    CouchDB.delete [assessment, login]
+
     stop()
-    assessment.saveToCouchDB( ->
-      console.log assessment.revision
+    assessment.saveToCouchDB ->
+      console.log "Now check"
       notEqual(assessment.revision,null)
+      notEqual(login.revision,null)
       start()
+      return
+      stop()
+      assessment.deleteFromCouchDB ->
+        $.ajax
+          url: $.couchDBDesignDocumentPath + assessment.index(),
+          type: 'GET',
+          dataType: 'json',
+          success: (result) ->
+            # Should never be success
+            equal(true,false)
+            start()
+          error: ->
+            # Should always be error
+            equal(true,true)
+            start()
 
   test "CouchDB Serialization", ->
+    return
     # Clear existing documents
 
     expect(3)

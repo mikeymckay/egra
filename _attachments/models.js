@@ -8,6 +8,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   return child;
 };
 $.assessment = null;
+$.couchDBDesignDocumentPath = '/egra/';
 Template = (function() {
   function Template() {}
   return Template;
@@ -89,31 +90,37 @@ Assessment = (function() {
     return _results;
   };
   Assessment.prototype.saveToCouchDB = function(callback) {
-    if (callback == null) {
-      callback = null;
-    }
     this.onReady(__bind(function() {
-      var page, _i, _len, _ref, _results;
+      var page, url, _i, _len, _ref;
+      this.loading = true;
+      url = $.couchDBDesignDocumentPath + this.index();
       $.ajax({
-        url: '/egra/' + this.index(),
+        url: url,
         type: 'PUT',
+        dataType: 'json',
         data: this.toJSON(),
-        success: function(result) {
-          console.log("SSS");
-          console.log(result);
-          this.revision = result.rev;
-          if (callback) {
-            return callback;
-          }
-        }
+        success: __bind(function(result) {
+          return this.revision = result.rev;
+        }, this),
+        fail: function() {
+          throw "Could not PUT to " + url;
+        },
+        complete: __bind(function() {
+          return this.loading = false;
+        }, this)
       });
+      console.log("saving pages");
       _ref = this.pages;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         page = _ref[_i];
-        _results.push(page.saveToCouchDB());
+        page.saveToCouchDB();
       }
-      return _results;
+      return this.onReady(__bind(function() {
+        console.log("done saving pages");
+        if (callback) {
+          return callback();
+        }
+      }, this));
     }, this));
     return this;
   };
@@ -131,7 +138,7 @@ Assessment = (function() {
   Assessment.prototype.loadFromCouchDB = function(callback) {
     this.loading = true;
     $.ajax({
-      url: '/egra/' + this.index(),
+      url: $.couchDBDesignDocumentPath + this.index(),
       type: 'GET',
       dataType: 'json',
       success: __bind(function(result) {
@@ -158,39 +165,35 @@ Assessment = (function() {
     }
     return localStorage.removeItem(this.index());
   };
-  Assessment.prototype.deleteFromCouchDB = function() {
-    var page, _i, _len, _ref;
-    console.log("deleting");
-    console.log(this);
-    console.log("AAAAA");
-    _ref = this.pages;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      page.deleteFromCouchDB();
+  Assessment.prototype.deleteFromCouchDB = function(callback) {
+    var page, url, _i, _len, _ref;
+    console.log("FOP");
+    url = $.couchDBDesignDocumentPath + this.index() + ("?rev=" + this.revision);
+    console.log("Deleting " + url);
+    if (this.pages) {
+      _ref = this.pages;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        page = _ref[_i];
+        page.deleteFromCouchDB();
+      }
     }
     return $.ajax({
-      url: '/egra/' + this.index(),
+      url: url,
       type: 'DELETE',
-      dataType: 'json',
-      success: __bind(function(result) {
-        var pageIndex, _i, _len, _ref;
-        this.pages = [];
-        _ref = result.indexesForPages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          pageIndex = _ref[_i];
-          JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
-            return this.pages.push(result);
-          }, this));
-        }
-        return this.loading = false;
-      }, this)
+      success: callback()
     });
   };
   Assessment.prototype.onReady = function(callback) {
-    var checkIfLoading;
+    var checkIfLoading, maxTries, timesTried;
+    maxTries = 10;
+    timesTried = 0;
     checkIfLoading = __bind(function() {
       var page, _i, _len, _ref;
+      timesTried++;
       if (this.loading) {
+        if (timesTried >= maxTries) {
+          throw "Timeout error while waiting for assessment: " + assessment.name;
+        }
         setTimeout(checkIfLoading, 1000);
         return;
       }
@@ -198,6 +201,10 @@ Assessment = (function() {
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         page = _ref[_i];
         if (page.loading) {
+          console.log(page.loading);
+          if (timesTried >= maxTries) {
+            throw "Timeout error while waiting for page: " + page.pageId;
+          }
           setTimeout(checkIfLoading, 1000);
           return;
         }
@@ -263,55 +270,40 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.index = function() {
     return this.assessment.index() + "." + this.pageId;
   };
-  JQueryMobilePage.prototype.couchdbURL = function() {
-    return '/egra/' + this.index();
-  };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
     return localStorage[this.index()] = JSON.stringify(this);
   };
-  JQueryMobilePage.prototype.putToCouchDB = function(revision_to_replace) {
-    if (revision_to_replace == null) {
-      revision_to_replace = null;
-    }
-    if (revision_to_replace) {
-      this._rev = revision_to_replace;
-    }
-    console.log(this);
-    return $.ajax({
-      url: '/egra/' + this.index(),
-      type: 'PUT',
-      data: JSON.stringify(this),
-      success: function(result) {}
-    });
-  };
   JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
     var url;
-    url = '/egra/' + this.index();
+    this.loading = true;
+    url = $.couchDBDesignDocumentPath + this.index();
     return $.ajax({
       url: url,
-      type: 'GET',
-      datatype: 'json',
+      type: 'PUT',
+      dataType: 'json',
+      data: JSON.stringify(this),
       success: __bind(function(result) {
-        var property, _i, _len, _ref;
-        result = JSON.parse(result);
-        _ref = "content,header,nextPage,pageId".split(",");
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          property = _ref[_i];
-          if (result[property] !== this[property]) {
-            console.log("differences found, putting " + url);
-            this.putToCouchDB(result._rev);
-            return;
-          }
-        }
+        return this.revision = result.rev;
       }, this),
-      error: __bind(function() {
-        console.log("Error looking up existing document at " + url);
-        return this.putToCouchDB();
+      fail: function() {
+        throw "Could not PUT to " + url;
+      },
+      complete: __bind(function() {
+        this.loading = false;
+        if (callback) {
+          return callback();
+        }
       }, this)
     });
   };
   JQueryMobilePage.prototype.deleteFromLocalStorage = function() {
     return localStorage.removeItem(this.index());
+  };
+  JQueryMobilePage.prototype.deleteFromCouchDB = function() {
+    return $.ajax({
+      url: $.couchDBDesignDocumentPath + this.index(),
+      type: 'DELETE'
+    });
   };
   return JQueryMobilePage;
 })();
@@ -330,14 +322,16 @@ JQueryMobilePage.loadFromLocalStorage = function(index) {
 };
 JQueryMobilePage.loadFromCouchDB = function(index, callback) {
   return $.ajax({
-    url: '/egra/' + index,
+    url: $.couchDBDesignDocumentPath + index,
     type: 'GET',
     dataType: 'json',
     success: function(result) {
-      return callback(JQueryMobilePage.deserialize(result));
+      var jqueryMobilePage;
+      jqueryMobilePage = JQueryMobilePage.deserialize(result);
+      return callback(jqueryMobilePage);
     },
     error: function() {
-      return console.log("Failed to load: " + '/egra/' + index);
+      throw "Failed to load: " + $.couchDBDesignDocumentPath + " + " + index;
     }
   });
 };
