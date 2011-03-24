@@ -84,26 +84,36 @@ $(document).ready ->
     expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
     equals(test_object.render(), expected_result)
 
-  test "LocalStorage Create/Delete", ->
+  test "LocalStorage Save/Load/Delete", ->
+    expect(8)
     assessment = new Assessment()
     assessment.name = "Test EGRA Prototype"
     login = new JQueryMobilePage()
     login.pageId = "Login"
     assessment.setPages([login])
+
     equals(localStorage["Assessment.Test EGRA Prototype"],null)
     equals(localStorage["Assessment.Test EGRA Prototype.Login"],null)
+
     assessment.saveToLocalStorage()
     notEqual(localStorage["Assessment.Test EGRA Prototype"],null)
     notEqual(localStorage["Assessment.Test EGRA Prototype.Login"],null)
-    assessment.deleteFromLocalStorage()
+
+    anotherAssessment = Assessment.load("localstorage://Assessment.Test EGRA Prototype")
+    equals(assessment.name, anotherAssessment.name)
+    equals(assessment.pages[0].pageId, anotherAssessment.pages[0].pageId)
+
+    assessment.delete()
     equals(localStorage["Assessment.Test EGRA Prototype"],null)
     equals(localStorage["Assessment.Test EGRA Prototype.Login"],null)
 
 
-  test "Load from JSON", ->
+  test "Load from http", ->
     expect(3)
     stop()
-    JQueryMobilePage.loadFromJSON "testData/Assessment.TEST EGRA Prototype.Login", (result) ->
+    currentUrl = document.location.href
+    baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf("/")+1 )
+    JQueryMobilePage.loadFromHTTP baseUrl + "testData/Assessment.TEST EGRA Prototype.Login", (result) ->
       equal(result.pageType,"JQueryLogin")
       Assessment.loadFromJSON "testData/Assessment.TEST EGRA Prototype", (result) ->
         equal(result.pages.length,3)

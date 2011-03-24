@@ -7,11 +7,18 @@ class JQueryMobilePage
     @footer_text = @footer ? ("<a href='##{@nextPage}'>#{@nextPage}</a>" if @nextPage?)
     Mustache.to_html(Template.JQueryMobilePage(),this)
 
-  index: ->
-    @assessment.index() + "." + @pageId
+  url: ->
+    return "#{@urlScheme}://#{@urlPath}"
+
+  save: ->
+    switch @urlScheme
+      when "localstorage" 
+        return @saveToLocalStorage
+      else
+        throw "URL type not yet implemented: #{urlScheme}"
 
   saveToLocalStorage: ->
-    localStorage[@index()] = JSON.stringify(this)
+    localStorage[@urlPath] = JSON.stringify(this)
 
   saveToCouchDB: (callback) ->
     @loading = true
@@ -30,7 +37,7 @@ class JQueryMobilePage
         callback() if callback
 
   deleteFromLocalStorage: ->
-    localStorage.removeItem(@index())
+    localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: ->
     url = $.couchDBDesignDocumentPath + @index() + "?rev=#{@revision}"
@@ -43,6 +50,8 @@ class JQueryMobilePage
         throw "Error deleting #{url}"
 
 JQueryMobilePage.deserialize = (pageObject) ->
+  console.log("Creating::")
+  console.log(pageObject)
   result = new window[pageObject.pageType]()
   for key,value of pageObject
     result[key] = value
@@ -51,6 +60,9 @@ JQueryMobilePage.deserialize = (pageObject) ->
 
 JQueryMobilePage.loadFromLocalStorage = (index) ->
   return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]))
+
+JQueryMobilePage.loadFromHTTP = (url, callback) ->
+  JQueryMobilePage.loadFromJSON(url, callback)
 
 JQueryMobilePage.loadFromJSON = (url, callback) ->
   $.ajax

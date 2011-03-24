@@ -17,11 +17,19 @@ JQueryMobilePage = (function() {
     this.footer_text = (_ref = this.footer) != null ? _ref : (this.nextPage != null ? "<a href='#" + this.nextPage + "'>" + this.nextPage + "</a>" : void 0);
     return Mustache.to_html(Template.JQueryMobilePage(), this);
   };
-  JQueryMobilePage.prototype.index = function() {
-    return this.assessment.index() + "." + this.pageId;
+  JQueryMobilePage.prototype.url = function() {
+    return "" + this.urlScheme + "://" + this.urlPath;
+  };
+  JQueryMobilePage.prototype.save = function() {
+    switch (this.urlScheme) {
+      case "localstorage":
+        return this.saveToLocalStorage;
+      default:
+        throw "URL type not yet implemented: " + urlScheme;
+    }
   };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
-    return localStorage[this.index()] = JSON.stringify(this);
+    return localStorage[this.urlPath] = JSON.stringify(this);
   };
   JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
     var url;
@@ -47,7 +55,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype.deleteFromLocalStorage = function() {
-    return localStorage.removeItem(this.index());
+    return localStorage.removeItem(this.urlPath);
   };
   JQueryMobilePage.prototype.deleteFromCouchDB = function() {
     var url;
@@ -69,6 +77,8 @@ JQueryMobilePage = (function() {
 })();
 JQueryMobilePage.deserialize = function(pageObject) {
   var key, result, value;
+  console.log("Creating::");
+  console.log(pageObject);
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
@@ -79,6 +89,9 @@ JQueryMobilePage.deserialize = function(pageObject) {
 };
 JQueryMobilePage.loadFromLocalStorage = function(index) {
   return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]));
+};
+JQueryMobilePage.loadFromHTTP = function(url, callback) {
+  return JQueryMobilePage.loadFromJSON(url, callback);
 };
 JQueryMobilePage.loadFromJSON = function(url, callback) {
   return $.ajax({

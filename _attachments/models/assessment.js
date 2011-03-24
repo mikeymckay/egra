@@ -7,7 +7,7 @@ Assessment = (function() {
   Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
     this.pages = pages;
-    this.indexesForPages = [];
+    this.urlPathsForPages = [];
     _ref = this.pages;
     _results = [];
     for (index = 0, _len = _ref.length; index < _len; index++) {
@@ -17,22 +17,33 @@ Assessment = (function() {
       if (pages.length !== index + 1) {
         page.nextPage = this.pages[index + 1].pageId;
       }
-      _results.push(this.indexesForPages.push(page.index()));
+      page.urlScheme = this.urlScheme;
+      page.urlPath = this.urlPath() + "." + page.pageId;
+      _results.push(this.urlPathsForPages.push(page.urlPath));
     }
     return _results;
   };
-  Assessment.prototype.index = function() {
+  Assessment.prototype.urlPath = function() {
     return "Assessment." + this.name;
   };
   Assessment.prototype.toJSON = function() {
     return JSON.stringify({
       name: this.name,
-      indexesForPages: this.indexesForPages
+      urlPathsForPages: this.urlPathsForPages
     });
+  };
+  Assessment.prototype.save = function() {
+    switch (this.urlScheme) {
+      case "localstorage":
+        return this.saveToLocalStorage();
+      default:
+        throw "URL type not yet implemented: " + this.urlScheme;
+    }
   };
   Assessment.prototype.saveToLocalStorage = function() {
     var page, _i, _len, _ref, _results;
-    localStorage[this.index()] = this.toJSON();
+    this.urlScheme = "localstorage";
+    localStorage[this.urlPath()] = this.toJSON();
     _ref = this.pages;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -45,7 +56,7 @@ Assessment = (function() {
     this.onReady(__bind(function() {
       var page, url, _i, _len, _ref;
       this.loading = true;
-      url = $.couchDBDesignDocumentPath + this.index();
+      url = $.couchDBDesignDocumentPath + this.url();
       $.ajax({
         url: url,
         type: 'PUT',
@@ -74,27 +85,16 @@ Assessment = (function() {
     }, this));
     return this;
   };
-  Assessment.prototype.loadFromLocalStorage = function() {
-    var pageIndex, result, _i, _len, _ref;
-    result = JSON.parse(localStorage[this.index()]);
-    this.pages = [];
-    _ref = result.indexesForPages;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      pageIndex = _ref[_i];
-      this.pages.push(JQueryMobilePage.loadFromLocalStorage(pageIndex));
-    }
-    return this;
-  };
   Assessment.prototype.loadFromCouchDB = function(callback) {
     this.loading = true;
     $.ajax({
-      url: $.couchDBDesignDocumentPath + this.index(),
+      url: $.couchDBDesignDocumentPath + this.url(),
       type: 'GET',
       dataType: 'json',
       success: __bind(function(result) {
         var pageIndex, _i, _len, _ref;
         this.pages = [];
-        _ref = result.indexesForPages;
+        _ref = result.urlPathsForPages;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           pageIndex = _ref[_i];
           JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
@@ -106,6 +106,11 @@ Assessment = (function() {
     });
     return this;
   };
+  Assessment.prototype["delete"] = function() {
+    if (this.urlScheme === "localstorage") {
+      return this.deleteFromLocalStorage();
+    }
+  };
   Assessment.prototype.deleteFromLocalStorage = function() {
     var page, _i, _len, _ref;
     _ref = this.pages;
@@ -113,11 +118,11 @@ Assessment = (function() {
       page = _ref[_i];
       page.deleteFromLocalStorage();
     }
-    return localStorage.removeItem(this.index());
+    return localStorage.removeItem(this.urlPath());
   };
   Assessment.prototype.deleteFromCouchDB = function(callback) {
     var page, url, _i, _len, _ref;
-    url = $.couchDBDesignDocumentPath + this.index() + ("?rev=" + this.revision);
+    url = $.couchDBDesignDocumentPath + this.url() + ("?rev=" + this.revision);
     if (this.pages) {
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -199,18 +204,12 @@ Assessment = (function() {
   };
   return Assessment;
 })();
-Assessment.loadFromLocalStorage = function(name) {
-  var assessment;
-  assessment = new Assessment();
-  assessment.name = name;
-  return assessment.loadFromLocalStorage();
-};
 Assessment.deserialize = function(assessmentObject) {
   var assessment, pageIndex, url, _i, _len, _ref, _results;
   assessment = new Assessment();
   assessment.name = assessmentObject.name;
   assessment.pages = [];
-  _ref = assessmentObject.indexesForPages;
+  _ref = assessmentObject.urlPathsForPages;
   _results = [];
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     pageIndex = _ref[_i];
@@ -221,6 +220,39 @@ Assessment.deserialize = function(assessmentObject) {
     }, this)));
   }
   return _results;
+};
+Assessment.load = function(url, callback) {
+  var assessment, urlPath, urlScheme;
+  try {
+    urlScheme = url.substring(0, url.indexOf("://"));
+    urlPath = url.substring(url.indexOf("://") + 3);
+  } catch (error) {
+    throw "Invalid url: " + url;
+  }
+  switch (urlScheme) {
+    case "localstorage":
+      assessment = Assessment.loadFromLocalStorage(urlPath);
+      if (callback != null) {
+        callback(assessment);
+      }
+      return assessment;
+    default:
+      throw "URL type not yet implemented: " + urlScheme;
+  }
+};
+Assessment.loadFromLocalStorage = function(urlPath) {
+  var assessment, assessmentObject, url, _i, _len, _ref;
+  assessment = new Assessment();
+  assessment.urlScheme = "localstorage";
+  assessmentObject = JSON.parse(localStorage[urlPath]);
+  assessment.name = assessmentObject.name;
+  assessment.pages = [];
+  _ref = assessmentObject.urlPathsForPages;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    url = _ref[_i];
+    assessment.pages.push(JQueryMobilePage.loadFromLocalStorage(url));
+  }
+  return assessment;
 };
 Assessment.loadFromJSON = function(url, callback) {
   var assessment, baseUrl;
@@ -234,7 +266,7 @@ Assessment.loadFromJSON = function(url, callback) {
       var pageIndex, _i, _len, _ref;
       assessment.name = result.name;
       assessment.pages = [];
-      _ref = result.indexesForPages;
+      _ref = result.urlPathsForPages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         pageIndex = _ref[_i];
         url = baseUrl + pageIndex;

@@ -87,8 +87,9 @@ $(document).ready(function() {
     expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
     return equals(test_object.render(), expected_result);
   });
-  test("LocalStorage Create/Delete", function() {
-    var assessment, login;
+  test("LocalStorage Save/Load/Delete", function() {
+    var anotherAssessment, assessment, login;
+    expect(8);
     assessment = new Assessment();
     assessment.name = "Test EGRA Prototype";
     login = new JQueryMobilePage();
@@ -99,14 +100,20 @@ $(document).ready(function() {
     assessment.saveToLocalStorage();
     notEqual(localStorage["Assessment.Test EGRA Prototype"], null);
     notEqual(localStorage["Assessment.Test EGRA Prototype.Login"], null);
-    assessment.deleteFromLocalStorage();
+    anotherAssessment = Assessment.load("localstorage://Assessment.Test EGRA Prototype");
+    equals(assessment.name, anotherAssessment.name);
+    equals(assessment.pages[0].pageId, anotherAssessment.pages[0].pageId);
+    assessment["delete"]();
     equals(localStorage["Assessment.Test EGRA Prototype"], null);
     return equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
   });
-  test("Load from JSON", function() {
+  test("Load from http", function() {
+    var baseUrl, currentUrl;
     expect(3);
     stop();
-    return JQueryMobilePage.loadFromJSON("testData/Assessment.TEST EGRA Prototype.Login", function(result) {
+    currentUrl = document.location.href;
+    baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf("/") + 1);
+    return JQueryMobilePage.loadFromHTTP(baseUrl + "testData/Assessment.TEST EGRA Prototype.Login", function(result) {
       equal(result.pageType, "JQueryLogin");
       return Assessment.loadFromJSON("testData/Assessment.TEST EGRA Prototype", function(result) {
         equal(result.pages.length, 3);
