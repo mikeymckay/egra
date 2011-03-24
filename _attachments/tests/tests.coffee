@@ -100,50 +100,37 @@ $(document).ready ->
     equals(localStorage["Assessment.Test EGRA Prototype.Login"],null)
 
 
+  test "Load from JSON", ->
+    expect(3)
+    stop()
+    JQueryMobilePage.loadFromJSON "testData/Assessment.TEST EGRA Prototype.Login", (result) ->
+      equal(result.pageType,"JQueryLogin")
+      Assessment.loadFromJSON "testData/Assessment.TEST EGRA Prototype", (result) ->
+        equal(result.pages.length,3)
+        equal(result.render().length,16407)
+        start()
+
   test "LocalStorage Serialization", ->
     expect(4)
-    assessment = new Assessment()
-    assessment.name = "Test EGRA Prototype"
-    login = new JQueryMobilePage()
-    instructions = new InstructionsPage()
-    letters = new LettersPage()
-
-    login.pageId = "Login"
-    login.header = "<h1>EGRA</h1>"
-    login.content = (new JQueryLogin()).render()
-
-    instructions.pageId = "Instructions"
-    instructions.header = "<h1>EGRA</h1>"
-    instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
-    instructions.updateFromGoogle()
-
-    letters.pageId = "Letters"
-    letters.header = "<h1>EGRA</h1>"
-    letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
-    letters.updateFromGoogle()
-
-    assessment.setPages([login, instructions,letters])
-
     stop()
-    assessment.onReady ->
-      index = letters.index()
+    Assessment.loadFromJSON "testData/Assessment.TEST EGRA Prototype", (assessment) ->
+
+      console.log assessment.pages[2]
+      letters = assessment.pages[2]
       letters.saveToLocalStorage()
-      result = JQueryMobilePage.loadFromLocalStorage(index)
+      result = JQueryMobilePage.loadFromLocalStorage(letters.index())
       equals(result.render(), letters.render())
       equals(result.content, letters.content)
 
-      anotherAssessment = new Assessment()
-      anotherAssessment.name = assessment.name
       assessment.saveToLocalStorage()
-      # Since name is same, it will deserialize from assessment
-      anotherAssessment.loadFromLocalStorage()
+      anotherAssessment = Assessment.loadFromLocalStorage(assessment.name)
       anotherAssessment.onReady ->
         equal(assessment.pages.length, anotherAssessment.pages.length)
         equal(assessment.render(), anotherAssessment.render())
         start()
-
   
   test "CouchDB Create/Delete", ->
+    # Note - the statusText test aren't running don't know why
     assessment = new Assessment()
     assessment.name = "Test EGRA Prototype"
     login = new JQueryMobilePage()
@@ -155,30 +142,32 @@ $(document).ready ->
 
     stop()
     assessment.saveToCouchDB ->
-      console.log "Now check"
       notEqual(assessment.revision,null)
       notEqual(login.revision,null)
       start()
-      return
       stop()
       assessment.deleteFromCouchDB ->
+        # Check that the page has been deleted
         $.ajax
-          url: $.couchDBDesignDocumentPath + assessment.index(),
+          url: $.couchDBDesignDocumentPath + login.index(),
           type: 'GET',
           dataType: 'json',
-          success: (result) ->
-            # Should never be success
-            equal(true,false)
+          complete: (result) ->
+            equal(result.statusText,"error") # not working!?
             start()
-          error: ->
-            # Should always be error
-            equal(true,true)
-            start()
+            stop()
+            # Check that the assessment has been deleted
+            $.ajax
+              url: $.couchDBDesignDocumentPath + assessment.index(),
+              type: 'GET',
+              dataType: 'json',
+              complete: (result) ->
+                equal(result.statusText,"error") # not working!?
+                start()
+
 
   test "CouchDB Serialization", ->
     return
-    # Clear existing documents
-
     expect(3)
     assessment = new Assessment()
     assessment.name = "TEST EGRA Prototype"
@@ -202,26 +191,29 @@ $(document).ready ->
 
     assessment.setPages([login, instructions,letters])
 
+    console.log "Clearing existing items"
+    CouchDB.delete [assessment, login, instructions, letters]
+    console.log "Done clearing existing items"
+
     stop()
     assessment.onReady ->
-      letters.saveToCouchDB()
-      # Wait 1 second for the save to complete
-      loadFunction = ->
+      console.log "A"
+      letters.saveToCouchDB ->
+        console.log "A"
         JQueryMobilePage.loadFromCouchDB letters.index(), (result) ->
+          console.log "A"
           equals(result.render(), letters.render())
           equals(result.content, letters.content)
-      setTimeout(loadFunction,1000)
 
-      anotherAssessment = new Assessment()
-      anotherAssessment.name = assessment.name
-      assessment.saveToCouchDB()
-      loadFunction = ->
-        # Since name is same, it will deserialize from assessment
-        anotherAssessment.loadFromCouchDB()
-        anotherAssessment.render (anotherAssessmentResult) ->
           assessment.render (assessmentResult) ->
             $.a=assessment
-            $.b=anotherAssessment
-            equals(anotherAssessmentResult, assessmentResult)
-            start()
-      setTimeout(loadFunction,1000)
+            assessment.saveToCouchDB ->
+
+            anotherAssessment = new Assessment()
+            anotherAssessment.name = assessment.name
+            # Since name is same, it will deserialize from assessment
+            anotherAssessment.loadFromCouchDB ->
+              $.b=anotherAssessment
+              anotherAssessment.render (anotherAssessmentResult) ->
+                equals(anotherAssessmentResult, assessmentResult)
+                start()

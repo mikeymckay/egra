@@ -103,38 +103,31 @@ $(document).ready(function() {
     equals(localStorage["Assessment.Test EGRA Prototype"], null);
     return equals(localStorage["Assessment.Test EGRA Prototype.Login"], null);
   });
-  test("LocalStorage Serialization", function() {
-    var assessment, instructions, letters, login;
-    expect(4);
-    assessment = new Assessment();
-    assessment.name = "Test EGRA Prototype";
-    login = new JQueryMobilePage();
-    instructions = new InstructionsPage();
-    letters = new LettersPage();
-    login.pageId = "Login";
-    login.header = "<h1>EGRA</h1>";
-    login.content = (new JQueryLogin()).render();
-    instructions.pageId = "Instructions";
-    instructions.header = "<h1>EGRA</h1>";
-    instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html";
-    instructions.updateFromGoogle();
-    letters.pageId = "Letters";
-    letters.header = "<h1>EGRA</h1>";
-    letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
-    letters.updateFromGoogle();
-    assessment.setPages([login, instructions, letters]);
+  test("Load from JSON", function() {
+    expect(3);
     stop();
-    return assessment.onReady(function() {
-      var anotherAssessment, index, result;
-      index = letters.index();
+    return JQueryMobilePage.loadFromJSON("testData/Assessment.TEST EGRA Prototype.Login", function(result) {
+      equal(result.pageType, "JQueryLogin");
+      return Assessment.loadFromJSON("testData/Assessment.TEST EGRA Prototype", function(result) {
+        equal(result.pages.length, 3);
+        equal(result.render().length, 16407);
+        return start();
+      });
+    });
+  });
+  test("LocalStorage Serialization", function() {
+    expect(4);
+    stop();
+    return Assessment.loadFromJSON("testData/Assessment.TEST EGRA Prototype", function(assessment) {
+      var anotherAssessment, letters, result;
+      console.log(assessment.pages[2]);
+      letters = assessment.pages[2];
       letters.saveToLocalStorage();
-      result = JQueryMobilePage.loadFromLocalStorage(index);
+      result = JQueryMobilePage.loadFromLocalStorage(letters.index());
       equals(result.render(), letters.render());
       equals(result.content, letters.content);
-      anotherAssessment = new Assessment();
-      anotherAssessment.name = assessment.name;
       assessment.saveToLocalStorage();
-      anotherAssessment.loadFromLocalStorage();
+      anotherAssessment = Assessment.loadFromLocalStorage(assessment.name);
       return anotherAssessment.onReady(function() {
         equal(assessment.pages.length, anotherAssessment.pages.length);
         equal(assessment.render(), anotherAssessment.render());
@@ -152,24 +145,28 @@ $(document).ready(function() {
     CouchDB["delete"]([assessment, login]);
     stop();
     return assessment.saveToCouchDB(function() {
-      console.log("Now check");
       notEqual(assessment.revision, null);
       notEqual(login.revision, null);
       start();
-      return;
       stop();
       return assessment.deleteFromCouchDB(function() {
         return $.ajax({
-          url: $.couchDBDesignDocumentPath + assessment.index(),
+          url: $.couchDBDesignDocumentPath + login.index(),
           type: 'GET',
           dataType: 'json',
-          success: function(result) {
-            equal(true, false);
-            return start();
-          },
-          error: function() {
-            equal(true, true);
-            return start();
+          complete: function(result) {
+            equal(result.statusText, "error");
+            start();
+            stop();
+            return $.ajax({
+              url: $.couchDBDesignDocumentPath + assessment.index(),
+              type: 'GET',
+              dataType: 'json',
+              complete: function(result) {
+                equal(result.statusText, "error");
+                return start();
+              }
+            });
           }
         });
       });
@@ -196,32 +193,34 @@ $(document).ready(function() {
     letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
     letters.updateFromGoogle();
     assessment.setPages([login, instructions, letters]);
+    console.log("Clearing existing items");
+    CouchDB["delete"]([assessment, login, instructions, letters]);
+    console.log("Done clearing existing items");
     stop();
     return assessment.onReady(function() {
-      var anotherAssessment, loadFunction;
-      letters.saveToCouchDB();
-      loadFunction = function() {
+      console.log("A");
+      return letters.saveToCouchDB(function() {
+        console.log("A");
         return JQueryMobilePage.loadFromCouchDB(letters.index(), function(result) {
+          console.log("A");
           equals(result.render(), letters.render());
-          return equals(result.content, letters.content);
-        });
-      };
-      setTimeout(loadFunction, 1000);
-      anotherAssessment = new Assessment();
-      anotherAssessment.name = assessment.name;
-      assessment.saveToCouchDB();
-      loadFunction = function() {
-        anotherAssessment.loadFromCouchDB();
-        return anotherAssessment.render(function(anotherAssessmentResult) {
+          equals(result.content, letters.content);
           return assessment.render(function(assessmentResult) {
+            var anotherAssessment;
             $.a = assessment;
-            $.b = anotherAssessment;
-            equals(anotherAssessmentResult, assessmentResult);
-            return start();
+            assessment.saveToCouchDB(function() {});
+            anotherAssessment = new Assessment();
+            anotherAssessment.name = assessment.name;
+            return anotherAssessment.loadFromCouchDB(function() {
+              $.b = anotherAssessment;
+              return anotherAssessment.render(function(anotherAssessmentResult) {
+                equals(anotherAssessmentResult, assessmentResult);
+                return start();
+              });
+            });
           });
         });
-      };
-      return setTimeout(loadFunction, 1000);
+      });
     });
   });
 });
