@@ -2,7 +2,8 @@ class CouchDB
 
 CouchDB.delete = (documents) ->
   for document in documents
-    couchdb_url = $.couchDBDesignDocumentPath + document.index()
+    document.urlPath = document.urlPath.substring(document.urlPath.indexOf("/")+1)
+    couchdb_url = $.couchDBDesignDocumentPath + document.urlPath
     # Figure out the revision number
     $.ajax
       url: couchdb_url,
@@ -86,9 +87,8 @@ $(document).ready ->
 
   test "LocalStorage Save/Load/Delete", ->
     expect(8)
-    assessment = new Assessment()
-    assessment.name = "Test EGRA Prototype"
-    login = new JQueryMobilePage()
+    assessment = new Assessment("Test EGRA Prototype")
+    login = new JQueryLogin()
     login.pageId = "Login"
     assessment.setPages([login])
 
@@ -96,8 +96,17 @@ $(document).ready ->
     equals(localStorage["Assessment.Test EGRA Prototype.Login"],null)
 
     assessment.saveToLocalStorage()
-    notEqual(localStorage["Assessment.Test EGRA Prototype"],null)
-    notEqual(localStorage["Assessment.Test EGRA Prototype.Login"],null)
+    equal localStorage["Assessment.Test EGRA Prototype"], JSON.stringify
+      name: "Test EGRA Prototype",
+      urlPathsForPages: ["Assessment.Test EGRA Prototype.Login"]
+    equal localStorage["Assessment.Test EGRA Prototype.Login"], JSON.stringify
+      header: "",
+      pageId: "Login",
+      pageType: "JQueryLogin",
+      assessment: assessment.toJSON(),
+      pageNumber: 0,
+      urlPath: "Assessment.Test EGRA Prototype.Login"
+
 
     anotherAssessment = Assessment.load("localstorage://Assessment.Test EGRA Prototype")
     equals(assessment.name, anotherAssessment.name)
@@ -111,38 +120,32 @@ $(document).ready ->
   test "Load from http", ->
     expect(3)
     stop()
-    currentUrl = document.location.href
-    baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf("/")+1 )
-    JQueryMobilePage.loadFromHTTP baseUrl + "testData/Assessment.TEST EGRA Prototype.Login", (result) ->
+    JQueryMobilePage.loadFromHTTP {url: "testData/Assessment.TEST EGRA Prototype.Login"}, (result) ->
       equal(result.pageType,"JQueryLogin")
-      Assessment.loadFromJSON "testData/Assessment.TEST EGRA Prototype", (result) ->
+      Assessment.loadFromHTTP "testData/Assessment.TEST EGRA Prototype", (result) ->
         equal(result.pages.length,3)
         equal(result.render().length,16407)
         start()
 
   test "LocalStorage Serialization", ->
+    return
     expect(4)
     stop()
-    Assessment.loadFromJSON "testData/Assessment.TEST EGRA Prototype", (assessment) ->
-
-      console.log assessment.pages[2]
+    Assessment.loadFromHTTP "testData/Assessment.TEST EGRA Prototype", (assessment) ->
       letters = assessment.pages[2]
       letters.saveToLocalStorage()
-      result = JQueryMobilePage.loadFromLocalStorage(letters.index())
+      result = JQueryMobilePage.loadFromLocalStorage(letters.urlPath)
       equals(result.render(), letters.render())
       equals(result.content, letters.content)
-
       assessment.saveToLocalStorage()
-      anotherAssessment = Assessment.loadFromLocalStorage(assessment.name)
+      anotherAssessment = Assessment.load(assessment.url())
       anotherAssessment.onReady ->
         equal(assessment.pages.length, anotherAssessment.pages.length)
         equal(assessment.render(), anotherAssessment.render())
         start()
   
   test "CouchDB Create/Delete", ->
-    # Note - the statusText test aren't running don't know why
-    assessment = new Assessment()
-    assessment.name = "Test EGRA Prototype"
+    assessment = new Assessment("Test EGRA Prototype")
     login = new JQueryMobilePage()
     login.pageId = "Login"
     assessment.setPages([login])
@@ -154,21 +157,17 @@ $(document).ready ->
     assessment.saveToCouchDB ->
       notEqual(assessment.revision,null)
       notEqual(login.revision,null)
-      start()
-      stop()
       assessment.deleteFromCouchDB ->
         # Check that the page has been deleted
         $.ajax
-          url: $.couchDBDesignDocumentPath + login.index(),
-          type: 'GET',
+         url: $.couchDBDesignDocumentPath + login.urlPath,
+         type: 'GET',
           dataType: 'json',
           complete: (result) ->
             equal(result.statusText,"error") # not working!?
-            start()
-            stop()
             # Check that the assessment has been deleted
             $.ajax
-              url: $.couchDBDesignDocumentPath + assessment.index(),
+              url: $.couchDBDesignDocumentPath + assessment.urlPath
               type: 'GET',
               dataType: 'json',
               complete: (result) ->
@@ -177,40 +176,22 @@ $(document).ready ->
 
 
   test "CouchDB Serialization", ->
-    return
-    expect(3)
-    assessment = new Assessment()
-    assessment.name = "TEST EGRA Prototype"
-    login = new JQueryMobilePage()
-    instructions = new InstructionsPage()
-    letters = new LettersPage()
-
-    login.pageId = "Login"
-    login.header = "<h1>EGRA</h1>"
-    login.content = (new JQueryLogin()).render()
-
-    instructions.pageId = "Instructions"
-    instructions.header = "<h1>EGRA</h1>"
-    instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
-    instructions.updateFromGoogle()
-
-    letters.pageId = "Letters"
-    letters.header = "<h1>EGRA</h1>"
-    letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
-    letters.updateFromGoogle()
-
-    assessment.setPages([login, instructions,letters])
-
-    console.log "Clearing existing items"
-    CouchDB.delete [assessment, login, instructions, letters]
-    console.log "Done clearing existing items"
-
+    expect(4)
     stop()
-    assessment.onReady ->
-      console.log "A"
+    Assessment.loadFromHTTP "testData/Assessment.TEST EGRA Prototype", (assessment) ->
+      console.log assessment.name
+      console.log assessment.urlPath
+
+      console.log "Clearing existing items"
+      console.log assessment.pages
+      CouchDB.delete assessment.pages
+      CouchDB.delete [assessment]
+      console.log "Done clearing existing items"
+
+      letters = assessment.pages[2]
       letters.saveToCouchDB ->
         console.log "A"
-        JQueryMobilePage.loadFromCouchDB letters.index(), (result) ->
+        JQueryMobilePage.loadFromCouchDB letters.urlPath, (result) ->
           console.log "A"
           equals(result.render(), letters.render())
           equals(result.content, letters.content)
@@ -219,8 +200,7 @@ $(document).ready ->
             $.a=assessment
             assessment.saveToCouchDB ->
 
-            anotherAssessment = new Assessment()
-            anotherAssessment.name = assessment.name
+            anotherAssessment = new Assessment(assessment.name)
             # Since name is same, it will deserialize from assessment
             anotherAssessment.loadFromCouchDB ->
               $.b=anotherAssessment

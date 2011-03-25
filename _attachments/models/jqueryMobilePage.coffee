@@ -7,30 +7,33 @@ class JQueryMobilePage
     @footer_text = @footer ? ("<a href='##{@nextPage}'>#{@nextPage}</a>" if @nextPage?)
     Mustache.to_html(Template.JQueryMobilePage(),this)
 
-  url: ->
-    return "#{@urlScheme}://#{@urlPath}"
+  #url: ->
+  #  return "#{@urlScheme}://#{@urlPath}"
 
   save: ->
     switch @urlScheme
-      when "localstorage" 
+      when "localstorage"
         return @saveToLocalStorage
       else
         throw "URL type not yet implemented: #{urlScheme}"
 
   saveToLocalStorage: ->
+    throw "Can't save page '#{@pageId}' to localStorage: No urlPath!" unless @urlPath?
     localStorage[@urlPath] = JSON.stringify(this)
 
   saveToCouchDB: (callback) ->
     @loading = true
-    url = $.couchDBDesignDocumentPath + @index()
+    @urlPath = @urlPath.substring(@urlPath.indexOf("/")+1)
+    url = $.couchDBDesignDocumentPath + @urlPath
     $.ajax
       url: url,
+      async: true,
       type: 'PUT',
       dataType: 'json',
       data: JSON.stringify(this),
       success: (result) =>
         @revision = result.rev
-      fail: ->
+      error: ->
         throw "Could not PUT to #{url}"
       complete: =>
         @loading = false
@@ -40,57 +43,49 @@ class JQueryMobilePage
     localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: ->
-    url = $.couchDBDesignDocumentPath + @index() + "?rev=#{@revision}"
+    url = $.couchDBDesignDocumentPath + @urlPath + "?rev=#{@revision}"
     $.ajax
       url: url
       type: 'DELETE',
       complete: ->
         callback() if callback?
-      fail: ->
+      error: ->
         throw "Error deleting #{url}"
 
 JQueryMobilePage.deserialize = (pageObject) ->
-  console.log("Creating::")
-  console.log(pageObject)
   result = new window[pageObject.pageType]()
   for key,value of pageObject
     result[key] = value
   result.loading = false
   return result
 
-JQueryMobilePage.loadFromLocalStorage = (index) ->
-  return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]))
+JQueryMobilePage.loadFromLocalStorage = (urlPath) ->
+  jqueryMobilePage = JQueryMobilePage.deserialize(JSON.parse(localStorage[urlPath]))
+  jqueryMobilePage.urlScheme = "localstorage"
+  return jqueryMobilePage
 
-JQueryMobilePage.loadFromHTTP = (url, callback) ->
-  JQueryMobilePage.loadFromJSON(url, callback)
-
-JQueryMobilePage.loadFromJSON = (url, callback) ->
-  $.ajax
-    url: url,
+JQueryMobilePage.loadFromHTTP = (options, callback) ->
+  throw "Must pass 'url' option to loadFromHTTP" unless options.url?
+  if options.url.match(/http/)
+    urlPath = options.url.substring(options.url.lastIndexOf("://")+3)
+  else
+    urlPath = options.url
+  # extend will merge two associative arrays
+  $.extend options,
     type: 'GET',
     dataType: 'json',
     success: (result) ->
       jqueryMobilePage = JQueryMobilePage.deserialize(result)
+      jqueryMobilePage.urlPath = urlPath
+      jqueryMobilePage.urlScheme = "http"
       callback(jqueryMobilePage) if callback?
     error: ->
       throw "Failed to load: #{url}"
+  $.ajax options
 
-JQueryMobilePage.loadSynchronousFromJSON = (url, callback) ->
-  $.ajax
-    async: false,
-    url: url,
-    type: 'GET',
-    dataType: 'json',
-    success: (result) ->
-      jqueryMobilePage = JQueryMobilePage.deserialize(result)
-      console.log "ASASAS"
-      console.log jqueryMobilePage
-      callback(jqueryMobilePage) if callback?
-    error: ->
-      throw "Failed to load: #{url}"
 
-JQueryMobilePage.loadFromCouchDB = (index, callback) ->
-  return JQueryMobilePage.loadFromJSON($.couchDBDesignDocumentPath + index, callback)
+JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
+  return JQueryMobilePage.loadFromHTTP(urlPath, callback)
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->
@@ -100,6 +95,10 @@ class AssessmentPage extends JQueryMobilePage
 #    @scorer.setPage(this)
 
     @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
+
+class JQueryLogin extends AssessmentPage
+  render: ->
+    Mustache.to_html(Template.JQueryLogin(),this)
 
 class InstructionsPage extends AssessmentPage
   updateFromGoogle: ->
@@ -191,8 +190,4 @@ class JQueryCheckboxGroup
       }
     </style>
     "
-
-class JQueryLogin
-  render: ->
-    Mustache.to_html(Template.JQueryLogin(),this)
 

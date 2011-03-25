@@ -9,8 +9,8 @@ watch( '(.*\.coffee$)' ) {|match_data|
     if line.match(/In /)  then
       error = true
       puts line
-      `mplayer -really-quiet "/home/crazy/Old Home Folders/crazy/src/GPRS_Easy_Connect_301/data/share/gprsec/sounds/error.wav"`
-      `notify-send "#{line}"`
+      `mplayer -really-quiet "/usr/share/evolution/2.30/sounds/default_alarm.wav"`
+      `notify-send "#{line}" -i /usr/share/icons/Humanity/status/128/dialog-warning.svg`
     end
   }
   if not error

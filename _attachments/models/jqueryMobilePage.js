@@ -17,9 +17,6 @@ JQueryMobilePage = (function() {
     this.footer_text = (_ref = this.footer) != null ? _ref : (this.nextPage != null ? "<a href='#" + this.nextPage + "'>" + this.nextPage + "</a>" : void 0);
     return Mustache.to_html(Template.JQueryMobilePage(), this);
   };
-  JQueryMobilePage.prototype.url = function() {
-    return "" + this.urlScheme + "://" + this.urlPath;
-  };
   JQueryMobilePage.prototype.save = function() {
     switch (this.urlScheme) {
       case "localstorage":
@@ -29,21 +26,26 @@ JQueryMobilePage = (function() {
     }
   };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
+    if (this.urlPath == null) {
+      throw "Can't save page '" + this.pageId + "' to localStorage: No urlPath!";
+    }
     return localStorage[this.urlPath] = JSON.stringify(this);
   };
   JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
     var url;
     this.loading = true;
-    url = $.couchDBDesignDocumentPath + this.index();
+    this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
+    url = $.couchDBDesignDocumentPath + this.urlPath;
     return $.ajax({
       url: url,
+      async: true,
       type: 'PUT',
       dataType: 'json',
       data: JSON.stringify(this),
       success: __bind(function(result) {
         return this.revision = result.rev;
       }, this),
-      fail: function() {
+      error: function() {
         throw "Could not PUT to " + url;
       },
       complete: __bind(function() {
@@ -59,7 +61,7 @@ JQueryMobilePage = (function() {
   };
   JQueryMobilePage.prototype.deleteFromCouchDB = function() {
     var url;
-    url = $.couchDBDesignDocumentPath + this.index() + ("?rev=" + this.revision);
+    url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
     return $.ajax({
       url: url,
       type: 'DELETE',
@@ -68,7 +70,7 @@ JQueryMobilePage = (function() {
           return callback();
         }
       },
-      fail: function() {
+      error: function() {
         throw "Error deleting " + url;
       }
     });
@@ -77,8 +79,6 @@ JQueryMobilePage = (function() {
 })();
 JQueryMobilePage.deserialize = function(pageObject) {
   var key, result, value;
-  console.log("Creating::");
-  console.log(pageObject);
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
@@ -87,20 +87,30 @@ JQueryMobilePage.deserialize = function(pageObject) {
   result.loading = false;
   return result;
 };
-JQueryMobilePage.loadFromLocalStorage = function(index) {
-  return JQueryMobilePage.deserialize(JSON.parse(localStorage[index]));
+JQueryMobilePage.loadFromLocalStorage = function(urlPath) {
+  var jqueryMobilePage;
+  jqueryMobilePage = JQueryMobilePage.deserialize(JSON.parse(localStorage[urlPath]));
+  jqueryMobilePage.urlScheme = "localstorage";
+  return jqueryMobilePage;
 };
-JQueryMobilePage.loadFromHTTP = function(url, callback) {
-  return JQueryMobilePage.loadFromJSON(url, callback);
-};
-JQueryMobilePage.loadFromJSON = function(url, callback) {
-  return $.ajax({
-    url: url,
+JQueryMobilePage.loadFromHTTP = function(options, callback) {
+  var urlPath;
+  if (options.url == null) {
+    throw "Must pass 'url' option to loadFromHTTP";
+  }
+  if (options.url.match(/http/)) {
+    urlPath = options.url.substring(options.url.lastIndexOf("://") + 3);
+  } else {
+    urlPath = options.url;
+  }
+  $.extend(options, {
     type: 'GET',
     dataType: 'json',
     success: function(result) {
       var jqueryMobilePage;
       jqueryMobilePage = JQueryMobilePage.deserialize(result);
+      jqueryMobilePage.urlPath = urlPath;
+      jqueryMobilePage.urlScheme = "http";
       if (callback != null) {
         return callback(jqueryMobilePage);
       }
@@ -109,29 +119,10 @@ JQueryMobilePage.loadFromJSON = function(url, callback) {
       throw "Failed to load: " + url;
     }
   });
+  return $.ajax(options);
 };
-JQueryMobilePage.loadSynchronousFromJSON = function(url, callback) {
-  return $.ajax({
-    async: false,
-    url: url,
-    type: 'GET',
-    dataType: 'json',
-    success: function(result) {
-      var jqueryMobilePage;
-      jqueryMobilePage = JQueryMobilePage.deserialize(result);
-      console.log("ASASAS");
-      console.log(jqueryMobilePage);
-      if (callback != null) {
-        return callback(jqueryMobilePage);
-      }
-    },
-    error: function() {
-      throw "Failed to load: " + url;
-    }
-  });
-};
-JQueryMobilePage.loadFromCouchDB = function(index, callback) {
-  return JQueryMobilePage.loadFromJSON($.couchDBDesignDocumentPath + index, callback);
+JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
+  return JQueryMobilePage.loadFromHTTP(urlPath, callback);
 };
 AssessmentPage = (function() {
   function AssessmentPage() {
@@ -145,6 +136,16 @@ AssessmentPage = (function() {
     return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render() + this.scorer.render()) + "</div>";
   };
   return AssessmentPage;
+})();
+JQueryLogin = (function() {
+  function JQueryLogin() {
+    JQueryLogin.__super__.constructor.apply(this, arguments);
+  }
+  __extends(JQueryLogin, AssessmentPage);
+  JQueryLogin.prototype.render = function() {
+    return Mustache.to_html(Template.JQueryLogin(), this);
+  };
+  return JQueryLogin;
 })();
 InstructionsPage = (function() {
   function InstructionsPage() {
@@ -232,11 +233,4 @@ JQueryCheckboxGroup = (function() {
     return this.render() + ("<script>    $(':checkbox').click(function(){      var button = $($(this).siblings()[0]);      button.removeClass('ui-btn-active');      button.toggleClass(function(){        button = $(this);        if(button.is('.first_click')){          button.removeClass('first_click');          return 'second_click';        }        else if(button.is('.second_click')){          button.removeClass('second_click');          return '';        }        else{          return 'first_click';        }      });    });    </script>    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
   };
   return JQueryCheckboxGroup;
-})();
-JQueryLogin = (function() {
-  function JQueryLogin() {}
-  JQueryLogin.prototype.render = function() {
-    return Mustache.to_html(Template.JQueryLogin(), this);
-  };
-  return JQueryLogin;
 })();

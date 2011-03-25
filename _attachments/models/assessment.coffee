@@ -4,6 +4,9 @@ $.assessment = null
 $.couchDBDesignDocumentPath = '/egra/'
 
 class Assessment
+  constructor: (@name) ->
+    @urlPath = "Assessment.#{@name}"
+
   setPages: (pages) ->
     @pages = pages
     @urlPathsForPages = []
@@ -12,11 +15,11 @@ class Assessment
       page.pageNumber = index
       page.nextPage = @pages[index + 1].pageId unless pages.length == index + 1
       page.urlScheme = @urlScheme
-      page.urlPath = @urlPath() + "." + page.pageId
+      page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
 
-  urlPath: ->
-    "Assessment.#{@name}"
+  url: ->
+    "#{@urlScheme}://#{@urlPath}"
 
   toJSON: ->
    JSON.stringify
@@ -32,25 +35,23 @@ class Assessment
 
   saveToLocalStorage: ->
     @urlScheme = "localstorage"
-    localStorage[@urlPath()] = @toJSON()
+    localStorage[@urlPath] = @toJSON()
     page.saveToLocalStorage() for page in @pages
 
   saveToCouchDB: (callback) ->
-    @onReady =>
-      @loading = true
-      url = $.couchDBDesignDocumentPath + @url()
-      $.ajax
-        url: url,
-        type: 'PUT',
-        dataType: 'json',
-        data: @toJSON(),
-        success: (result) =>
-          @revision = result.rev
-        fail: ->
-          throw "Could not PUT to #{url}"
-        complete: =>
-          @loading = false
+    url = $.couchDBDesignDocumentPath + @urlPath
+    $.ajax
+      url: url,
+      async: true,
+      type: 'PUT',
+      dataType: 'json',
+      data: @toJSON(),
+      success: (result) =>
+        @revision = result.rev
+      error: ->
+        throw "Could not PUT to #{url}"
 
+      console.log "AAS"
       page.saveToCouchDB() for page in @pages
       @onReady =>
         callback() if callback
@@ -79,10 +80,10 @@ class Assessment
   deleteFromLocalStorage: ->
     for page in @pages
       page.deleteFromLocalStorage()
-    localStorage.removeItem(@urlPath())
+    localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: (callback) ->
-    url = $.couchDBDesignDocumentPath + @url() + "?rev=#{@revision}"
+    url = $.couchDBDesignDocumentPath + @urlPath + "?rev=#{@revision}"
     if @pages
       for page in @pages
         page.deleteFromCouchDB()
@@ -91,7 +92,7 @@ class Assessment
       type: 'DELETE',
       complete: ->
         callback() if callback?
-      fail: ->
+      error: ->
         throw "Error deleting #{url}"
 
 
@@ -159,25 +160,27 @@ Assessment.loadFromLocalStorage = (urlPath) ->
   assessment = new Assessment()
   assessment.urlScheme = "localstorage"
   assessmentObject = JSON.parse(localStorage[urlPath])
+  throw "Could not load localStorage['#{urlPath}'], #{error}" unless assessmentObject?
+  console.log assessmentObject
   assessment.name = assessmentObject.name
   assessment.pages = []
-  for url in assessmentObject.urlPathsForPages
-    assessment.pages.push(JQueryMobilePage.loadFromLocalStorage(url))
+  for urlPath in assessmentObject.urlPathsForPages
+    assessment.pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath))
   return assessment
 
-Assessment.loadFromJSON = (url, callback) ->
-  assessment = new Assessment()
+Assessment.loadFromHTTP = (url, callback) ->
+  assessment = null
   baseUrl = url.substring(0,url.lastIndexOf("/")+1)
   $.ajax
     url: url,
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      assessment.name = result.name
+      assessment = new Assessment(result.name)
       assessment.pages = []
-      for pageIndex in result.urlPathsForPages
-        url = baseUrl + pageIndex
-        JQueryMobilePage.loadSynchronousFromJSON url, (result) =>
+      for urlPath in result.urlPathsForPages
+        url = baseUrl + urlPath
+        JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
           result.assessment = assessment
           assessment.pages.push result
       callback(assessment) if callback?
