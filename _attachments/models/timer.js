@@ -1,17 +1,12 @@
 var Timer;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-$("div.timer a:contains('start')").live('click', function() {
-  console.log("click");
-  return $.currentPage.timer.start();
-});
-$("" + this.elementLocation + " a:contains('start')").live('click', __bind(function() {
-  return this.start();
-}, this));
-$("" + this.elementLocation + " a:contains('stop')").live('click', __bind(function() {
-  return this.stop();
-}, this));
-$("" + this.elementLocation + " a:contains('reset')").live('click', __bind(function() {
-  return this.reset();
+if ($.assessment === void 0) {
+  throw "No assessment loaded";
+}
+$("div.timer a").live('click', __bind(function(eventData) {
+  var buttonPressed;
+  buttonPressed = eventData.target.innerHTML;
+  return $.assessment.currentPage.timer[buttonPressed]();
 }, this));
 Timer = (function() {
   function Timer() {

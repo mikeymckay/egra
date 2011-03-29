@@ -1,14 +1,10 @@
+throw "No assessment loaded" if $.assessment is undefined
 
-# Handlers needed to use timers
-$("div.timer a:contains('start')").live 'click', ->
-  console.log "click"
-  $.currentPage.timer.start()
-$("#{@elementLocation} a:contains('start')").live 'click', =>
-  @start()
-$("#{@elementLocation} a:contains('stop')").live 'click', =>
-  @stop()
-$("#{@elementLocation} a:contains('reset')").live 'click', =>
-  @reset()
+# Live handler for buttons in timer control
+$("div.timer a").live 'click', (eventData) =>
+  buttonPressed = eventData.target.innerHTML
+# Call the timer method that has the same name as the button just pressed, i.e. "start"
+  $.assessment.currentPage.timer[buttonPressed]()
 
 class Timer
   constructor: ->
