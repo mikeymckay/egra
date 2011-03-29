@@ -10,7 +10,7 @@ watch( '(.*\.coffee$)' ) {|match_data|
       error = true
       puts line
       `mplayer -really-quiet "/usr/share/evolution/2.30/sounds/default_alarm.wav"`
-      `notify-send "#{line}" -i /usr/share/icons/Humanity/status/128/dialog-warning.svg`
+      `notify-send "#{line}" -i /usr/share/icons/Humanity/status/128/dialog-warning.svg &`
     end
   }
   if not error

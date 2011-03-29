@@ -20,9 +20,9 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.save = function() {
     switch (this.urlScheme) {
       case "localstorage":
-        return this.saveToLocalStorage;
+        return this.saveToLocalStorage();
       default:
-        throw "URL type not yet implemented: " + urlScheme;
+        throw "URL type not yet implemented: " + this.urlScheme;
     }
   };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
@@ -34,6 +34,7 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
     var url;
     this.loading = true;
+    this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
     return $.ajax({
@@ -50,7 +51,7 @@ JQueryMobilePage = (function() {
       },
       complete: __bind(function() {
         this.loading = false;
-        if (callback) {
+        if (callback != null) {
           return callback();
         }
       }, this)
@@ -61,7 +62,7 @@ JQueryMobilePage = (function() {
   };
   JQueryMobilePage.prototype.deleteFromCouchDB = function() {
     var url;
-    url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
+    url = this.urlPath + ("?rev=" + this.revision);
     return $.ajax({
       url: url,
       type: 'DELETE',
@@ -96,7 +97,7 @@ JQueryMobilePage.loadFromLocalStorage = function(urlPath) {
 JQueryMobilePage.loadFromHTTP = function(options, callback) {
   var urlPath;
   if (options.url == null) {
-    throw "Must pass 'url' option to loadFromHTTP";
+    throw "Must pass 'url' option to loadFromHTTP, received: " + options;
   }
   if (options.url.match(/http/)) {
     urlPath = options.url.substring(options.url.lastIndexOf("://") + 3);
@@ -111,18 +112,21 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
       jqueryMobilePage = JQueryMobilePage.deserialize(result);
       jqueryMobilePage.urlPath = urlPath;
       jqueryMobilePage.urlScheme = "http";
+      jqueryMobilePage.revision = result._rev;
       if (callback != null) {
         return callback(jqueryMobilePage);
       }
     },
     error: function() {
-      throw "Failed to load: " + url;
+      throw "Failed to load: " + urlPath;
     }
   });
   return $.ajax(options);
 };
 JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
-  return JQueryMobilePage.loadFromHTTP(urlPath, callback);
+  return JQueryMobilePage.loadFromHTTP({
+    url: $.couchDBDesignDocumentPath + urlPath
+  }, callback);
 };
 AssessmentPage = (function() {
   function AssessmentPage() {

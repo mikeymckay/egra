@@ -132,7 +132,6 @@ $(document).ready(function() {
     });
   });
   test("LocalStorage Serialization", function() {
-    return;
     expect(4);
     stop();
     return Assessment.loadFromHTTP("testData/Assessment.TEST EGRA Prototype", function(assessment) {
@@ -145,7 +144,7 @@ $(document).ready(function() {
       assessment.saveToLocalStorage();
       anotherAssessment = Assessment.load(assessment.url());
       return anotherAssessment.onReady(function() {
-        equal(assessment.pages.length, anotherAssessment.pages.length);
+        equal(3, anotherAssessment.pages.length);
         equal(assessment.render(), anotherAssessment.render());
         return start();
       });
@@ -153,6 +152,7 @@ $(document).ready(function() {
   });
   test("CouchDB Create/Delete", function() {
     var assessment, login;
+    expect(4);
     assessment = new Assessment("Test EGRA Prototype");
     login = new JQueryMobilePage();
     login.pageId = "Login";
@@ -160,27 +160,26 @@ $(document).ready(function() {
     CouchDB["delete"]([assessment, login]);
     stop();
     return assessment.saveToCouchDB(function() {
-      notEqual(assessment.revision, null);
-      notEqual(login.revision, null);
-      return assessment.deleteFromCouchDB(function() {
-        return $.ajax({
-          url: $.couchDBDesignDocumentPath + login.urlPath,
-          type: 'GET'
-        }, {
-          dataType: 'json',
-          complete: function(result) {
-            equal(result.statusText, "error");
-            return $.ajax({
-              url: $.couchDBDesignDocumentPath + assessment.urlPath,
-              type: 'GET',
-              dataType: 'json',
-              complete: function(result) {
-                equal(result.statusText, "error");
-                return start();
-              }
-            });
-          }
-        });
+      equal(assessment.revision.length > 10, true);
+      equal(login.revision.length > 10, true);
+      assessment.deleteFromCouchDB();
+      return $.ajax({
+        url: $.couchDBDesignDocumentPath + login.urlPath,
+        type: 'GET'
+      }, {
+        dataType: 'json',
+        complete: function(result) {
+          equal(result.statusText, "error");
+          return $.ajax({
+            url: $.couchDBDesignDocumentPath + assessment.urlPath,
+            type: 'GET',
+            dataType: 'json',
+            complete: function(result) {
+              equal(result.statusText, "error");
+              return start();
+            }
+          });
+        }
       });
     });
   });
@@ -189,31 +188,19 @@ $(document).ready(function() {
     stop();
     return Assessment.loadFromHTTP("testData/Assessment.TEST EGRA Prototype", function(assessment) {
       var letters;
-      console.log(assessment.name);
-      console.log(assessment.urlPath);
-      console.log("Clearing existing items");
-      console.log(assessment.pages);
       CouchDB["delete"](assessment.pages);
       CouchDB["delete"]([assessment]);
-      console.log("Done clearing existing items");
       letters = assessment.pages[2];
       return letters.saveToCouchDB(function() {
-        console.log("A");
         return JQueryMobilePage.loadFromCouchDB(letters.urlPath, function(result) {
-          console.log("A");
           equals(result.render(), letters.render());
           equals(result.content, letters.content);
-          return assessment.render(function(assessmentResult) {
-            var anotherAssessment;
-            $.a = assessment;
-            assessment.saveToCouchDB(function() {});
-            anotherAssessment = new Assessment(assessment.name);
-            return anotherAssessment.loadFromCouchDB(function() {
-              $.b = anotherAssessment;
-              return anotherAssessment.render(function(anotherAssessmentResult) {
-                equals(anotherAssessmentResult, assessmentResult);
-                return start();
-              });
+          result.deleteFromCouchDB();
+          return assessment.saveToCouchDB(function() {
+            return Assessment.load(assessment.url(), function(result) {
+              equal(3, result.pages.length);
+              equal(assessment.render(), result.render());
+              return start();
             });
           });
         });

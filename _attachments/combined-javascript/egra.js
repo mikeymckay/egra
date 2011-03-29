@@ -424,54 +424,31 @@ Assessment = (function() {
     return _results;
   };
   Assessment.prototype.saveToCouchDB = function(callback) {
-    var page, url;
-    url = $.couchDBDesignDocumentPath + this.urlPath;
+    this.urlScheme = "http";
+    if (this.urlPath[0] !== "/") {
+      this.urlPath = $.couchDBDesignDocumentPath + this.urlPath;
+    }
     $.ajax({
-      url: url,
+      url: this.urlPath,
       async: true,
       type: 'PUT',
       dataType: 'json',
       data: this.toJSON(),
       success: __bind(function(result) {
-        return this.revision = result.rev;
+        var page, _i, _len, _ref;
+        this.revision = result.rev;
+        _ref = this.pages;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          page = _ref[_i];
+          page.saveToCouchDB();
+        }
+        return this.onReady(function() {
+          return callback();
+        });
       }, this),
       error: function() {
-        throw "Could not PUT to " + url;
+        throw "Could not PUT to " + this.urlPath;
       }
-    }, console.log("AAS"), (function() {
-      var _i, _len, _ref, _results;
-      _ref = this.pages;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        page = _ref[_i];
-        _results.push(page.saveToCouchDB());
-      }
-      return _results;
-    }).call(this), this.onReady(__bind(function() {
-      if (callback) {
-        return callback();
-      }
-    }, this)));
-    return this;
-  };
-  Assessment.prototype.loadFromCouchDB = function(callback) {
-    this.loading = true;
-    $.ajax({
-      url: $.couchDBDesignDocumentPath + this.url(),
-      type: 'GET',
-      dataType: 'json',
-      success: __bind(function(result) {
-        var pageIndex, _i, _len, _ref;
-        this.pages = [];
-        _ref = result.urlPathsForPages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          pageIndex = _ref[_i];
-          JQueryMobilePage.loadFromCouchDB(pageIndex, __bind(function(result) {
-            return this.pages.push(result);
-          }, this));
-        }
-        return this.loading = false;
-      }, this)
     });
     return this;
   };
@@ -489,7 +466,7 @@ Assessment = (function() {
     }
     return localStorage.removeItem(this.urlPath);
   };
-  Assessment.prototype.deleteFromCouchDB = function(callback) {
+  Assessment.prototype.deleteFromCouchDB = function() {
     var page, url, _i, _len, _ref;
     url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
     if (this.pages) {
@@ -501,12 +478,8 @@ Assessment = (function() {
     }
     return $.ajax({
       url: url,
+      async: true,
       type: 'DELETE',
-      complete: function() {
-        if (callback != null) {
-          return callback();
-        }
-      },
       error: function() {
         throw "Error deleting " + url;
       }
@@ -573,23 +546,6 @@ Assessment = (function() {
   };
   return Assessment;
 })();
-Assessment.deserialize = function(assessmentObject) {
-  var assessment, pageIndex, url, _i, _len, _ref, _results;
-  assessment = new Assessment();
-  assessment.name = assessmentObject.name;
-  assessment.pages = [];
-  _ref = assessmentObject.urlPathsForPages;
-  _results = [];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    pageIndex = _ref[_i];
-    url = baseUrl + pageIndex;
-    _results.push(JQueryMobilePage.loadSynchronousFromJSON(url, __bind(function(result) {
-      result.assessment = assessment;
-      return assessment.pages.push(result);
-    }, this)));
-  }
-  return _results;
-};
 Assessment.load = function(url, callback) {
   var assessment, urlPath, urlScheme;
   try {
@@ -605,27 +561,33 @@ Assessment.load = function(url, callback) {
         callback(assessment);
       }
       break;
+    case "http":
+      Assessment.loadFromHTTP(urlPath, function(result) {
+        if (callback != null) {
+          return callback(result);
+        }
+      });
+      break;
     default:
       throw "URL type not yet implemented: " + urlScheme;
   }
   return assessment;
 };
 Assessment.loadFromLocalStorage = function(urlPath) {
-  var assessment, assessmentObject, _i, _len, _ref;
-  assessment = new Assessment();
-  assessment.urlScheme = "localstorage";
+  var assessment, assessmentObject, pages, _i, _len, _ref;
   assessmentObject = JSON.parse(localStorage[urlPath]);
   if (assessmentObject == null) {
     throw "Could not load localStorage['" + urlPath + "'], " + error;
   }
-  console.log(assessmentObject);
-  assessment.name = assessmentObject.name;
-  assessment.pages = [];
+  assessment = new Assessment(assessmentObject.name);
+  assessment.urlScheme = "localstorage";
+  pages = [];
   _ref = assessmentObject.urlPathsForPages;
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     urlPath = _ref[_i];
-    assessment.pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath));
+    pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath));
   }
+  assessment.setPages(pages);
   return assessment;
 };
 Assessment.loadFromHTTP = function(url, callback) {
@@ -637,9 +599,9 @@ Assessment.loadFromHTTP = function(url, callback) {
     type: 'GET',
     dataType: 'json',
     success: function(result) {
-      var urlPath, _i, _len, _ref;
+      var pages, urlPath, _i, _len, _ref;
       assessment = new Assessment(result.name);
-      assessment.pages = [];
+      pages = [];
       _ref = result.urlPathsForPages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         urlPath = _ref[_i];
@@ -649,9 +611,10 @@ Assessment.loadFromHTTP = function(url, callback) {
           async: false
         }, __bind(function(result) {
           result.assessment = assessment;
-          return assessment.pages.push(result);
+          return pages.push(result);
         }, this));
       }
+      assessment.setPages(pages);
       if (callback != null) {
         return callback(assessment);
       }
@@ -661,12 +624,6 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};
-Assessment.loadFromCouchDB = function(name) {
-  var assessment;
-  assessment = new Assessment();
-  assessment.name = name;
-  return assessment.loadFromCouchDB();
 };var AssessmentPage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
@@ -689,9 +646,9 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.save = function() {
     switch (this.urlScheme) {
       case "localstorage":
-        return this.saveToLocalStorage;
+        return this.saveToLocalStorage();
       default:
-        throw "URL type not yet implemented: " + urlScheme;
+        throw "URL type not yet implemented: " + this.urlScheme;
     }
   };
   JQueryMobilePage.prototype.saveToLocalStorage = function() {
@@ -703,6 +660,7 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.saveToCouchDB = function(callback) {
     var url;
     this.loading = true;
+    this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
     return $.ajax({
@@ -719,7 +677,7 @@ JQueryMobilePage = (function() {
       },
       complete: __bind(function() {
         this.loading = false;
-        if (callback) {
+        if (callback != null) {
           return callback();
         }
       }, this)
@@ -730,7 +688,7 @@ JQueryMobilePage = (function() {
   };
   JQueryMobilePage.prototype.deleteFromCouchDB = function() {
     var url;
-    url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
+    url = this.urlPath + ("?rev=" + this.revision);
     return $.ajax({
       url: url,
       type: 'DELETE',
@@ -765,7 +723,7 @@ JQueryMobilePage.loadFromLocalStorage = function(urlPath) {
 JQueryMobilePage.loadFromHTTP = function(options, callback) {
   var urlPath;
   if (options.url == null) {
-    throw "Must pass 'url' option to loadFromHTTP";
+    throw "Must pass 'url' option to loadFromHTTP, received: " + options;
   }
   if (options.url.match(/http/)) {
     urlPath = options.url.substring(options.url.lastIndexOf("://") + 3);
@@ -780,18 +738,21 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
       jqueryMobilePage = JQueryMobilePage.deserialize(result);
       jqueryMobilePage.urlPath = urlPath;
       jqueryMobilePage.urlScheme = "http";
+      jqueryMobilePage.revision = result._rev;
       if (callback != null) {
         return callback(jqueryMobilePage);
       }
     },
     error: function() {
-      throw "Failed to load: " + url;
+      throw "Failed to load: " + urlPath;
     }
   });
   return $.ajax(options);
 };
 JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
-  return JQueryMobilePage.loadFromHTTP(urlPath, callback);
+  return JQueryMobilePage.loadFromHTTP({
+    url: $.couchDBDesignDocumentPath + urlPath
+  }, callback);
 };
 AssessmentPage = (function() {
   function AssessmentPage() {

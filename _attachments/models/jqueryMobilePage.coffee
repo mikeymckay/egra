@@ -13,9 +13,9 @@ class JQueryMobilePage
   save: ->
     switch @urlScheme
       when "localstorage"
-        return @saveToLocalStorage
+        return @saveToLocalStorage()
       else
-        throw "URL type not yet implemented: #{urlScheme}"
+        throw "URL type not yet implemented: #{@urlScheme}"
 
   saveToLocalStorage: ->
     throw "Can't save page '#{@pageId}' to localStorage: No urlPath!" unless @urlPath?
@@ -23,6 +23,7 @@ class JQueryMobilePage
 
   saveToCouchDB: (callback) ->
     @loading = true
+    @urlScheme = "http"
     @urlPath = @urlPath.substring(@urlPath.indexOf("/")+1)
     url = $.couchDBDesignDocumentPath + @urlPath
     $.ajax
@@ -37,13 +38,13 @@ class JQueryMobilePage
         throw "Could not PUT to #{url}"
       complete: =>
         @loading = false
-        callback() if callback
+        callback() if callback?
 
   deleteFromLocalStorage: ->
     localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: ->
-    url = $.couchDBDesignDocumentPath + @urlPath + "?rev=#{@revision}"
+    url =  @urlPath + "?rev=#{@revision}"
     $.ajax
       url: url
       type: 'DELETE',
@@ -65,7 +66,7 @@ JQueryMobilePage.loadFromLocalStorage = (urlPath) ->
   return jqueryMobilePage
 
 JQueryMobilePage.loadFromHTTP = (options, callback) ->
-  throw "Must pass 'url' option to loadFromHTTP" unless options.url?
+  throw "Must pass 'url' option to loadFromHTTP, received: #{options}" unless options.url?
   if options.url.match(/http/)
     urlPath = options.url.substring(options.url.lastIndexOf("://")+3)
   else
@@ -78,14 +79,15 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
       jqueryMobilePage = JQueryMobilePage.deserialize(result)
       jqueryMobilePage.urlPath = urlPath
       jqueryMobilePage.urlScheme = "http"
+      jqueryMobilePage.revision = result._rev
       callback(jqueryMobilePage) if callback?
     error: ->
-      throw "Failed to load: #{url}"
+      throw "Failed to load: #{urlPath}"
   $.ajax options
 
 
 JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
-  return JQueryMobilePage.loadFromHTTP(urlPath, callback)
+  return JQueryMobilePage.loadFromHTTP({url:$.couchDBDesignDocumentPath+urlPath}, callback)
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->

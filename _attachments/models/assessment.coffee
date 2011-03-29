@@ -39,38 +39,22 @@ class Assessment
     page.saveToLocalStorage() for page in @pages
 
   saveToCouchDB: (callback) ->
-    url = $.couchDBDesignDocumentPath + @urlPath
+    @urlScheme = "http"
+    @urlPath = $.couchDBDesignDocumentPath + @urlPath unless @urlPath[0] == "/"
     $.ajax
-      url: url,
+      url: @urlPath
       async: true,
       type: 'PUT',
       dataType: 'json',
       data: @toJSON(),
       success: (result) =>
         @revision = result.rev
+        page.saveToCouchDB() for page in @pages
+        @onReady ->
+          callback()
       error: ->
-        throw "Could not PUT to #{url}"
+        throw "Could not PUT to #{@urlPath}"
 
-      console.log "AAS"
-      page.saveToCouchDB() for page in @pages
-      @onReady =>
-        callback() if callback
-    return this
-
-  loadFromCouchDB: (callback) ->
-    @loading = true
-    $.ajax({
-      url: $.couchDBDesignDocumentPath + @url(),
-      type: 'GET',
-      dataType: 'json',
-      success: (result) =>
-        @pages = []
-        for pageIndex in result.urlPathsForPages
-          JQueryMobilePage.loadFromCouchDB(pageIndex, (result) =>
-            @pages.push result
-          )
-        @loading = false
-    })
     return this
 
   delete: ->
@@ -82,19 +66,17 @@ class Assessment
       page.deleteFromLocalStorage()
     localStorage.removeItem(@urlPath)
 
-  deleteFromCouchDB: (callback) ->
+  deleteFromCouchDB: ->
     url = $.couchDBDesignDocumentPath + @urlPath + "?rev=#{@revision}"
     if @pages
       for page in @pages
         page.deleteFromCouchDB()
     $.ajax
-      url: url
+      url: url,
+      async: true,
       type: 'DELETE',
-      complete: ->
-        callback() if callback?
       error: ->
         throw "Error deleting #{url}"
-
 
   onReady: (callback) ->
     maxTries = 10
@@ -129,16 +111,6 @@ class Assessment
       callback(result.join("")) if callback?
       return result.join("")
 
-Assessment.deserialize = (assessmentObject) ->
-  assessment = new Assessment()
-  assessment.name = assessmentObject.name
-  assessment.pages = []
-  for pageIndex in assessmentObject.urlPathsForPages
-    url = baseUrl + pageIndex
-    JQueryMobilePage.loadSynchronousFromJSON url, (result) =>
-      result.assessment = assessment
-      assessment.pages.push result
-
 Assessment.load = (url, callback) ->
   try
     urlScheme = url.substring(0,url.indexOf("://"))
@@ -147,9 +119,12 @@ Assessment.load = (url, callback) ->
     throw "Invalid url: #{url}"
 
   switch urlScheme
-    when "localstorage" 
+    when "localstorage"
       assessment = Assessment.loadFromLocalStorage(urlPath)
       callback(assessment) if callback?
+    when "http"
+      Assessment.loadFromHTTP urlPath, (result) ->
+        callback(result) if callback?
     else
       throw "URL type not yet implemented: #{urlScheme}"
 
@@ -157,15 +132,14 @@ Assessment.load = (url, callback) ->
 
 
 Assessment.loadFromLocalStorage = (urlPath) ->
-  assessment = new Assessment()
-  assessment.urlScheme = "localstorage"
   assessmentObject = JSON.parse(localStorage[urlPath])
   throw "Could not load localStorage['#{urlPath}'], #{error}" unless assessmentObject?
-  console.log assessmentObject
-  assessment.name = assessmentObject.name
-  assessment.pages = []
+  assessment = new Assessment(assessmentObject.name)
+  assessment.urlScheme = "localstorage"
+  pages = []
   for urlPath in assessmentObject.urlPathsForPages
-    assessment.pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath))
+    pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath))
+  assessment.setPages(pages)
   return assessment
 
 Assessment.loadFromHTTP = (url, callback) ->
@@ -177,18 +151,14 @@ Assessment.loadFromHTTP = (url, callback) ->
     dataType: 'json',
     success: (result) ->
       assessment = new Assessment(result.name)
-      assessment.pages = []
+      pages = []
       for urlPath in result.urlPathsForPages
         url = baseUrl + urlPath
         JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
           result.assessment = assessment
-          assessment.pages.push result
+          pages.push result
+      assessment.setPages(pages)
       callback(assessment) if callback?
     error: ->
       throw "Failed to load: #{url}"
   return assessment
-
-Assessment.loadFromCouchDB = (name) ->
-  assessment = new Assessment()
-  assessment.name = name
-  assessment.loadFromCouchDB()
