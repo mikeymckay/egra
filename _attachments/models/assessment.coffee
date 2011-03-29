@@ -113,6 +113,7 @@ class Assessment
         for page in @pages
           if page.pageId is document.location.hash.substr(1)
             @currentPage = page
+
       result = for page,i in @pages
         page.render()
       callback(result.join("")) if callback?

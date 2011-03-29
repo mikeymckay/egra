@@ -57,7 +57,10 @@ class JQueryMobilePage
 JQueryMobilePage.deserialize = (pageObject) ->
   result = new window[pageObject.pageType]()
   for key,value of pageObject
-    result[key] = value
+    if key is "timer"
+      result.addTimer()
+    else
+      result[key] = value
   result.loading = false
   return result
 

@@ -1,5 +1,18 @@
 var Timer;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+$("div.timer a:contains('start')").live('click', function() {
+  console.log("click");
+  return $.currentPage.timer.start();
+});
+$("" + this.elementLocation + " a:contains('start')").live('click', __bind(function() {
+  return this.start();
+}, this));
+$("" + this.elementLocation + " a:contains('stop')").live('click', __bind(function() {
+  return this.stop();
+}, this));
+$("" + this.elementLocation + " a:contains('reset')").live('click', __bind(function() {
+  return this.reset();
+}, this));
 Timer = (function() {
   function Timer() {
     this.elementLocation = null;
@@ -44,15 +57,6 @@ Timer = (function() {
   Timer.prototype.render = function() {
     this.id = "timer";
     this.seconds = 60;
-    $("" + this.elementLocation + " a:contains('start')").live('click', __bind(function() {
-      return this.start();
-    }, this));
-    $("" + this.elementLocation + " a:contains('stop')").live('click', __bind(function() {
-      return this.stop();
-    }, this));
-    $("" + this.elementLocation + " a:contains('reset')").live('click', __bind(function() {
-      return this.reset();
-    }, this));
     return Mustache.to_html(Template.Timer(), this);
   };
   return Timer;

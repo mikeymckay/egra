@@ -3,7 +3,6 @@ $(document).bind "mobileinit", ->
 
 $(document).ready ->
   EarlyGradeReadingAssessment.loadFromCouch()
-  
 
 class EarlyGradeReadingAssessment
 
@@ -23,8 +22,7 @@ EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = (callback) ->
 
 EarlyGradeReadingAssessment.createFromGoogle = ->
 
-  assessment= new Assessment()
-  assessment.name= "EGRA Prototype"
+  assessment= new Assessment("EGRA Prototype")
 
   login= new JQueryMobilePage()
   instructions= new InstructionsPage()

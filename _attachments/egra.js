@@ -25,8 +25,7 @@ EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = function(callback) {
 };
 EarlyGradeReadingAssessment.createFromGoogle = function() {
   var assessment, instructions, letters, login;
-  assessment = new Assessment();
-  assessment.name = "EGRA Prototype";
+  assessment = new Assessment("EGRA Prototype");
   login = new JQueryMobilePage();
   instructions = new InstructionsPage();
   letters = new LettersPage();

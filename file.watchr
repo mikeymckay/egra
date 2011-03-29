@@ -18,5 +18,4 @@ watch( '(.*\.coffee$)' ) {|match_data|
     `make combined`
     `couchapp push`
   end
-
 }

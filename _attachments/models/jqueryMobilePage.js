@@ -84,7 +84,11 @@ JQueryMobilePage.deserialize = function(pageObject) {
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
-    result[key] = value;
+    if (key === "timer") {
+      result.addTimer();
+    } else {
+      result[key] = value;
+    }
   }
   result.loading = false;
   return result;
