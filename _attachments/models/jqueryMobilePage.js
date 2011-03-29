@@ -37,6 +37,7 @@ JQueryMobilePage = (function() {
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
+    console.log(url);
     return $.ajax({
       url: url,
       async: true,
@@ -146,9 +147,6 @@ JQueryLogin = (function() {
     JQueryLogin.__super__.constructor.apply(this, arguments);
   }
   __extends(JQueryLogin, AssessmentPage);
-  JQueryLogin.prototype.render = function() {
-    return Mustache.to_html(Template.JQueryLogin(), this);
-  };
   return JQueryLogin;
 })();
 InstructionsPage = (function() {

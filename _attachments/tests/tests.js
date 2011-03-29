@@ -74,13 +74,6 @@ $(document).ready(function() {
     expected_result = "<div data-role='content'>	  <form>    <fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'><input type='checkbox' name='unique_name' id='unique_name' class='custom' /><label for='unique_name'>content</label></fieldset>  </form></div>    ";
     return equals(test_object.render(), expected_result);
   });
-  test("JQueryLogin", function() {
-    var expected_result, test_object;
-    expect(1);
-    test_object = new JQueryLogin();
-    expected_result = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
-    return equals(test_object.render(), expected_result);
-  });
   test("Timer", function() {
     var expected_result, test_object;
     expect(1);
@@ -126,7 +119,8 @@ $(document).ready(function() {
       equal(result.pageType, "JQueryLogin");
       return Assessment.loadFromHTTP("testData/Assessment.TEST EGRA Prototype", function(result) {
         equal(result.pages.length, 3);
-        equal(result.render().length, 16407);
+        console.log(result.render());
+        equal(result.render().length, 16682);
         return start();
       });
     });

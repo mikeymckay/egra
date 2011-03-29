@@ -26,6 +26,7 @@ class JQueryMobilePage
     @urlScheme = "http"
     @urlPath = @urlPath.substring(@urlPath.indexOf("/")+1)
     url = $.couchDBDesignDocumentPath + @urlPath
+    console.log url
     $.ajax
       url: url,
       async: true,
@@ -99,8 +100,8 @@ class AssessmentPage extends JQueryMobilePage
     @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
 
 class JQueryLogin extends AssessmentPage
-  render: ->
-    Mustache.to_html(Template.JQueryLogin(),this)
+#  render: ->
+#    Mustache.to_html(Template.JQueryLogin(),this)
 
 class InstructionsPage extends AssessmentPage
   updateFromGoogle: ->

@@ -375,6 +375,19 @@ Assessment = (function() {
     this.name = name;
     this.urlPath = "Assessment." + this.name;
   }
+  Assessment.prototype.changeName = function(newName) {
+    var page, _i, _len, _ref, _results;
+    this.name = newName;
+    this.urlPath = "Assessment." + this.name;
+    _ref = this.pages;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      page.urlPath = this.urlPath + "." + page.pageId;
+      _results.push(console.log(page));
+    }
+    return _results;
+  };
   Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
     this.pages = pages;
@@ -663,6 +676,7 @@ JQueryMobilePage = (function() {
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
+    console.log(url);
     return $.ajax({
       url: url,
       async: true,
@@ -772,9 +786,6 @@ JQueryLogin = (function() {
     JQueryLogin.__super__.constructor.apply(this, arguments);
   }
   __extends(JQueryLogin, AssessmentPage);
-  JQueryLogin.prototype.render = function() {
-    return Mustache.to_html(Template.JQueryLogin(), this);
-  };
   return JQueryLogin;
 })();
 InstructionsPage = (function() {
@@ -1078,17 +1089,26 @@ $(document).bind("mobileinit", function() {
   return $.mobile.autoInitialize = false;
 });
 $(document).ready(function() {
-  var assessment;
-  assessment = EarlyGradeReadingAssessment.createFromGoogle().saveToCouchDB();
-  return assessment.render(function(result) {
-    $("body").html(result);
-    return $.mobile.initializePage();
-  });
+  return EarlyGradeReadingAssessment.loadFromCouch();
 });
 EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
+EarlyGradeReadingAssessment.loadFromCouch = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+    return assessment.render(function(result) {
+      $("body").html(result);
+      return $.mobile.initializePage();
+    });
+  });
+};
+EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = function(callback) {
+  return Assessment.loadFromHTTP("tests/testData/Assessment.TEST EGRA Prototype", function(assessment) {
+    assessment.changeName("EGRA Prototype");
+    return assessment.saveToCouchDB(callback);
+  });
+};
 EarlyGradeReadingAssessment.createFromGoogle = function() {
   var assessment, instructions, letters, login;
   assessment = new Assessment();

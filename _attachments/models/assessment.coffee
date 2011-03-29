@@ -7,6 +7,13 @@ class Assessment
   constructor: (@name) ->
     @urlPath = "Assessment.#{@name}"
 
+  changeName: (newName) ->
+    @name = newName
+    @urlPath = "Assessment.#{@name}"
+    for page in @pages
+      page.urlPath = @urlPath + "." + page.pageId
+      console.log page
+
   setPages: (pages) ->
     @pages = pages
     @urlPathsForPages = []
