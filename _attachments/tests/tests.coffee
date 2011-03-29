@@ -64,21 +64,6 @@ $(document).ready ->
 <div data-role='content'>	  <form>    <fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'><input type='checkbox' name='unique_name' id='unique_name' class='custom' /><label for='unique_name'>content</label></fieldset>  </form></div>    "
     equals(test_object.render(), expected_result)
 
-  test "JQueryLogin", ->
-    expect(1)
-    test_object = new JQueryLogin()
-    expected_result = "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='Enumia' />
-    <label for='password'>Password (not needed for demo):</label>
-    <input type='password' name='password' id='password' value='' />
-  </div>
-</form>
-"
-    equals(test_object.render(), expected_result)
-
   test "Timer", ->
     expect(1)
     test_object = new Timer()
@@ -124,7 +109,8 @@ $(document).ready ->
       equal(result.pageType,"JQueryLogin")
       Assessment.loadFromHTTP "testData/Assessment.TEST EGRA Prototype", (result) ->
         equal(result.pages.length,3)
-        equal(result.render().length,16407)
+        console.log result.render()
+        equal(result.render().length,16682)
         start()
 
   test "LocalStorage Serialization", ->

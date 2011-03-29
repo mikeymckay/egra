@@ -375,6 +375,19 @@ Assessment = (function() {
     this.name = name;
     this.urlPath = "Assessment." + this.name;
   }
+  Assessment.prototype.changeName = function(newName) {
+    var page, _i, _len, _ref, _results;
+    this.name = newName;
+    this.urlPath = "Assessment." + this.name;
+    _ref = this.pages;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      page.urlPath = this.urlPath + "." + page.pageId;
+      _results.push(console.log(page));
+    }
+    return _results;
+  };
   Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
     this.pages = pages;
@@ -663,6 +676,7 @@ JQueryMobilePage = (function() {
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
+    console.log(url);
     return $.ajax({
       url: url,
       async: true,
@@ -709,7 +723,11 @@ JQueryMobilePage.deserialize = function(pageObject) {
   result = new window[pageObject.pageType]();
   for (key in pageObject) {
     value = pageObject[key];
-    result[key] = value;
+    if (key === "timer") {
+      result.addTimer();
+    } else {
+      result[key] = value;
+    }
   }
   result.loading = false;
   return result;
@@ -772,9 +790,6 @@ JQueryLogin = (function() {
     JQueryLogin.__super__.constructor.apply(this, arguments);
   }
   __extends(JQueryLogin, AssessmentPage);
-  JQueryLogin.prototype.render = function() {
-    return Mustache.to_html(Template.JQueryLogin(), this);
-  };
   return JQueryLogin;
 })();
 InstructionsPage = (function() {
@@ -892,6 +907,14 @@ Scorer = (function() {
   return Scorer;
 })();var Timer;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+if ($.assessment === void 0) {
+  throw "No assessment loaded";
+}
+$("div.timer a").live('click', __bind(function(eventData) {
+  var buttonPressed;
+  buttonPressed = eventData.target.innerHTML;
+  return $.assessment.currentPage.timer[buttonPressed]();
+}, this));
 Timer = (function() {
   function Timer() {
     this.elementLocation = null;
@@ -936,15 +959,6 @@ Timer = (function() {
   Timer.prototype.render = function() {
     this.id = "timer";
     this.seconds = 60;
-    $("" + this.elementLocation + " a:contains('start')").live('click', __bind(function() {
-      return this.start();
-    }, this));
-    $("" + this.elementLocation + " a:contains('stop')").live('click', __bind(function() {
-      return this.stop();
-    }, this));
-    $("" + this.elementLocation + " a:contains('reset')").live('click', __bind(function() {
-      return this.reset();
-    }, this));
     return Mustache.to_html(Template.Timer(), this);
   };
   return Timer;
@@ -1078,21 +1092,29 @@ $(document).bind("mobileinit", function() {
   return $.mobile.autoInitialize = false;
 });
 $(document).ready(function() {
-  var assessment;
-  assessment = EarlyGradeReadingAssessment.createFromGoogle().saveToCouchDB();
-  return assessment.render(function(result) {
-    $("body").html(result);
-    return $.mobile.initializePage();
-  });
+  return EarlyGradeReadingAssessment.loadFromCouch();
 });
 EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
+EarlyGradeReadingAssessment.loadFromCouch = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+    return assessment.render(function(result) {
+      $("body").html(result);
+      return $.mobile.initializePage();
+    });
+  });
+};
+EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = function(callback) {
+  return Assessment.loadFromHTTP("tests/testData/Assessment.TEST EGRA Prototype", function(assessment) {
+    assessment.changeName("EGRA Prototype");
+    return assessment.saveToCouchDB(callback);
+  });
+};
 EarlyGradeReadingAssessment.createFromGoogle = function() {
   var assessment, instructions, letters, login;
-  assessment = new Assessment();
-  assessment.name = "EGRA Prototype";
+  assessment = new Assessment("EGRA Prototype");
   login = new JQueryMobilePage();
   instructions = new InstructionsPage();
   letters = new LettersPage();

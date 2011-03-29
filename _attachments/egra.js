@@ -3,21 +3,29 @@ $(document).bind("mobileinit", function() {
   return $.mobile.autoInitialize = false;
 });
 $(document).ready(function() {
-  var assessment;
-  assessment = EarlyGradeReadingAssessment.createFromGoogle().saveToCouchDB();
-  return assessment.render(function(result) {
-    $("body").html(result);
-    return $.mobile.initializePage();
-  });
+  return EarlyGradeReadingAssessment.loadFromCouch();
 });
 EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
+EarlyGradeReadingAssessment.loadFromCouch = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+    return assessment.render(function(result) {
+      $("body").html(result);
+      return $.mobile.initializePage();
+    });
+  });
+};
+EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = function(callback) {
+  return Assessment.loadFromHTTP("tests/testData/Assessment.TEST EGRA Prototype", function(assessment) {
+    assessment.changeName("EGRA Prototype");
+    return assessment.saveToCouchDB(callback);
+  });
+};
 EarlyGradeReadingAssessment.createFromGoogle = function() {
   var assessment, instructions, letters, login;
-  assessment = new Assessment();
-  assessment.name = "EGRA Prototype";
+  assessment = new Assessment("EGRA Prototype");
   login = new JQueryMobilePage();
   instructions = new InstructionsPage();
   letters = new LettersPage();

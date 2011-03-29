@@ -7,6 +7,19 @@ Assessment = (function() {
     this.name = name;
     this.urlPath = "Assessment." + this.name;
   }
+  Assessment.prototype.changeName = function(newName) {
+    var page, _i, _len, _ref, _results;
+    this.name = newName;
+    this.urlPath = "Assessment." + this.name;
+    _ref = this.pages;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      page.urlPath = this.urlPath + "." + page.pageId;
+      _results.push(console.log(page));
+    }
+    return _results;
+  };
   Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
     this.pages = pages;
