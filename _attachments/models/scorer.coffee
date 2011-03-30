@@ -13,3 +13,13 @@ class Scorer
     @id = "scorer"
     setInterval( this.update, 500)
     Mustache.to_html(Template.Scorer(),this)
+
+Template.Scorer = () -> "
+<div class='scorer'>
+  <small>
+  Completed:<span id='completed'></span>
+  Wrong:<span id='wrong'></span>
+  </small>
+</div>
+"
+

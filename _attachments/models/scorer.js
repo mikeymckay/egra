@@ -26,3 +26,6 @@ Scorer = (function() {
   };
   return Scorer;
 })();
+Template.Scorer = function() {
+  return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
+};

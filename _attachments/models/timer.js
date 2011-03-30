@@ -56,3 +56,6 @@ Timer = (function() {
   };
   return Timer;
 })();
+Template.Timer = function() {
+  return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+};

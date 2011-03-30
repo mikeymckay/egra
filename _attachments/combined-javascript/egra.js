@@ -339,34 +339,7 @@ var Mustache = function() {
     }
   });
 }();
-var Template;
-Template = (function() {
-  function Template() {}
-  return Template;
-})();
-Template.JQueryMobilePage = function() {
-  return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    {{{header}}}  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{{footer_text}}}  </div><!-- /header --></div><!-- /page -->";
-};
-Template.JQueryCheckbox = function() {
-  return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
-};
-Template.JQueryLogin = function() {
-  return "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
-};
-Template.Timer = function() {
-  return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
-};
-Template.Scorer = function() {
-  return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
-};
-Template.Store = function() {
-  var template, _results;
-  _results = [];
-  for (template in Template) {
-    _results.push(template !== "Store" ? localStorage["template." + template] = Template[template]() : void 0);
-  }
-  return _results;
-};var Assessment;
+ var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
 $.couchDBDesignDocumentPath = '/egra/';
@@ -878,7 +851,16 @@ JQueryCheckboxGroup = (function() {
     return this.render() + ("<script>    $(':checkbox').click(function(){      var button = $($(this).siblings()[0]);      button.removeClass('ui-btn-active');      button.toggleClass(function(){        button = $(this);        if(button.is('.first_click')){          button.removeClass('first_click');          return 'second_click';        }        else if(button.is('.second_click')){          button.removeClass('second_click');          return '';        }        else{          return 'first_click';        }      });    });    </script>    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
   };
   return JQueryCheckboxGroup;
-})();var Scorer;
+})();
+Template.JQueryMobilePage = function() {
+  return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    {{{header}}}  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{{footer_text}}}  </div><!-- /header --></div><!-- /page -->";
+};
+Template.JQueryCheckbox = function() {
+  return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
+};
+Template.JQueryLogin = function() {
+  return "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+};var Scorer;
 Scorer = (function() {
   function Scorer() {}
   Scorer.prototype.update = function() {
@@ -905,7 +887,10 @@ Scorer = (function() {
     return Mustache.to_html(Template.Scorer(), this);
   };
   return Scorer;
-})();var Timer;
+})();
+Template.Scorer = function() {
+  return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
+};var Timer;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 if ($.assessment === void 0) {
   throw "No assessment loaded";
@@ -962,7 +947,10 @@ Timer = (function() {
     return Mustache.to_html(Template.Timer(), this);
   };
   return Timer;
-})();/*
+})();
+Template.Timer = function() {
+  return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+};/*
 Updated versions can be found at https://github.com/mikeymckay/google-spreadsheet-javascript
 */var GoogleSpreadsheet, GoogleUrl;
 GoogleUrl = (function() {
