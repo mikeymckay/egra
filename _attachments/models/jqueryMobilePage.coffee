@@ -1,13 +1,12 @@
-$("#Letters label").live 'mousedown', (eventData) ->
-  button = $(eventData.currentTarget)
-  console.log button
-  button.removeClass('ui-btn-active')
-  button.toggleClass ->
-    if(button.is('.first_click'))
-      button.removeClass('first_click')
+$("#Letters label").live 'mouseup', (eventData) ->
+  checkbox = $(eventData.currentTarget)
+  checkbox.removeClass('ui-btn-active')
+  checkbox.toggleClass ->
+    if(checkbox.is('.first_click'))
+      checkbox.removeClass('first_click')
       return 'second_click'
-    else if(button.is('.second_click'))
-      button.removeClass('second_click')
+    else if(checkbox.is('.second_click'))
+      checkbox.removeClass('second_click')
       return ''
     else
       return 'first_click'
@@ -175,6 +174,7 @@ class InstructionsPage extends AssessmentPage
       @content = result.data[0].replace(/\n/g, "<br/>")
       @loading = false
 
+
 class LettersPage extends AssessmentPage
   constructor: (@letters) ->
     super()
@@ -206,6 +206,21 @@ class LettersPage extends AssessmentPage
         checkbox
       @content = lettersCheckboxes.three_way_render()
       @loading = false
+
+  results: ->
+    letters = new Array()
+    # Initialize to all wrong
+    letters[i] = false for checkbox,index in $("#Letters label")
+    time_remain = @timer.seconds
+    auto_stop = true if @timer.seconds
+    attempted = null
+    for checkbox,index in $("#Letters label")
+      if checkbox.hasClass("second-click")
+        attempted = index
+        return
+      letters[i] = true unless checkbox.hasClass("first-click")
+
+    
 
 LettersPage.deserialize = (pageObject) ->
   lettersPage = new LettersPage(pageObject.letters)

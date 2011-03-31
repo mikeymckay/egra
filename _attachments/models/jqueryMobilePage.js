@@ -7,17 +7,16 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
-$("#Letters label").live('mousedown', function(eventData) {
-  var button;
-  button = $(eventData.currentTarget);
-  console.log(button);
-  button.removeClass('ui-btn-active');
-  return button.toggleClass(function() {
-    if (button.is('.first_click')) {
-      button.removeClass('first_click');
+$("#Letters label").live('mouseup', function(eventData) {
+  var checkbox;
+  checkbox = $(eventData.currentTarget);
+  checkbox.removeClass('ui-btn-active');
+  return checkbox.toggleClass(function() {
+    if (checkbox.is('.first_click')) {
+      checkbox.removeClass('first_click');
       return 'second_click';
-    } else if (button.is('.second_click')) {
-      button.removeClass('second_click');
+    } else if (checkbox.is('.second_click')) {
+      checkbox.removeClass('second_click');
       return '';
     } else {
       return 'first_click';
@@ -269,6 +268,30 @@ LettersPage = (function() {
       this.content = lettersCheckboxes.three_way_render();
       return this.loading = false;
     }, this));
+  };
+  LettersPage.prototype.results = function() {
+    var attempted, auto_stop, checkbox, index, letters, time_remain, _len, _len2, _ref, _ref2, _results;
+    letters = new Array();
+    _ref = $("#Letters label");
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      checkbox = _ref[index];
+      letters[i] = false;
+    }
+    time_remain = this.timer.seconds;
+    if (this.timer.seconds) {
+      auto_stop = true;
+    }
+    attempted = null;
+    _ref2 = $("#Letters label");
+    _results = [];
+    for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
+      checkbox = _ref2[index];
+      if (checkbox.hasClass("second-click")) {
+        return;
+      }
+      _results.push(!checkbox.hasClass("first-click") ? letters[i] = true : void 0);
+    }
+    return _results;
   };
   return LettersPage;
 })();
