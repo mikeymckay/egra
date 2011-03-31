@@ -27,21 +27,32 @@ $(document).ready ->
   module "EGRA"
 
   QUnit.testStart = (name) ->
-    console.log name
+    console.log "**#{name}**"
     localStorage.clear()
 
 
   test "JQueryMobilePage", ->
-    expect(1)
-    test_object = new JQueryMobilePage()
-    test_object.pageId = "pageId"
-    test_object.footer = "footer_text"
-    test_object.header = "header"
-    test_object.content = "content"
+    expect(3)
+    jqueryMobilePage = new JQueryMobilePage()
+    jqueryMobilePage.pageId = "pageId"
+    jqueryMobilePage.footer = "footer_text"
+    jqueryMobilePage.header = "header"
+    jqueryMobilePage.content = "content"
     expected_result = "<div data-role='page' id='pageId'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->"
 
-    equals(test_object.render(), expected_result)
+    equals jqueryMobilePage.render(), expected_result
+    equals jqueryMobilePage.toJSON(),
+      pageId: "pageId"
+      pageType: "JQueryMobilePage"
+      urlPath: undefined
+      urlScheme: undefined
 
+    anotherJqueryMobilePage = JQueryMobilePage.deserialize(jqueryMobilePage.toJSON())
+    equals anotherJqueryMobilePage.toJSON(),
+      pageId: "pageId"
+      pageType: "JQueryMobilePage"
+      urlPath: undefined
+      urlScheme: undefined
 
   test "JQueryCheckbox", ->
     expect(1)
@@ -64,10 +75,14 @@ $(document).ready ->
 <div data-role='content'>	  <form>    <fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'><input type='checkbox' name='unique_name' id='unique_name' class='custom' /><label for='unique_name'>content</label></fieldset>  </form></div>    "
     equals(test_object.render(), expected_result)
 
+  test "LettersPage", ->
+    lettersPage = new LettersPage(["a","b"])
+    equals lettersPage.render().length, 1633
+
   test "Timer", ->
     expect(1)
     test_object = new Timer()
-    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>"
+    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>"
     equals(test_object.render(), expected_result)
 
   test "LocalStorage Save/Load/Delete", ->
@@ -84,13 +99,12 @@ $(document).ready ->
     equal localStorage["Assessment.Test EGRA Prototype"], JSON.stringify
       name: "Test EGRA Prototype",
       urlPathsForPages: ["Assessment.Test EGRA Prototype.Login"]
-    equal localStorage["Assessment.Test EGRA Prototype.Login"], JSON.stringify
-      header: "",
+
+    equal( JSON.parse(localStorage["Assessment.Test EGRA Prototype.Login"]),
       pageId: "Login",
       pageType: "JQueryLogin",
-      assessment: assessment.toJSON(),
-      pageNumber: 0,
       urlPath: "Assessment.Test EGRA Prototype.Login"
+    )
 
 
     anotherAssessment = Assessment.load("localstorage://Assessment.Test EGRA Prototype")
@@ -110,7 +124,7 @@ $(document).ready ->
       Assessment.loadFromHTTP "testData/Assessment.TEST EGRA Prototype", (result) ->
         equal(result.pages.length,3)
         console.log result.render()
-        equal(result.render().length,16682)
+        equal(result.render().length,16101)
         start()
 
   test "LocalStorage Serialization", ->

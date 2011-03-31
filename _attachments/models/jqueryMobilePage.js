@@ -7,15 +7,53 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
+$("#Letters label").live('mousedown', function(eventData) {
+  var button;
+  button = $(eventData.currentTarget);
+  console.log(button);
+  button.removeClass('ui-btn-active');
+  return button.toggleClass(function() {
+    if (button.is('.first_click')) {
+      button.removeClass('first_click');
+      return 'second_click';
+    } else if (button.is('.second_click')) {
+      button.removeClass('second_click');
+      return '';
+    } else {
+      return 'first_click';
+    }
+  });
+});
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
-    this.pageId = this.header = "";
+    this.pageId = "";
     this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
-    var _ref;
-    this.footer_text = (_ref = this.footer) != null ? _ref : (this.nextPage != null ? "<a href='#" + this.nextPage + "'>" + this.nextPage + "</a>" : void 0);
-    return Mustache.to_html(Template.JQueryMobilePage(), this);
+    return Mustache.to_html(this._template(), this);
+  };
+  JQueryMobilePage.prototype.propertiesForSerialization = function() {
+    return ["pageId", "pageType", "urlPath", "urlScheme"];
+  };
+  JQueryMobilePage.prototype.toJSON = function() {
+    var object, property, _i, _len, _ref;
+    object = {};
+    _ref = this.propertiesForSerialization();
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      property = _ref[_i];
+      object[property] = this[property];
+    }
+    return object;
+  };
+  JQueryMobilePage.prototype.load = function(data) {
+    var property, _i, _len, _ref, _results;
+    _ref = this.propertiesForSerialization();
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      property = _ref[_i];
+      _results.push(this[property] = data[property]);
+    }
+    return _results;
   };
   JQueryMobilePage.prototype.save = function() {
     switch (this.urlScheme) {
@@ -77,21 +115,21 @@ JQueryMobilePage = (function() {
       }
     });
   };
+  JQueryMobilePage.prototype._template = function() {
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>{{previousPage}}</a>    <h1>{{pageId}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <a href='\#{{nextPage}}'>{{nextPage}}</a>  </div><!-- /header --></div><!-- /page -->";
+  };
   return JQueryMobilePage;
 })();
 JQueryMobilePage.deserialize = function(pageObject) {
-  var key, result, value;
-  result = new window[pageObject.pageType]();
-  for (key in pageObject) {
-    value = pageObject[key];
-    if (key === "timer") {
-      result.addTimer();
-    } else {
-      result[key] = value;
-    }
+  var result;
+  switch (pageObject.pageType) {
+    case "LettersPage":
+      return LettersPage.deserialize(pageObject);
+    default:
+      result = new window[pageObject.pageType]();
+      result.load(pageObject);
+      return result;
   }
-  result.loading = false;
-  return result;
 };
 JQueryMobilePage.loadFromLocalStorage = function(urlPath) {
   var jqueryMobilePage;
@@ -147,10 +185,11 @@ AssessmentPage = (function() {
   return AssessmentPage;
 })();
 JQueryLogin = (function() {
-  function JQueryLogin() {
-    JQueryLogin.__super__.constructor.apply(this, arguments);
-  }
   __extends(JQueryLogin, AssessmentPage);
+  function JQueryLogin() {
+    JQueryLogin.__super__.constructor.call(this);
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+  }
   return JQueryLogin;
 })();
 InstructionsPage = (function() {
@@ -158,6 +197,12 @@ InstructionsPage = (function() {
     InstructionsPage.__super__.constructor.apply(this, arguments);
   }
   __extends(InstructionsPage, AssessmentPage);
+  InstructionsPage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = InstructionsPage.__super__.propertiesForSerialization.call(this);
+    properties.push("content");
+    return properties;
+  };
   InstructionsPage.prototype.updateFromGoogle = function() {
     var googleSpreadsheet;
     this.loading = true;
@@ -171,10 +216,34 @@ InstructionsPage = (function() {
   return InstructionsPage;
 })();
 LettersPage = (function() {
-  function LettersPage() {
-    LettersPage.__super__.constructor.apply(this, arguments);
-  }
   __extends(LettersPage, AssessmentPage);
+  function LettersPage(letters) {
+    var checkbox, index, letter, lettersCheckboxes;
+    this.letters = letters;
+    LettersPage.__super__.constructor.call(this);
+    lettersCheckboxes = new JQueryCheckboxGroup();
+    lettersCheckboxes.checkboxes = (function() {
+      var _len, _ref, _results;
+      _ref = this.letters;
+      _results = [];
+      for (index = 0, _len = _ref.length; index < _len; index++) {
+        letter = _ref[index];
+        checkbox = new JQueryCheckbox();
+        checkbox.unique_name = "checkbox_" + index;
+        checkbox.content = letter;
+        _results.push(checkbox);
+      }
+      return _results;
+    }).call(this);
+    this.addTimer();
+    this.content = lettersCheckboxes.three_way_render();
+  }
+  LettersPage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = LettersPage.__super__.propertiesForSerialization.call(this);
+    properties.push("letters");
+    return properties;
+  };
   LettersPage.prototype.updateFromGoogle = function() {
     var googleSpreadsheet;
     this.loading = true;
@@ -197,17 +266,25 @@ LettersPage = (function() {
         }
         return _results;
       }).call(this);
-      this.addTimer();
       this.content = lettersCheckboxes.three_way_render();
       return this.loading = false;
     }, this));
   };
   return LettersPage;
 })();
+LettersPage.deserialize = function(pageObject) {
+  var lettersPage;
+  lettersPage = new LettersPage(pageObject.letters);
+  lettersPage.load(pageObject);
+  return lettersPage;
+};
 JQueryCheckbox = (function() {
   function JQueryCheckbox() {}
   JQueryCheckbox.prototype.render = function() {
-    return Mustache.to_html(Template.JQueryCheckbox(), this);
+    return Mustache.to_html(this._template(), this);
+  };
+  JQueryCheckbox.prototype._template = function() {
+    return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
   };
   return JQueryCheckbox;
 })();
@@ -236,16 +313,7 @@ JQueryCheckboxGroup = (function() {
     var _ref, _ref2;
     (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#FF0000";
     (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#009900";
-    return this.render() + ("<script>    $(':checkbox').click(function(){      var button = $($(this).siblings()[0]);      button.removeClass('ui-btn-active');      button.toggleClass(function(){        button = $(this);        if(button.is('.first_click')){          button.removeClass('first_click');          return 'second_click';        }        else if(button.is('.second_click')){          button.removeClass('second_click');          return '';        }        else{          return 'first_click';        }      });    });    </script>    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
+    return this.render() + ("    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
   };
   return JQueryCheckboxGroup;
 })();
-Template.JQueryMobilePage = function() {
-  return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    {{{header}}}  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{{footer_text}}}  </div><!-- /header --></div><!-- /page -->";
-};
-Template.JQueryCheckbox = function() {
-  return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
-};
-Template.JQueryLogin = function() {
-  return "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
-};

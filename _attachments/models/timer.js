@@ -3,11 +3,11 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 if ($.assessment === void 0) {
   throw "No assessment loaded";
 }
-$("div.timer a").live('click', __bind(function(eventData) {
+$("div.timer button").live('click', function(eventData) {
   var buttonPressed;
   buttonPressed = eventData.target.innerHTML;
   return $.assessment.currentPage.timer[buttonPressed]();
-}, this));
+});
 Timer = (function() {
   function Timer() {
     this.elementLocation = null;
@@ -52,10 +52,10 @@ Timer = (function() {
   Timer.prototype.render = function() {
     this.id = "timer";
     this.seconds = 60;
-    return Mustache.to_html(Template.Timer(), this);
+    return Mustache.to_html(this._template(), this);
+  };
+  Timer.prototype._template = function() {
+    return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
   };
   return Timer;
 })();
-Template.Timer = function() {
-  return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
-};

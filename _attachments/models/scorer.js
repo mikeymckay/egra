@@ -22,10 +22,10 @@ Scorer = (function() {
   Scorer.prototype.render = function() {
     this.id = "scorer";
     setInterval(this.update, 500);
-    return Mustache.to_html(Template.Scorer(), this);
+    return Mustache.to_html(this._template(), this);
+  };
+  Scorer.prototype._template = function() {
+    return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
   };
   return Scorer;
 })();
-Template.Scorer = function() {
-  return "<div class='scorer'>  <small>  Completed:<span id='completed'></span>  Wrong:<span id='wrong'></span>  </small></div>";
-};

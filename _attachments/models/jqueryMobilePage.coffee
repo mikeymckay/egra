@@ -1,14 +1,44 @@
+$("#Letters label").live 'mousedown', (eventData) ->
+  button = $(eventData.currentTarget)
+  console.log button
+  button.removeClass('ui-btn-active')
+  button.toggleClass ->
+    if(button.is('.first_click'))
+      button.removeClass('first_click')
+      return 'second_click'
+    else if(button.is('.second_click'))
+      button.removeClass('second_click')
+      return ''
+    else
+      return 'first_click'
+
 class JQueryMobilePage
   constructor: ->
-    @pageId = @header = ""
+    @pageId = ""
     @pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
-    @footer_text = @footer ? ("<a href='##{@nextPage}'>#{@nextPage}</a>" if @nextPage?)
-    Mustache.to_html(Template.JQueryMobilePage(),this)
+    Mustache.to_html(@_template(),this)
 
   #url: ->
   #  return "#{@urlScheme}://#{@urlPath}"
+
+  propertiesForSerialization: -> [
+    "pageId"
+    "pageType"
+    "urlPath"
+    "urlScheme"
+  ]
+
+  toJSON: ->
+    object = {}
+    for property in @propertiesForSerialization()
+      object[property] = this[property]
+    return object
+
+  load: (data) ->
+    for property in @propertiesForSerialization()
+      this[property] = data[property]
 
   save: ->
     switch @urlScheme
@@ -54,15 +84,30 @@ class JQueryMobilePage
       error: ->
         throw "Error deleting #{url}"
 
+  _template: -> "
+<div data-role='page' id='{{{pageId}}'>
+  <div data-role='header'>
+    <a href='\#{{previousPage}}'>{{previousPage}}</a>
+    <h1>{{pageId}}</h1>
+  </div><!-- /header -->
+  <div data-role='content'>	
+    {{{controls}}}
+    {{{content}}}
+  </div><!-- /content -->
+  <div data-role='footer'>
+    <a href='\#{{nextPage}}'>{{nextPage}}</a>
+  </div><!-- /header -->
+</div><!-- /page -->
+"
+
 JQueryMobilePage.deserialize = (pageObject) ->
-  result = new window[pageObject.pageType]()
-  for key,value of pageObject
-    if key is "timer"
-      result.addTimer()
+  switch pageObject.pageType
+    when "LettersPage"
+      return LettersPage.deserialize(pageObject)
     else
-      result[key] = value
-  result.loading = false
-  return result
+      result = new window[pageObject.pageType]()
+      result.load(pageObject)
+      return result
 
 JQueryMobilePage.loadFromLocalStorage = (urlPath) ->
   jqueryMobilePage = JQueryMobilePage.deserialize(JSON.parse(localStorage[urlPath]))
@@ -103,10 +148,25 @@ class AssessmentPage extends JQueryMobilePage
     @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
 
 class JQueryLogin extends AssessmentPage
-#  render: ->
-#    Mustache.to_html(Template.JQueryLogin(),this)
+  constructor: ->
+    super()
+    @content = "
+<form>
+  <div data-role='fieldcontain'>
+    <label for='username'>Username:</label>
+    <input type='text' name='username' id='username' value='Enumia' />
+    <label for='password'>Password (not needed for demo):</label>
+    <input type='password' name='password' id='password' value='' />
+  </div>
+</form>
+"
 
 class InstructionsPage extends AssessmentPage
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("content")
+    return properties
+
   updateFromGoogle: ->
     @loading = true
     googleSpreadsheet = new GoogleSpreadsheet()
@@ -116,6 +176,22 @@ class InstructionsPage extends AssessmentPage
       @loading = false
 
 class LettersPage extends AssessmentPage
+  constructor: (@letters) ->
+    super()
+    lettersCheckboxes = new JQueryCheckboxGroup()
+    lettersCheckboxes.checkboxes = for letter,index in @letters
+      checkbox = new JQueryCheckbox()
+      checkbox.unique_name = "checkbox_" + index
+      checkbox.content = letter
+      checkbox
+    @addTimer()
+    @content = lettersCheckboxes.three_way_render()
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("letters")
+    return properties
+
   updateFromGoogle: ->
     @loading = true
     googleSpreadsheet = new GoogleSpreadsheet()
@@ -128,13 +204,23 @@ class LettersPage extends AssessmentPage
         checkbox.unique_name = "checkbox_" + index
         checkbox.content = letter
         checkbox
-      @addTimer()
       @content = lettersCheckboxes.three_way_render()
       @loading = false
 
+LettersPage.deserialize = (pageObject) ->
+  lettersPage = new LettersPage(pageObject.letters)
+  lettersPage.load(pageObject)
+  return lettersPage
+  
+
 class JQueryCheckbox
   render: ->
-    Mustache.to_html(Template.JQueryCheckbox(),this)
+    Mustache.to_html(@_template(),this)
+
+  _template: -> "
+<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' />
+<label for='{{unique_name}}'>{{{content}}}</label>
+"
 
 class JQueryCheckboxGroup
   render: ->
@@ -162,26 +248,7 @@ class JQueryCheckboxGroup
 
     this.render() +
 # TODO rewrite as coffeescript and use jquery .live for binding click event
-    "<script>
-    $(':checkbox').click(function(){
-      var button = $($(this).siblings()[0]);
-      button.removeClass('ui-btn-active');
-      button.toggleClass(function(){
-        button = $(this);
-        if(button.is('.first_click')){
-          button.removeClass('first_click');
-          return 'second_click';
-        }
-        else if(button.is('.second_click')){
-          button.removeClass('second_click');
-          return '';
-        }
-        else{
-          return 'first_click';
-        }
-      });
-    });
-    </script>
+    "
     <style>
       #Letters label.first_click{
         background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
@@ -197,33 +264,5 @@ class JQueryCheckboxGroup
     </style>
     "
 
-Template.JQueryMobilePage = () ->  "
-<div data-role='page' id='{{{pageId}}'>
-  <div data-role='header'>
-    {{{header}}}
-  </div><!-- /header -->
-  <div data-role='content'>	
-    {{{controls}}}
-    {{{content}}}
-  </div><!-- /content -->
-  <div data-role='footer'>
-    {{{footer_text}}}
-  </div><!-- /header -->
-</div><!-- /page -->
-"
 
-Template.JQueryCheckbox = () -> "
-<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' />
-<label for='{{unique_name}}'>{{{content}}}</label>
-"
 
-Template.JQueryLogin = () -> "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='Enumia' />
-    <label for='password'>Password (not needed for demo):</label>
-    <input type='password' name='password' id='password' value='' />
-  </div>
-</form>
-"

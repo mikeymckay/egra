@@ -39,19 +39,32 @@ CouchDB["delete"] = function(documents) {
 $(document).ready(function() {
   module("EGRA");
   QUnit.testStart = function(name) {
-    console.log(name);
+    console.log("**" + name + "**");
     return localStorage.clear();
   };
   test("JQueryMobilePage", function() {
-    var expected_result, test_object;
-    expect(1);
-    test_object = new JQueryMobilePage();
-    test_object.pageId = "pageId";
-    test_object.footer = "footer_text";
-    test_object.header = "header";
-    test_object.content = "content";
+    var anotherJqueryMobilePage, expected_result, jqueryMobilePage;
+    expect(3);
+    jqueryMobilePage = new JQueryMobilePage();
+    jqueryMobilePage.pageId = "pageId";
+    jqueryMobilePage.footer = "footer_text";
+    jqueryMobilePage.header = "header";
+    jqueryMobilePage.content = "content";
     expected_result = "<div data-role='page' id='pageId'>  <div data-role='header'>    header  </div><!-- /header -->  <div data-role='content'>	        content  </div><!-- /content -->  <div data-role='footer'>    footer_text  </div><!-- /header --></div><!-- /page -->";
-    return equals(test_object.render(), expected_result);
+    equals(jqueryMobilePage.render(), expected_result);
+    equals(jqueryMobilePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "JQueryMobilePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
+    anotherJqueryMobilePage = JQueryMobilePage.deserialize(jqueryMobilePage.toJSON());
+    return equals(anotherJqueryMobilePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "JQueryMobilePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
   });
   test("JQueryCheckbox", function() {
     var expected_result, test_object;
@@ -74,11 +87,16 @@ $(document).ready(function() {
     expected_result = "<div data-role='content'>	  <form>    <fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'><input type='checkbox' name='unique_name' id='unique_name' class='custom' /><label for='unique_name'>content</label></fieldset>  </form></div>    ";
     return equals(test_object.render(), expected_result);
   });
+  test("LettersPage", function() {
+    var lettersPage;
+    lettersPage = new LettersPage(["a", "b"]);
+    return equals(lettersPage.render().length, 1633);
+  });
   test("Timer", function() {
     var expected_result, test_object;
     expect(1);
     test_object = new Timer();
-    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <a href='#' data-role='button'>start</a>  <a href='#' data-role='button'>stop</a>  <a href='#' data-role='button'>reset</a></div>";
+    expected_result = "<div class='timer'>  <span class='timer_seconds'>60</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
     return equals(test_object.render(), expected_result);
   });
   test("LocalStorage Save/Load/Delete", function() {
@@ -95,14 +113,11 @@ $(document).ready(function() {
       name: "Test EGRA Prototype",
       urlPathsForPages: ["Assessment.Test EGRA Prototype.Login"]
     }));
-    equal(localStorage["Assessment.Test EGRA Prototype.Login"], JSON.stringify({
-      header: "",
+    equal(JSON.parse(localStorage["Assessment.Test EGRA Prototype.Login"]), {
       pageId: "Login",
       pageType: "JQueryLogin",
-      assessment: assessment.toJSON(),
-      pageNumber: 0,
       urlPath: "Assessment.Test EGRA Prototype.Login"
-    }));
+    });
     anotherAssessment = Assessment.load("localstorage://Assessment.Test EGRA Prototype");
     equals(assessment.name, anotherAssessment.name);
     equals(assessment.pages[0].pageId, anotherAssessment.pages[0].pageId);
@@ -120,7 +135,7 @@ $(document).ready(function() {
       return Assessment.loadFromHTTP("testData/Assessment.TEST EGRA Prototype", function(result) {
         equal(result.pages.length, 3);
         console.log(result.render());
-        equal(result.render().length, 16682);
+        equal(result.render().length, 16101);
         return start();
       });
     });

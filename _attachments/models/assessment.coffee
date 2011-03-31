@@ -10,9 +10,10 @@ class Assessment
   changeName: (newName) ->
     @name = newName
     @urlPath = "Assessment.#{@name}"
+    @urlPathsForPages = []
     for page in @pages
       page.urlPath = @urlPath + "." + page.pageId
-      console.log page
+      @urlPathsForPages.push(page.urlPath)
 
   setPages: (pages) ->
     @pages = pages
@@ -20,6 +21,7 @@ class Assessment
     for page, index in @pages
       page.assessment = this
       page.pageNumber = index
+      page.previousPage = @pages[index - 1].pageId unless index == 0
       page.nextPage = @pages[index + 1].pageId unless pages.length == index + 1
       page.urlScheme = @urlScheme
       page.urlPath = @urlPath + "." + page.pageId

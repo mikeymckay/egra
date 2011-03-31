@@ -11,12 +11,13 @@ Assessment = (function() {
     var page, _i, _len, _ref, _results;
     this.name = newName;
     this.urlPath = "Assessment." + this.name;
+    this.urlPathsForPages = [];
     _ref = this.pages;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       page = _ref[_i];
       page.urlPath = this.urlPath + "." + page.pageId;
-      _results.push(console.log(page));
+      _results.push(this.urlPathsForPages.push(page.urlPath));
     }
     return _results;
   };
@@ -30,6 +31,9 @@ Assessment = (function() {
       page = _ref[index];
       page.assessment = this;
       page.pageNumber = index;
+      if (index !== 0) {
+        page.previousPage = this.pages[index - 1].pageId;
+      }
       if (pages.length !== index + 1) {
         page.nextPage = this.pages[index + 1].pageId;
       }

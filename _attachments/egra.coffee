@@ -2,6 +2,7 @@ $(document).bind "mobileinit", ->
   $.mobile.autoInitialize = false
 
 $(document).ready ->
+#  EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch()
   EarlyGradeReadingAssessment.loadFromCouch()
 
 class EarlyGradeReadingAssessment

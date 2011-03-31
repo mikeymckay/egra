@@ -12,9 +12,9 @@ class Scorer
   render: ->
     @id = "scorer"
     setInterval( this.update, 500)
-    Mustache.to_html(Template.Scorer(),this)
+    Mustache.to_html(@_template(),this)
 
-Template.Scorer = () -> "
+  _template: -> "
 <div class='scorer'>
   <small>
   Completed:<span id='completed'></span>

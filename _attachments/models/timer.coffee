@@ -1,7 +1,7 @@
 throw "No assessment loaded" if $.assessment is undefined
 
 # Live handler for buttons in timer control
-$("div.timer a").live 'click', (eventData) =>
+$("div.timer button").live 'click', (eventData) ->
   buttonPressed = eventData.target.innerHTML
 # Call the timer method that has the same name as the button just pressed, i.e. "start" 
   $.assessment.currentPage.timer[buttonPressed]()
@@ -43,14 +43,13 @@ class Timer
   render: ->
     @id = "timer"
     @seconds = 60
-    Mustache.to_html(Template.Timer(),this)
+    Mustache.to_html(@_template(),this)
 
-Template.Timer = () -> "
+  _template: -> "
 <div class='timer'>
   <span class='timer_seconds'>{{seconds}}</span>
-  <a href='#' data-role='button'>start</a>
-  <a href='#' data-role='button'>stop</a>
-  <a href='#' data-role='button'>reset</a>
+  <button>start</button>
+  <button>stop</button>
+  <button>reset</button>
 </div>
 "
-
