@@ -208,17 +208,21 @@ class LettersPage extends AssessmentPage
       @loading = false
 
   results: ->
-    letters = new Array()
+    results = {}
+    results.letters = new Array()
     # Initialize to all wrong
-    letters[i] = false for checkbox,index in $("#Letters label")
-    time_remain = @timer.seconds
-    auto_stop = true if @timer.seconds
-    attempted = null
+    results.letters[index] = false for checkbox,index in $("#Letters label")
+    results.time_remain = @timer.seconds
+    results.auto_stop = true if @timer.seconds
+    results.attempted = null
     for checkbox,index in $("#Letters label")
-      if checkbox.hasClass("second-click")
-        attempted = index
-        return
-      letters[i] = true unless checkbox.hasClass("first-click")
+      checkbox = $(checkbox)
+      if checkbox.hasClass("second_click")
+        results.attempted = index
+        return results
+      results.letters[index] = true unless checkbox.hasClass("first_click")
+
+    return results
 
     
 
@@ -258,13 +262,21 @@ class JQueryCheckboxGroup
     "
 
   three_way_render: ->
-    @first_click_color ?= "#FF0000"
-    @second_click_color ?= "#009900"
+    @first_click_color ?= "yellow"
+    @second_click_color ?= "blue"
 
     this.render() +
 # TODO rewrite as coffeescript and use jquery .live for binding click event
     "
     <style>
+      #Letters .ui-checkbox span.show{
+        color: black;
+      }
+
+      #Letters .ui-checkbox span{
+        color: transparent;
+      }
+
       #Letters label.first_click{
         background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@first_click_color}')\"; 

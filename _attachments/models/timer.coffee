@@ -20,6 +20,7 @@ class Timer
     @elementLocation = "div##{page.pageId} div.timer"
 
   start: ->
+    @showLetters()
     return if @running
     @running = true
     @tick_value = 1
@@ -30,6 +31,7 @@ class Timer
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
+    @hideLetters()
     @running = false
     clearInterval(@intervalId)
 
@@ -44,6 +46,12 @@ class Timer
     @id = "timer"
     @seconds = 60
     Mustache.to_html(@_template(),this)
+
+  hideLetters: ->
+    $("##{@pageId} label").removeClass("show")
+
+  showLetters: ->
+    $("##{@pageId} label").addClass("show")
 
   _template: -> "
 <div class='timer'>

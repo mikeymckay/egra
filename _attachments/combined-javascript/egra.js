@@ -886,28 +886,32 @@ LettersPage = (function() {
     }, this));
   };
   LettersPage.prototype.results = function() {
-    var attempted, auto_stop, checkbox, index, letters, time_remain, _len, _len2, _ref, _ref2, _results;
-    letters = new Array();
+    var checkbox, index, results, _len, _len2, _ref, _ref2;
+    results = {};
+    results.letters = new Array();
     _ref = $("#Letters label");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       checkbox = _ref[index];
-      letters[i] = false;
+      results.letters[index] = false;
     }
-    time_remain = this.timer.seconds;
+    results.time_remain = this.timer.seconds;
     if (this.timer.seconds) {
-      auto_stop = true;
+      results.auto_stop = true;
     }
-    attempted = null;
+    results.attempted = null;
     _ref2 = $("#Letters label");
-    _results = [];
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       checkbox = _ref2[index];
-      if (checkbox.hasClass("second-click")) {
-        return;
+      checkbox = $(checkbox);
+      if (checkbox.hasClass("second_click")) {
+        results.attempted = index;
+        return results;
       }
-      _results.push(!checkbox.hasClass("first-click") ? letters[i] = true : void 0);
+      if (!checkbox.hasClass("first_click")) {
+        results.letters[index] = true;
+      }
     }
-    return _results;
+    return results;
   };
   return LettersPage;
 })();
@@ -950,9 +954,9 @@ JQueryCheckboxGroup = (function() {
   };
   JQueryCheckboxGroup.prototype.three_way_render = function() {
     var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#FF0000";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#009900";
-    return this.render() + ("    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
+    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "yellow";
+    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "blue";
+    return this.render() + ("    <style>      #Letters .ui-checkbox span.show{        color: black;      }      #Letters .ui-checkbox span{        color: transparent;      }      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
   };
   return JQueryCheckboxGroup;
 })();var Scorer;
@@ -1011,6 +1015,7 @@ Timer = (function() {
   };
   Timer.prototype.start = function() {
     var decrement;
+    this.showLetters();
     if (this.running) {
       return;
     }
@@ -1026,6 +1031,7 @@ Timer = (function() {
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
+    this.hideLetters();
     this.running = false;
     return clearInterval(this.intervalId);
   };
@@ -1040,6 +1046,12 @@ Timer = (function() {
     this.id = "timer";
     this.seconds = 60;
     return Mustache.to_html(this._template(), this);
+  };
+  Timer.prototype.hideLetters = function() {
+    return $("#" + this.pageId + " label").removeClass("show");
+  };
+  Timer.prototype.showLetters = function() {
+    return $("#" + this.pageId + " label").addClass("show");
   };
   Timer.prototype._template = function() {
     return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
