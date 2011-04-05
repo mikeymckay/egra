@@ -66,6 +66,27 @@ $(document).ready(function() {
       urlScheme: void 0
     });
   });
+  test("DateTimePage", function() {
+    var anotherDateTimePage, dateTimePage, expected_result;
+    expect(3);
+    dateTimePage = new DateTimePage();
+    dateTimePage.pageId = "pageId";
+    expected_result = "    <div data-role='page' id='pageId'>        <div data-role='header'>        <a href='#'></a>        <h1>pageId</h1>         </div><!-- /header -->        <div data-role='content'>        <form>          <div data-role='fieldcontain'>            <label for='year'>Year:</label>            <input type='number' name='year' id='year' />            <label for='month'>Month:</label>            <input type='text' name='month' id='month' />            <label for='day'>Day:</label>            <input type='number' name='date' id='date' />            <label for='time'>Time:</label>            <input type='number' name='time' id='time' />          </div>        </form>      </div><!-- /content -->        <div data-role='footer'>        <a href='#'></a>      </div><!-- /header -->    </div><!-- /page -->";
+    equals(dateTimePage.render(), expected_result);
+    equals(dateTimePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "DateTimePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
+    anotherDateTimePage = JQueryMobilePage.deserialize(dateTimePage.toJSON());
+    return equals(anotherDateTimePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "DateTimePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
+  });
   test("JQueryCheckbox", function() {
     var expected_result, test_object;
     expect(1);

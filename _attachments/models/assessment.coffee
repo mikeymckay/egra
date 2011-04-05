@@ -27,13 +27,17 @@ class Assessment
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
 
+  insertPage: (page, pageNumber) ->
+    @pages.splice(pageNumber,0,page)
+    @setPages(@pages)
+
   url: ->
     "#{@urlScheme}://#{@urlPath}"
 
   toJSON: ->
-   JSON.stringify
-     name: @name,
-     urlPathsForPages: @urlPathsForPages
+    JSON.stringify
+      name: @name,
+      urlPathsForPages: @urlPathsForPages
 
   save: ->
     switch @urlScheme

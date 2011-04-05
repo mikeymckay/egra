@@ -2,12 +2,45 @@ $(document).bind "mobileinit", ->
   $.mobile.autoInitialize = false
 
 $(document).ready ->
-#  EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch()
-  EarlyGradeReadingAssessment.loadFromCouch()
+  switch document.location.search
+    when "?deleteFromCouch=true"
+      EarlyGradeReadingAssessment.deleteFromCouch ->
+        EarlyGradeReadingAssessment.showMenu()
+    when "?loadFromTestDataSaveToCouch=true"
+      EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch ->
+        EarlyGradeReadingAssessment.showMenu()
+    when "?showMenu=true"
+      EarlyGradeReadingAssessment.showMenu()
+    else
+      EarlyGradeReadingAssessment.loadFromCouch()
+
 
 class EarlyGradeReadingAssessment
-
-# These are different ways of loading the data
+EarlyGradeReadingAssessment.showMenu = ->
+  url = "/egra/_all_docs"
+  $.ajax
+    url: url,
+    async: true,
+    type: 'GET',
+    dataType: 'json',
+    success: (result) =>
+      documents = ("<a href='/egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
+      $("body").html("
+        <div data-role='page' id='menu'>
+          <div data-role='header'>
+            <h1>Admin Menu</h1>
+          </div><!-- /header -->
+          <div data-role='content'>	
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            #{documents.join("<br/>")}
+          </div><!-- /content -->
+        </div><!-- /page -->
+      ")
+      $.mobile.initializePage()
+    error: ->
+      throw "Could not GET #{url}"
 
 EarlyGradeReadingAssessment.loadFromCouch = ->
   Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
@@ -15,7 +48,29 @@ EarlyGradeReadingAssessment.loadFromCouch = ->
       $("body").html(result)
       $.mobile.initializePage()
 
-EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = (callback) ->
+EarlyGradeReadingAssessment.deleteFromCouch = (callback) ->
+  url = "/egra/_all_docs"
+  $.ajax
+    url: url,
+    async: true,
+    type: 'GET',
+    dataType: 'json',
+    success: (result) =>
+      for document in result.rows
+        if document.id.match(/Assessment.EGRA/)
+          url = "/egra/#{document.id}?rev=#{document.value.rev}"
+          $.ajax
+            url: url
+            async: true
+            type: 'DELETE'
+            error: ->
+              throw "Could not DELETE #{url}"
+    error: ->
+      throw "Could not GET #{url}"
+    complete: =>
+      callback() if callback?
+
+EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch = (callback) ->
   Assessment.loadFromHTTP "tests/testData/Assessment.TEST EGRA Prototype", (assessment) ->
     assessment.changeName("EGRA Prototype")
     assessment.saveToCouchDB(callback)

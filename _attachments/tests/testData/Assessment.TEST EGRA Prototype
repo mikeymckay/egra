@@ -1,1 +1,12 @@
-{"_id":"Assessment.TEST EGRA Prototype","name":"TEST EGRA Prototype","urlPathsForPages":["Assessment.TEST EGRA Prototype.Login","Assessment.TEST EGRA Prototype.Instructions","Assessment.TEST EGRA Prototype.Letters"]}
+{
+  "name": "TEST EGRA Prototype",
+  "_id": "Assessment.TEST EGRA Prototype",
+  "urlPathsForPages": [
+    "Assessment.TEST EGRA Prototype.Login",
+    "Assessment.TEST EGRA Prototype.DateTime",
+    "Assessment.TEST EGRA Prototype.School",
+    "Assessment.TEST EGRA Prototype.Instructions",
+    "Assessment.TEST EGRA Prototype.StudentInformation",
+    "Assessment.TEST EGRA Prototype.Letters"
+  ]
+}

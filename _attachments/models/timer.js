@@ -57,10 +57,11 @@ Timer = (function() {
     return Mustache.to_html(this._template(), this);
   };
   Timer.prototype.hideLetters = function() {
-    return $("#" + this.pageId + " label").removeClass("show");
+    return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
   };
   Timer.prototype.showLetters = function() {
-    return $("#" + this.pageId + " label").addClass("show");
+    console.log("$('#" + this.page.pageId + " .ui-checkbox spanr').addClass('show')");
+    return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
     return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";

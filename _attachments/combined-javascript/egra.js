@@ -384,6 +384,10 @@ Assessment = (function() {
     }
     return _results;
   };
+  Assessment.prototype.insertPage = function(page, pageNumber) {
+    this.pages.splice(pageNumber, 0, page);
+    return this.setPages(this.pages);
+  };
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
   };
@@ -614,7 +618,7 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};var AssessmentPage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage;
+};var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, SchoolPage, StudentInformationPage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -690,7 +694,6 @@ JQueryMobilePage = (function() {
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
-    console.log(url);
     return $.ajax({
       url: url,
       async: true,
@@ -740,6 +743,10 @@ JQueryMobilePage.deserialize = function(pageObject) {
   switch (pageObject.pageType) {
     case "LettersPage":
       return LettersPage.deserialize(pageObject);
+    case "SchoolPage":
+      return SchoolPage.deserialize(pageObject);
+    case "StudentInformationPage":
+      return StudentInformationPage.deserialize(pageObject);
     default:
       result = new window[pageObject.pageType]();
       result.load(pageObject);
@@ -794,8 +801,7 @@ AssessmentPage = (function() {
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    this.scorer = new Scorer();
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render() + this.scorer.render()) + "</div>";
+    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render()) + "</div>";
   };
   return AssessmentPage;
 })();
@@ -806,6 +812,103 @@ JQueryLogin = (function() {
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
   }
   return JQueryLogin;
+})();
+StudentInformationPage = (function() {
+  function StudentInformationPage() {
+    StudentInformationPage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(StudentInformationPage, AssessmentPage);
+  StudentInformationPage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
+    properties.push("radioButtons");
+    return properties;
+  };
+  StudentInformationPage.prototype._studentInformationTemplate = function() {
+    return "    <form>      {{#radioButtons}}        <fieldset data-type='{{type}}' data-role='controlgroup'>          <legend>{{label}}</legend>          {{#options}}            <label for='{{.}}'>{{.}}</label>            <input type='radio' name='{{.}}' id='{{.}}'></input>          {{/options}}        </fieldset>      {{/radioButtons}}    </form>  ";
+  };
+  return StudentInformationPage;
+})();
+StudentInformationPage.deserialize = function(pageObject) {
+  var studentInformationPage;
+  studentInformationPage = new StudentInformationPage();
+  studentInformationPage.load(pageObject);
+  studentInformationPage.content = Mustache.to_html(studentInformationPage._studentInformationTemplate(), studentInformationPage);
+  return studentInformationPage;
+};
+SchoolPage = (function() {
+  __extends(SchoolPage, AssessmentPage);
+  function SchoolPage(schools) {
+    this.schools = schools;
+    SchoolPage.__super__.constructor.call(this);
+    $("div#" + this.pageId + " li").live("mouseup", __bind(function(eventData) {
+      var dataAttribute, selectedElement, _i, _len, _ref, _results;
+      selectedElement = $(eventData.currentTarget);
+      _ref = ["name", "province", "district", "schoolId"];
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        dataAttribute = _ref[_i];
+        _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
+      }
+      return _results;
+    }, this));
+  }
+  SchoolPage.prototype.propertiesForSerialization = function() {
+    var properties, property, _i, _len, _ref;
+    properties = SchoolPage.__super__.propertiesForSerialization.call(this);
+    properties.push("schools");
+    properties.push("selectNameText");
+    _ref = ["name", "province", "district", "schoolId"];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      property = _ref[_i];
+      properties.push(property + "Text");
+    }
+    return properties;
+  };
+  SchoolPage.prototype._schoolTemplate = function() {
+    var dataAttribute, inputElements, listAttributes, listElement, properties, _i, _j, _len, _len2;
+    properties = ["name", "province", "district", "schoolId"];
+    listAttributes = "";
+    for (_i = 0, _len = properties.length; _i < _len; _i++) {
+      dataAttribute = properties[_i];
+      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
+    }
+    listElement = "<li " + listAttributes + ">{{name}}</li>";
+    inputElements = "";
+    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
+      dataAttribute = properties[_j];
+      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
+    }
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+  };
+  return SchoolPage;
+})();
+SchoolPage.deserialize = function(pageObject) {
+  var schoolPage;
+  schoolPage = new SchoolPage(pageObject.schools);
+  schoolPage.load(pageObject);
+  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
+  return schoolPage;
+};
+DateTimePage = (function() {
+  __extends(DateTimePage, AssessmentPage);
+  function DateTimePage() {
+    DateTimePage.__super__.constructor.call(this);
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
+    $("div#" + this.pageId).live("pageshow", __bind(function() {
+      var dateTime, minutes;
+      dateTime = new Date();
+      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
+      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
+      $("div#" + this.pageId + " #day").val(dateTime.getDate());
+      minutes = dateTime.getMinutes();
+      if (minutes < 10) {
+        minutes = "0" + minutes;
+      }
+      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
+    }, this));
+  }
+  return DateTimePage;
 })();
 InstructionsPage = (function() {
   function InstructionsPage() {
@@ -1048,10 +1151,11 @@ Timer = (function() {
     return Mustache.to_html(this._template(), this);
   };
   Timer.prototype.hideLetters = function() {
-    return $("#" + this.pageId + " label").removeClass("show");
+    return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
   };
   Timer.prototype.showLetters = function() {
-    return $("#" + this.pageId + " label").addClass("show");
+    console.log("$('#" + this.page.pageId + " .ui-checkbox spanr').addClass('show')");
+    return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
     return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
@@ -1183,16 +1287,58 @@ GoogleSpreadsheet.callbackCells = function(data) {
 };
 /* TODO (Handle row based data)
 GoogleSpreadsheet.callbackList = (data) ->*/var EarlyGradeReadingAssessment;
+var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $(document).bind("mobileinit", function() {
   return $.mobile.autoInitialize = false;
 });
 $(document).ready(function() {
-  return EarlyGradeReadingAssessment.loadFromCouch();
+  switch (document.location.search) {
+    case "?deleteFromCouch=true":
+      return EarlyGradeReadingAssessment.deleteFromCouch(function() {
+        return EarlyGradeReadingAssessment.showMenu();
+      });
+    case "?loadFromTestDataSaveToCouch=true":
+      return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
+        return EarlyGradeReadingAssessment.showMenu();
+      });
+    case "?showMenu=true":
+      return EarlyGradeReadingAssessment.showMenu();
+    default:
+      return EarlyGradeReadingAssessment.loadFromCouch();
+  }
 });
 EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
+EarlyGradeReadingAssessment.showMenu = function() {
+  var url;
+  url = "/egra/_all_docs";
+  return $.ajax({
+    url: url,
+    async: true,
+    type: 'GET',
+    dataType: 'json',
+    success: __bind(function(result) {
+      var couchDocument, documents;
+      documents = (function() {
+        var _i, _len, _ref, _results;
+        _ref = result.rows;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          couchDocument = _ref[_i];
+          _results.push("<a href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+        }
+        return _results;
+      })();
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->        </div><!-- /page -->      ");
+      return $.mobile.initializePage();
+    }, this),
+    error: function() {
+      throw "Could not GET " + url;
+    }
+  });
+};
 EarlyGradeReadingAssessment.loadFromCouch = function() {
   return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
     return assessment.render(function(result) {
@@ -1201,7 +1347,42 @@ EarlyGradeReadingAssessment.loadFromCouch = function() {
     });
   });
 };
-EarlyGradeReadingAssessment.loadFromHttpRenameSaveToCouch = function(callback) {
+EarlyGradeReadingAssessment.deleteFromCouch = function(callback) {
+  var url;
+  url = "/egra/_all_docs";
+  return $.ajax({
+    url: url,
+    async: true,
+    type: 'GET',
+    dataType: 'json',
+    success: __bind(function(result) {
+      var document, _i, _len, _ref, _results;
+      _ref = result.rows;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        document = _ref[_i];
+        _results.push(document.id.match(/Assessment.EGRA/) ? (url = "/egra/" + document.id + "?rev=" + document.value.rev, $.ajax({
+          url: url,
+          async: true,
+          type: 'DELETE',
+          error: function() {
+            throw "Could not DELETE " + url;
+          }
+        })) : void 0);
+      }
+      return _results;
+    }, this),
+    error: function() {
+      throw "Could not GET " + url;
+    },
+    complete: __bind(function() {
+      if (callback != null) {
+        return callback();
+      }
+    }, this)
+  });
+};
+EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch = function(callback) {
   return Assessment.loadFromHTTP("tests/testData/Assessment.TEST EGRA Prototype", function(assessment) {
     assessment.changeName("EGRA Prototype");
     return assessment.saveToCouchDB(callback);

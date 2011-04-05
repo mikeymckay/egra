@@ -1,4 +1,4 @@
-var AssessmentPage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage;
+var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, SchoolPage, StudentInformationPage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -74,7 +74,6 @@ JQueryMobilePage = (function() {
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
     url = $.couchDBDesignDocumentPath + this.urlPath;
-    console.log(url);
     return $.ajax({
       url: url,
       async: true,
@@ -124,6 +123,10 @@ JQueryMobilePage.deserialize = function(pageObject) {
   switch (pageObject.pageType) {
     case "LettersPage":
       return LettersPage.deserialize(pageObject);
+    case "SchoolPage":
+      return SchoolPage.deserialize(pageObject);
+    case "StudentInformationPage":
+      return StudentInformationPage.deserialize(pageObject);
     default:
       result = new window[pageObject.pageType]();
       result.load(pageObject);
@@ -178,8 +181,7 @@ AssessmentPage = (function() {
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    this.scorer = new Scorer();
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render() + this.scorer.render()) + "</div>";
+    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render()) + "</div>";
   };
   return AssessmentPage;
 })();
@@ -190,6 +192,103 @@ JQueryLogin = (function() {
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
   }
   return JQueryLogin;
+})();
+StudentInformationPage = (function() {
+  function StudentInformationPage() {
+    StudentInformationPage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(StudentInformationPage, AssessmentPage);
+  StudentInformationPage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
+    properties.push("radioButtons");
+    return properties;
+  };
+  StudentInformationPage.prototype._studentInformationTemplate = function() {
+    return "    <form>      {{#radioButtons}}        <fieldset data-type='{{type}}' data-role='controlgroup'>          <legend>{{label}}</legend>          {{#options}}            <label for='{{.}}'>{{.}}</label>            <input type='radio' name='{{.}}' id='{{.}}'></input>          {{/options}}        </fieldset>      {{/radioButtons}}    </form>  ";
+  };
+  return StudentInformationPage;
+})();
+StudentInformationPage.deserialize = function(pageObject) {
+  var studentInformationPage;
+  studentInformationPage = new StudentInformationPage();
+  studentInformationPage.load(pageObject);
+  studentInformationPage.content = Mustache.to_html(studentInformationPage._studentInformationTemplate(), studentInformationPage);
+  return studentInformationPage;
+};
+SchoolPage = (function() {
+  __extends(SchoolPage, AssessmentPage);
+  function SchoolPage(schools) {
+    this.schools = schools;
+    SchoolPage.__super__.constructor.call(this);
+    $("div#" + this.pageId + " li").live("mouseup", __bind(function(eventData) {
+      var dataAttribute, selectedElement, _i, _len, _ref, _results;
+      selectedElement = $(eventData.currentTarget);
+      _ref = ["name", "province", "district", "schoolId"];
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        dataAttribute = _ref[_i];
+        _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
+      }
+      return _results;
+    }, this));
+  }
+  SchoolPage.prototype.propertiesForSerialization = function() {
+    var properties, property, _i, _len, _ref;
+    properties = SchoolPage.__super__.propertiesForSerialization.call(this);
+    properties.push("schools");
+    properties.push("selectNameText");
+    _ref = ["name", "province", "district", "schoolId"];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      property = _ref[_i];
+      properties.push(property + "Text");
+    }
+    return properties;
+  };
+  SchoolPage.prototype._schoolTemplate = function() {
+    var dataAttribute, inputElements, listAttributes, listElement, properties, _i, _j, _len, _len2;
+    properties = ["name", "province", "district", "schoolId"];
+    listAttributes = "";
+    for (_i = 0, _len = properties.length; _i < _len; _i++) {
+      dataAttribute = properties[_i];
+      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
+    }
+    listElement = "<li " + listAttributes + ">{{name}}</li>";
+    inputElements = "";
+    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
+      dataAttribute = properties[_j];
+      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
+    }
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+  };
+  return SchoolPage;
+})();
+SchoolPage.deserialize = function(pageObject) {
+  var schoolPage;
+  schoolPage = new SchoolPage(pageObject.schools);
+  schoolPage.load(pageObject);
+  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
+  return schoolPage;
+};
+DateTimePage = (function() {
+  __extends(DateTimePage, AssessmentPage);
+  function DateTimePage() {
+    DateTimePage.__super__.constructor.call(this);
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
+    $("div#" + this.pageId).live("pageshow", __bind(function() {
+      var dateTime, minutes;
+      dateTime = new Date();
+      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
+      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
+      $("div#" + this.pageId + " #day").val(dateTime.getDate());
+      minutes = dateTime.getMinutes();
+      if (minutes < 10) {
+        minutes = "0" + minutes;
+      }
+      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
+    }, this));
+  }
+  return DateTimePage;
 })();
 InstructionsPage = (function() {
   function InstructionsPage() {

@@ -1,0 +1,54 @@
+{
+  "pageType": "StudentInformationPage",
+  "pageId": "StudentInformation",
+  "radioButtons": [
+    {
+      "label": "Grade",
+      "name": "grade",
+      "type": "horizontal",
+      "options": [
+        "1st",
+        "2nd",
+        "3rd"
+      ]
+    },
+    {
+      "label": "Class",
+      "name": "class",
+      "type": "horizontal",
+      "options": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "label": "Month of Birth",
+      "name": "monthOfBirth",
+      "type": "vertical",
+      "options": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    },
+    {
+      "label": "Gender",
+      "name": "gender",
+      "type": "horizontal",
+      "options": [
+        "Female",
+        "Male"
+      ]
+    }
+  ]
+}

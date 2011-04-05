@@ -48,10 +48,11 @@ class Timer
     Mustache.to_html(@_template(),this)
 
   hideLetters: ->
-    $("##{@pageId} label").removeClass("show")
+    $("##{@page.pageId} .ui-checkbox span").removeClass("show")
 
   showLetters: ->
-    $("##{@pageId} label").addClass("show")
+    console.log "$('##{@page.pageId} .ui-checkbox spanr').addClass('show')"
+    $("##{@page.pageId} .ui-checkbox span").addClass("show")
 
   _template: -> "
 <div class='timer'>

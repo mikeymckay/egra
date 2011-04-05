@@ -55,7 +55,6 @@ class JQueryMobilePage
     @urlScheme = "http"
     @urlPath = @urlPath.substring(@urlPath.indexOf("/")+1)
     url = $.couchDBDesignDocumentPath + @urlPath
-    console.log url
     $.ajax
       url: url,
       async: true,
@@ -99,10 +98,15 @@ class JQueryMobilePage
 </div><!-- /page -->
 "
 
+#TODO Fix this - why can't we use load?
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
     when "LettersPage"
       return LettersPage.deserialize(pageObject)
+    when "SchoolPage"
+      return SchoolPage.deserialize(pageObject)
+    when "StudentInformationPage"
+      return StudentInformationPage.deserialize(pageObject)
     else
       result = new window[pageObject.pageType]()
       result.load(pageObject)
@@ -141,10 +145,11 @@ class AssessmentPage extends JQueryMobilePage
   addTimer: ->
     @timer = new Timer()
     @timer.setPage(this)
-    @scorer = new Scorer()
+#    @scorer = new Scorer()
 #    @scorer.setPage(this)
 
-    @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
+    @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render()}</div>"
+    #@controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
 
 class JQueryLogin extends AssessmentPage
   constructor: ->
@@ -159,6 +164,125 @@ class JQueryLogin extends AssessmentPage
   </div>
 </form>
 "
+
+class StudentInformationPage extends AssessmentPage
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("radioButtons")
+    return properties
+
+  #TODO remove onClick, switch to live
+  _studentInformationTemplate: -> "
+    <form>
+      {{#radioButtons}}
+        <fieldset data-type='{{type}}' data-role='controlgroup'>
+          <legend>{{label}}</legend>
+          {{#options}}
+            <label for='{{.}}'>{{.}}</label>
+            <input type='radio' name='{{.}}' id='{{.}}'></input>
+          {{/options}}
+        </fieldset>
+      {{/radioButtons}}
+    </form>
+  "
+
+StudentInformationPage.deserialize = (pageObject) ->
+  studentInformationPage = new StudentInformationPage()
+  studentInformationPage.load(pageObject)
+  studentInformationPage.content = Mustache.to_html(studentInformationPage._studentInformationTemplate(),studentInformationPage)
+  return studentInformationPage
+
+class SchoolPage extends AssessmentPage
+  constructor: (@schools) ->
+    super()
+    $("div##{@pageId} li").live "mouseup", (eventData) =>
+      selectedElement = $(eventData.currentTarget)
+      for dataAttribute in ["name","province","district","schoolId"]
+        $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("schools")
+    properties.push("selectNameText")
+    properties.push(property+"Text") for property in ["name","province","district","schoolId"]
+    return properties
+
+  #TODO remove onClick, switch to live
+  _schoolTemplate: ->
+    properties = ["name","province","district","schoolId"]
+
+    listAttributes = ""
+    for dataAttribute in properties
+      listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
+    listElement = "<li #{listAttributes}>{{name}}</li>"
+
+    inputElements = ""
+    for dataAttribute in properties
+      inputElements += "
+      <div data-role='fieldcontain'>
+        <label for='#{dataAttribute}'>{{#{dataAttribute}Text}}</label>
+        <input type='text' name='#{dataAttribute}' id='#{dataAttribute}'></input>
+      </div>
+      "
+  
+    return "
+    <div>
+      <h4>
+        {{selectSchoolText}}
+      </h4>
+    </div>
+    <ul data-filter='true' data-role='listview'>
+      {{#schools}}
+        #{listElement}
+      {{/schools}}
+    </ul>
+    <br/>
+    <br/>
+    <form>
+      #{inputElements}
+    </form>
+  "
+
+SchoolPage.deserialize = (pageObject) ->
+  schoolPage = new SchoolPage(pageObject.schools)
+  schoolPage.load(pageObject)
+  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(),schoolPage)
+  return schoolPage
+
+#TODO Internationalize
+class DateTimePage extends AssessmentPage
+  constructor: ->
+    super()
+    @content = "
+<form>
+  <div data-role='fieldcontain'>
+    <label for='year'>Year:</label>
+    <input type='number' name='year' id='year' />
+  </div>
+  <div data-role='fieldcontain'>
+    <label for='month'>Month:</label>
+    <input type='text' name='month' id='month' />
+  </div>
+  <div data-role='fieldcontain'>
+    <label for='day'>Day:</label>
+    <input type='number' name='day' id='day' />
+  </div>
+  <div data-role='fieldcontain'>
+    <label for='time'>Time:</label>
+    <input type='number' name='time' id='time' />
+  </div>
+</form>
+"
+
+    $("div##{@pageId}").live "pageshow", =>
+      dateTime = new Date()
+      $("div##{@pageId} #year").val(dateTime.getFullYear())
+      $("div##{@pageId} #month").val(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dateTime.getMonth()])
+      $("div##{@pageId} #day").val(dateTime.getDate())
+      minutes = dateTime.getMinutes()
+      minutes = "0" + minutes if minutes < 10
+      $("div##{@pageId} #time").val(dateTime.getHours() + ":" + minutes)
+      
 
 class InstructionsPage extends AssessmentPage
   propertiesForSerialization: ->

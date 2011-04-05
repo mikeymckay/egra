@@ -1,0 +1,14 @@
+{
+  "pageId": "School",
+  "pageType": "SchoolPage",
+  "schools" : [
+    { "name" : "Anderson", "province": "Nevada", "district":"Washoe", "schoolId" : "2442"},
+    { "name" : "Swope", "province": "Nevada", "district": "Washoe", "schoolId" : "442"},
+    { "name" : "Manogue", "province": "Nevada", "district":"Carson", "schoolId" : "42"}
+  ],
+  "selectSchoolText" : "Select School",
+  "nameText" : "Name",
+  "provinceText" : "Province",
+  "districtText" : "District",
+  "schoolIdText" : "ID"
+}
