@@ -116,8 +116,9 @@ class Assessment
       # Make sure that whenever a new page is shown we have access
       # To the instantiated page object
       $('div').live 'pageshow', (event,ui) =>
+        console.log event
         for page in @pages
-          if page.pageId is document.location.hash.substr(1)
+          if page.pageId is $(event.currentTarget).attr('id')
             @currentPage = page
 
       result = for page,i in @pages

@@ -173,11 +173,12 @@ Assessment = (function() {
       $.assessment = this;
       $('div').live('pageshow', __bind(function(event, ui) {
         var page, _i, _len, _ref, _results;
+        console.log(event);
         _ref = this.pages;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
-          _results.push(page.pageId === document.location.hash.substr(1) ? this.currentPage = page : void 0);
+          _results.push(page.pageId === $(event.currentTarget).attr('id') ? this.currentPage = page : void 0);
         }
         return _results;
       }, this));

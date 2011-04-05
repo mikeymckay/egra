@@ -1,16 +1,3 @@
-$("#Letters label").live 'mouseup', (eventData) ->
-  checkbox = $(eventData.currentTarget)
-  checkbox.removeClass('ui-btn-active')
-  checkbox.toggleClass ->
-    if(checkbox.is('.first_click'))
-      checkbox.removeClass('first_click')
-      return 'second_click'
-    else if(checkbox.is('.second_click'))
-      checkbox.removeClass('second_click')
-      return ''
-    else
-      return 'first_click'
-
 class JQueryMobilePage
   constructor: ->
     @pageId = ""
@@ -93,7 +80,8 @@ class JQueryMobilePage
     {{{content}}}
   </div><!-- /content -->
   <div data-role='footer'>
-    <a href='\#{{nextPage}}'>{{nextPage}}</a>
+    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->
+    <button href='\#{{nextPage}}'>Next</button>
   </div><!-- /header -->
 </div><!-- /page -->
 "
@@ -151,6 +139,27 @@ class AssessmentPage extends JQueryMobilePage
     @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render()}</div>"
     #@controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
 
+##
+# By default we expect all input fields to be filled
+##
+  validate: ->
+    for inputElement in $("div##{@pageId} form input")
+      return false if $(inputElement).val() == ""
+    return true
+
+AssessmentPage.validateCurrentPageUpdateNextButton = ->
+  return unless $.assessment?
+  passedValidation = $.assessment.currentPage.validate()
+  $('div.ui-footer button').toggleClass("passedValidation", passedValidation)
+  $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b",passedValidation).toggleClass("ui-btn-up-c", !passedValidation)
+
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
+
+$('div.ui-footer button').live 'click', (event,ui) ->
+  button = $(event.currentTarget)
+  if button.hasClass("passedValidation")
+    $.mobile.changePage(button.attr("href"))
+
 class JQueryLogin extends AssessmentPage
   constructor: ->
     super()
@@ -164,32 +173,33 @@ class JQueryLogin extends AssessmentPage
   </div>
 </form>
 "
-
 class StudentInformationPage extends AssessmentPage
   propertiesForSerialization: ->
     properties = super()
     properties.push("radioButtons")
     return properties
 
-  #TODO remove onClick, switch to live
-  _studentInformationTemplate: -> "
-    <form>
-      {{#radioButtons}}
-        <fieldset data-type='{{type}}' data-role='controlgroup'>
-          <legend>{{label}}</legend>
-          {{#options}}
-            <label for='{{.}}'>{{.}}</label>
-            <input type='radio' name='{{.}}' id='{{.}}'></input>
-          {{/options}}
-        </fieldset>
-      {{/radioButtons}}
-    </form>
-  "
+  validate: ->
+    return $("#StudentInformation input:'radio':checked").length == 4
+
+StudentInformationPage.template = Handlebars.compile "
+  <form>
+    {{#radioButtons}}
+      <fieldset data-type='{{type}}' data-role='controlgroup'>
+        <legend>{{label}}</legend>
+        {{#options}}
+          <label for='{{.}}'>{{.}}</label>
+          <input type='radio' name='{{../name}}' id='{{.}}'></input>
+        {{/options}}
+      </fieldset>
+    {{/radioButtons}}
+  </form>
+"
 
 StudentInformationPage.deserialize = (pageObject) ->
   studentInformationPage = new StudentInformationPage()
   studentInformationPage.load(pageObject)
-  studentInformationPage.content = Mustache.to_html(studentInformationPage._studentInformationTemplate(),studentInformationPage)
+  studentInformationPage.content = StudentInformationPage.template(studentInformationPage)
   return studentInformationPage
 
 class SchoolPage extends AssessmentPage
@@ -242,6 +252,11 @@ class SchoolPage extends AssessmentPage
       #{inputElements}
     </form>
   "
+
+  validate: ->
+    for inputElement in $("div##{@pageId} form div.ui-field-contain input")
+      return false if $(inputElement).val() == ""
+    return true
 
 SchoolPage.deserialize = (pageObject) ->
   schoolPage = new SchoolPage(pageObject.schools)
@@ -355,6 +370,19 @@ LettersPage.deserialize = (pageObject) ->
   lettersPage.load(pageObject)
   return lettersPage
   
+$("#Letters label").live 'mouseup', (eventData) ->
+  checkbox = $(eventData.currentTarget)
+  checkbox.removeClass('ui-btn-active')
+  checkbox.toggleClass ->
+    if(checkbox.is('.first_click'))
+      checkbox.removeClass('first_click')
+      return 'second_click'
+    else if(checkbox.is('.second_click'))
+      checkbox.removeClass('second_click')
+      return ''
+    else
+      return 'first_click'
+
 
 class JQueryCheckbox
   render: ->
@@ -386,34 +414,35 @@ class JQueryCheckboxGroup
     "
 
   three_way_render: ->
-    @first_click_color ?= "yellow"
-    @second_click_color ?= "blue"
+    @first_click_color ?= "#F7C942"
+    @second_click_color ?= "#5E87B0"
 
-    this.render() +
-# TODO rewrite as coffeescript and use jquery .live for binding click event
-    "
-    <style>
-      #Letters .ui-checkbox span.show{
-        color: black;
-      }
-
-      #Letters .ui-checkbox span{
-        color: transparent;
-      }
-
-      #Letters label.first_click{
-        background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
-        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@first_click_color}')\"; 
-      }
-      #Letters label.second_click{
-        background-image: -moz-linear-gradient(top, #FFFFFF, #{@second_click_color}); 
-        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@second_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@second_click_color}')\";
-      }
-      #Letters .ui-btn-active{
-        background-image: none;
-      }
-    </style>
-    "
-
-
-
+    this.render()
+#    this.render() +
+## TODO rewrite as coffeescript and use jquery .live for binding click event
+#    "
+#    <style>
+#      #Letters .ui-checkbox span.show{
+#        color: black;
+#      }
+#
+#      #Letters .ui-checkbox span{
+#        color: transparent;
+#      }
+#
+#      #Letters label.first_click{
+#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
+#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@first_click_color}')\"; 
+#      }
+#      #Letters label.second_click{
+#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@second_click_color}); 
+#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@second_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@second_click_color}')\";
+#      }
+#      #Letters .ui-btn-active{
+#        background-image: none;
+#      }
+#    </style>
+#    "
+#
+#
+#

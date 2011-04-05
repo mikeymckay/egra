@@ -514,11 +514,12 @@ Assessment = (function() {
       $.assessment = this;
       $('div').live('pageshow', __bind(function(event, ui) {
         var page, _i, _len, _ref, _results;
+        console.log(event);
         _ref = this.pages;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
-          _results.push(page.pageId === document.location.hash.substr(1) ? this.currentPage = page : void 0);
+          _results.push(page.pageId === $(event.currentTarget).attr('id') ? this.currentPage = page : void 0);
         }
         return _results;
       }, this));
@@ -627,22 +628,6 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
-$("#Letters label").live('mouseup', function(eventData) {
-  var checkbox;
-  checkbox = $(eventData.currentTarget);
-  checkbox.removeClass('ui-btn-active');
-  return checkbox.toggleClass(function() {
-    if (checkbox.is('.first_click')) {
-      checkbox.removeClass('first_click');
-      return 'second_click';
-    } else if (checkbox.is('.second_click')) {
-      checkbox.removeClass('second_click');
-      return '';
-    } else {
-      return 'first_click';
-    }
-  });
-});
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
     this.pageId = "";
@@ -734,7 +719,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>{{previousPage}}</a>    <h1>{{pageId}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <a href='\#{{nextPage}}'>{{nextPage}}</a>  </div><!-- /header --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>{{previousPage}}</a>    <h1>{{pageId}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
   };
   return JQueryMobilePage;
 })();
@@ -803,8 +788,36 @@ AssessmentPage = (function() {
     this.timer.setPage(this);
     return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render()) + "</div>";
   };
+  AssessmentPage.prototype.validate = function() {
+    var inputElement, _i, _len, _ref;
+    _ref = $("div#" + this.pageId + " form input");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      inputElement = _ref[_i];
+      if ($(inputElement).val() === "") {
+        return false;
+      }
+    }
+    return true;
+  };
   return AssessmentPage;
 })();
+AssessmentPage.validateCurrentPageUpdateNextButton = function() {
+  var passedValidation;
+  if ($.assessment == null) {
+    return;
+  }
+  passedValidation = $.assessment.currentPage.validate();
+  $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
+  return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
+};
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
+$('div.ui-footer button').live('click', function(event, ui) {
+  var button;
+  button = $(event.currentTarget);
+  if (button.hasClass("passedValidation")) {
+    return $.mobile.changePage(button.attr("href"));
+  }
+});
 JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
@@ -824,16 +837,17 @@ StudentInformationPage = (function() {
     properties.push("radioButtons");
     return properties;
   };
-  StudentInformationPage.prototype._studentInformationTemplate = function() {
-    return "    <form>      {{#radioButtons}}        <fieldset data-type='{{type}}' data-role='controlgroup'>          <legend>{{label}}</legend>          {{#options}}            <label for='{{.}}'>{{.}}</label>            <input type='radio' name='{{.}}' id='{{.}}'></input>          {{/options}}        </fieldset>      {{/radioButtons}}    </form>  ";
+  StudentInformationPage.prototype.validate = function() {
+    return $("#StudentInformation input:'radio':checked").length === 4;
   };
   return StudentInformationPage;
 })();
+StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
 StudentInformationPage.deserialize = function(pageObject) {
   var studentInformationPage;
   studentInformationPage = new StudentInformationPage();
   studentInformationPage.load(pageObject);
-  studentInformationPage.content = Mustache.to_html(studentInformationPage._studentInformationTemplate(), studentInformationPage);
+  studentInformationPage.content = StudentInformationPage.template(studentInformationPage);
   return studentInformationPage;
 };
 SchoolPage = (function() {
@@ -880,6 +894,17 @@ SchoolPage = (function() {
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
     return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+  };
+  SchoolPage.prototype.validate = function() {
+    var inputElement, _i, _len, _ref;
+    _ref = $("div#" + this.pageId + " form div.ui-field-contain input");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      inputElement = _ref[_i];
+      if ($(inputElement).val() === "") {
+        return false;
+      }
+    }
+    return true;
   };
   return SchoolPage;
 })();
@@ -1024,6 +1049,22 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
+$("#Letters label").live('mouseup', function(eventData) {
+  var checkbox;
+  checkbox = $(eventData.currentTarget);
+  checkbox.removeClass('ui-btn-active');
+  return checkbox.toggleClass(function() {
+    if (checkbox.is('.first_click')) {
+      checkbox.removeClass('first_click');
+      return 'second_click';
+    } else if (checkbox.is('.second_click')) {
+      checkbox.removeClass('second_click');
+      return '';
+    } else {
+      return 'first_click';
+    }
+  });
+});
 JQueryCheckbox = (function() {
   function JQueryCheckbox() {}
   JQueryCheckbox.prototype.render = function() {
@@ -1057,9 +1098,9 @@ JQueryCheckboxGroup = (function() {
   };
   JQueryCheckboxGroup.prototype.three_way_render = function() {
     var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "yellow";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "blue";
-    return this.render() + ("    <style>      #Letters .ui-checkbox span.show{        color: black;      }      #Letters .ui-checkbox span{        color: transparent;      }      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
+    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#F7C942";
+    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#5E87B0";
+    return this.render();
   };
   return JQueryCheckboxGroup;
 })();var Scorer;
