@@ -72,7 +72,7 @@ class JQueryMobilePage
   _template: -> "
 <div data-role='page' id='{{{pageId}}'>
   <div data-role='header'>
-    <a href='\#{{previousPage}}'>{{previousPage}}</a>
+    <a href='\#{{previousPage}}'>Back</a>
     <h1>{{pageId}}</h1>
   </div><!-- /header -->
   <div data-role='content'>	
@@ -168,7 +168,7 @@ class JQueryLogin extends AssessmentPage
   <div data-role='fieldcontain'>
     <label for='username'>Username:</label>
     <input type='text' name='username' id='username' value='Enumia' />
-    <label for='password'>Password (not needed for demo):</label>
+    <label for='password'>Password:</label>
     <input type='password' name='password' id='password' value='' />
   </div>
 </form>
