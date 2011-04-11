@@ -16,6 +16,10 @@ class JQueryMobilePage
     "urlScheme"
   ]
 
+  name: ->
+    # Insert spaces and do proper casing
+    @pageId.underscore().titleize()
+
   toJSON: ->
     object = {}
     for property in @propertiesForSerialization()
@@ -73,7 +77,7 @@ class JQueryMobilePage
 <div data-role='page' id='{{{pageId}}'>
   <div data-role='header'>
     <a href='\#{{previousPage}}'>Back</a>
-    <h1>{{pageId}}</h1>
+    <h1>{{name}}</h1>
   </div><!-- /header -->
   <div data-role='content'>	
     {{{controls}}}
@@ -136,7 +140,7 @@ class AssessmentPage extends JQueryMobilePage
 #    @scorer = new Scorer()
 #    @scorer.setPage(this)
 
-    @controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render()}</div>"
+    @controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>#{@timer.render()}</div>"
     #@controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
 
 ##
@@ -180,7 +184,7 @@ class StudentInformationPage extends AssessmentPage
     return properties
 
   validate: ->
-    return $("#StudentInformation input:'radio':checked").length == 4
+    return $("#StudentInformation input:'radio':checked").length == 5
 
 StudentInformationPage.template = Handlebars.compile "
   <form>

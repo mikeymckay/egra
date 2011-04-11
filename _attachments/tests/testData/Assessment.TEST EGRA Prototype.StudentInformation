@@ -23,10 +23,39 @@
       ]
     },
     {
+      "label": "Gender",
+      "name": "gender",
+      "type": "horizontal",
+      "options": [
+        "Female",
+        "Male"
+      ]
+    },
+    {
+      "label": "Year of birth",
+      "name": "yearOfBirth",
+      "type": "horizontal",
+      "options": [
+        "Unknown",
+        "1997",
+        "1998",
+        "1999",
+        "2000",
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005",
+        "2006",
+        "2007"
+      ]
+    },
+    {
       "label": "Month of Birth",
       "name": "monthOfBirth",
       "type": "vertical",
       "options": [
+        "Unknown",
         "January",
         "February",
         "March",
@@ -39,15 +68,6 @@
         "October",
         "November",
         "December"
-      ]
-    },
-    {
-      "label": "Gender",
-      "name": "gender",
-      "type": "horizontal",
-      "options": [
-        "Female",
-        "Male"
       ]
     }
   ]

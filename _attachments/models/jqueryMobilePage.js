@@ -18,6 +18,9 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype.propertiesForSerialization = function() {
     return ["pageId", "pageType", "urlPath", "urlScheme"];
   };
+  JQueryMobilePage.prototype.name = function() {
+    return this.pageId.underscore().titleize();
+  };
   JQueryMobilePage.prototype.toJSON = function() {
     var object, property, _i, _len, _ref;
     object = {};
@@ -98,7 +101,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{pageId}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
   };
   return JQueryMobilePage;
 })();
@@ -165,7 +168,7 @@ AssessmentPage = (function() {
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render()) + "</div>";
+    return this.controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>" + (this.timer.render()) + "</div>";
   };
   AssessmentPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -217,7 +220,7 @@ StudentInformationPage = (function() {
     return properties;
   };
   StudentInformationPage.prototype.validate = function() {
-    return $("#StudentInformation input:'radio':checked").length === 4;
+    return $("#StudentInformation input:'radio':checked").length === 5;
   };
   return StudentInformationPage;
 })();
