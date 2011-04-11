@@ -152,7 +152,7 @@ class AssessmentPage extends JQueryMobilePage
     return true
 
   results: ->
-    return {}
+    return $("div##{@pageId} form").serialize()
 
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
@@ -273,8 +273,8 @@ SchoolPage.deserialize = (pageObject) ->
 
 #TODO Internationalize
 class DateTimePage extends AssessmentPage
-  constructor: ->
-    super()
+
+  load: (data) ->
     @content = "
 <form>
   <div data-role='fieldcontain'>
@@ -295,7 +295,7 @@ class DateTimePage extends AssessmentPage
   </div>
 </form>
 "
-
+    super(data)
     $("div##{@pageId}").live "pageshow", =>
       dateTime = new Date()
       $("div##{@pageId} #year").val(dateTime.getFullYear())
@@ -307,10 +307,12 @@ class DateTimePage extends AssessmentPage
       
 
 class ResultsPage extends AssessmentPage
-  constructor: ->
-    super()
-    $("div##{@pageId} div[data-role='content'").html(JSON.stringify($.assessment.results))
 
+  load: (data) ->
+    super(data)
+    $("div##{@pageId}").live "pageshow", =>
+      console.log JSON.stringify($.assessment.results())
+      $("div##{@pageId} div[data-role='content']").html( "<pre>" + JSON.stringify($.assessment.results(),null,2) + "</pre>" )
 
 class InstructionsPage extends AssessmentPage
   propertiesForSerialization: ->

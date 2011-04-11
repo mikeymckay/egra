@@ -182,7 +182,7 @@ AssessmentPage = (function() {
     return true;
   };
   AssessmentPage.prototype.results = function() {
-    return {};
+    return $("div#" + this.pageId + " form").serialize();
   };
   return AssessmentPage;
 })();
@@ -301,11 +301,14 @@ SchoolPage.deserialize = function(pageObject) {
   return schoolPage;
 };
 DateTimePage = (function() {
-  __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
-    DateTimePage.__super__.constructor.call(this);
+    DateTimePage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(DateTimePage, AssessmentPage);
+  DateTimePage.prototype.load = function(data) {
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
-    $("div#" + this.pageId).live("pageshow", __bind(function() {
+    DateTimePage.__super__.load.call(this, data);
+    return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var dateTime, minutes;
       dateTime = new Date();
       $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
@@ -317,15 +320,21 @@ DateTimePage = (function() {
       }
       return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
     }, this));
-  }
+  };
   return DateTimePage;
 })();
 ResultsPage = (function() {
-  __extends(ResultsPage, AssessmentPage);
   function ResultsPage() {
-    ResultsPage.__super__.constructor.call(this);
-    $("div#" + this.pageId + " div[data-role='content'").html(JSON.stringify($.assessment.results));
+    ResultsPage.__super__.constructor.apply(this, arguments);
   }
+  __extends(ResultsPage, AssessmentPage);
+  ResultsPage.prototype.load = function(data) {
+    ResultsPage.__super__.load.call(this, data);
+    return $("div#" + this.pageId).live("pageshow", __bind(function() {
+      console.log(JSON.stringify($.assessment.results()));
+      return $("div#" + this.pageId + " div[data-role='content']").html("<pre>" + JSON.stringify($.assessment.results(), null, 2) + "</pre>");
+    }, this));
+  };
   return ResultsPage;
 })();
 InstructionsPage = (function() {

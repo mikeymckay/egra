@@ -50,6 +50,16 @@ Assessment = (function() {
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
   };
+  Assessment.prototype.results = function() {
+    var page, results, _i, _len, _ref;
+    results = {};
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      results[page.pageId] = page.results();
+    }
+    return results;
+  };
   Assessment.prototype.toJSON = function() {
     return JSON.stringify({
       name: this.name,
@@ -173,7 +183,6 @@ Assessment = (function() {
       $.assessment = this;
       $('div').live('pageshow', __bind(function(event, ui) {
         var page, _i, _len, _ref, _results;
-        console.log(event);
         _ref = this.pages;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
