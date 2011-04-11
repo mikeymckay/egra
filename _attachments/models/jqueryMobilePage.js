@@ -1,4 +1,4 @@
-var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, SchoolPage, StudentInformationPage;
+var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -181,6 +181,9 @@ AssessmentPage = (function() {
     }
     return true;
   };
+  AssessmentPage.prototype.results = function() {
+    return {};
+  };
   return AssessmentPage;
 })();
 AssessmentPage.validateCurrentPageUpdateNextButton = function() {
@@ -316,6 +319,14 @@ DateTimePage = (function() {
     }, this));
   }
   return DateTimePage;
+})();
+ResultsPage = (function() {
+  __extends(ResultsPage, AssessmentPage);
+  function ResultsPage() {
+    ResultsPage.__super__.constructor.call(this);
+    $("div#" + this.pageId + " div[data-role='content'").html(JSON.stringify($.assessment.results));
+  }
+  return ResultsPage;
 })();
 InstructionsPage = (function() {
   function InstructionsPage() {

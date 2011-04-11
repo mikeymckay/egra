@@ -151,6 +151,9 @@ class AssessmentPage extends JQueryMobilePage
       return false if $(inputElement).val() == ""
     return true
 
+  results: ->
+    return {}
+
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
   passedValidation = $.assessment.currentPage.validate()
@@ -302,6 +305,12 @@ class DateTimePage extends AssessmentPage
       minutes = "0" + minutes if minutes < 10
       $("div##{@pageId} #time").val(dateTime.getHours() + ":" + minutes)
       
+
+class ResultsPage extends AssessmentPage
+  constructor: ->
+    super()
+    $("div##{@pageId} div[data-role='content'").html(JSON.stringify($.assessment.results))
+
 
 class InstructionsPage extends AssessmentPage
   propertiesForSerialization: ->

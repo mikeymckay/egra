@@ -34,6 +34,12 @@ class Assessment
   url: ->
     "#{@urlScheme}://#{@urlPath}"
 
+  results: ->
+    results = {}
+    for page in @pages
+      results[page.pageId] = page.result()
+    return results
+
   toJSON: ->
     JSON.stringify
       name: @name,
