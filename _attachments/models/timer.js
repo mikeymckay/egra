@@ -33,6 +33,7 @@ Timer = (function() {
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
       if (this.seconds === 0) {
+        this.running = false;
         clearInterval(this.intervalId);
       }
       return this.renderSeconds();

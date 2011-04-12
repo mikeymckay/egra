@@ -2740,7 +2740,7 @@ var Mustache = function() {
  var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
-$.couchDBDesignDocumentPath = '/egra/';
+$.couchDBDatabasePath = '/egra/';
 Assessment = (function() {
   function Assessment(name) {
     this.name = name;
@@ -2799,6 +2799,44 @@ Assessment = (function() {
     }
     return results;
   };
+  Assessment.prototype.saveResults = function() {
+    var results, url;
+    results = this.results();
+    console.log(JSON.stringify(results));
+    url = $.couchDBDatabasePath;
+    return $.ajax({
+      url: url,
+      async: true,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(results),
+      error: function() {
+        throw "Could not PUT to " + url;
+      },
+      complete: __bind(function() {
+        if (typeof callback != "undefined" && callback !== null) {
+          return callback(results);
+        }
+      }, this)
+    });
+  };
+  Assessment.prototype.validate = function() {
+    var page, pageResult, validationErrors, _i, _len, _ref;
+    validationErrors = "";
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      pageResult = page.validate();
+      if (pageResult !== true) {
+        validationErrors += "'" + (page.name()) + "' page invalid: " + pageResult + " <br/>";
+      }
+    }
+    if (validationErrors !== "") {
+      return validationErrors;
+    } else {
+      return true;
+    }
+  };
   Assessment.prototype.toJSON = function() {
     return JSON.stringify({
       name: this.name,
@@ -2828,7 +2866,7 @@ Assessment = (function() {
   Assessment.prototype.saveToCouchDB = function(callback) {
     this.urlScheme = "http";
     if (this.urlPath[0] !== "/") {
-      this.urlPath = $.couchDBDesignDocumentPath + this.urlPath;
+      this.urlPath = $.couchDBDatabasePath + this.urlPath;
     }
     $.ajax({
       url: this.urlPath,
@@ -2870,7 +2908,7 @@ Assessment = (function() {
   };
   Assessment.prototype.deleteFromCouchDB = function() {
     var page, url, _i, _len, _ref;
-    url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
+    url = $.couchDBDatabasePath + this.urlPath + ("?rev=" + this.revision);
     if (this.pages) {
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -2940,10 +2978,12 @@ Assessment = (function() {
         }
         return _results;
       }).call(this);
+      result = result.join("");
+      result += "        <div data-role='dialog' id='_infoPage'>          <div data-role='header'>	            <h1>Information</h1>          </div>          <div data-role='content'>	          </div><!-- /content -->        </div>      ";
       if (callback != null) {
-        callback(result.join(""));
+        callback(result);
       }
-      return result.join("");
+      return result;
     }, this));
   };
   return Assessment;
@@ -3088,7 +3128,7 @@ JQueryMobilePage = (function() {
     this.loading = true;
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
-    url = $.couchDBDesignDocumentPath + this.urlPath;
+    url = $.couchDBDatabasePath + this.urlPath;
     return $.ajax({
       url: url,
       async: true,
@@ -3185,7 +3225,7 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
 };
 JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
   return JQueryMobilePage.loadFromHTTP({
-    url: $.couchDBDesignDocumentPath + urlPath
+    url: $.couchDBDatabasePath + urlPath
   }, callback);
 };
 AssessmentPage = (function() {
@@ -3204,13 +3244,31 @@ AssessmentPage = (function() {
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       inputElement = _ref[_i];
       if ($(inputElement).val() === "") {
-        return false;
+        return "'" + ($("label[for=" + inputElement.id + "]").html()) + "' is empty";
       }
     }
     return true;
   };
   AssessmentPage.prototype.results = function() {
-    return $("div#" + this.pageId + " form").serialize();
+    var objectData;
+    objectData = {};
+    $.each($("div#" + this.pageId + " form").serializeArray(), function() {
+      var value;
+      if (this.value != null) {
+        value = this.value;
+      } else {
+        value = '';
+      }
+      if (objectData[this.name] != null) {
+        if (!objectData[this.name].push) {
+          objectData[this.name] = [objectData[this.name]];
+        }
+        return objectData[this.name].push(value);
+      } else {
+        return objectData[this.name] = value;
+      }
+    });
+    return objectData;
   };
   return AssessmentPage;
 })();
@@ -3219,16 +3277,22 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
   if ($.assessment == null) {
     return;
   }
-  passedValidation = $.assessment.currentPage.validate();
+  passedValidation = $.assessment.currentPage.validate() === true;
   $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
   return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
 };
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
 $('div.ui-footer button').live('click', function(event, ui) {
-  var button;
-  button = $(event.currentTarget);
-  if (button.hasClass("passedValidation")) {
+  var button, validationResult;
+  console.log("YO");
+  validationResult = $.assessment.currentPage.validate();
+  if (validationResult === true) {
+    button = $(event.currentTarget);
     return $.mobile.changePage(button.attr("href"));
+  } else {
+    console.log(validationResult);
+    $("#_infoPage div[data-role='content']").html("Please fix the following before proceeding:<br/>" + validationResult);
+    return $.mobile.changePage("#_infoPage");
   }
 });
 JQueryLogin = (function() {
@@ -3251,11 +3315,15 @@ StudentInformationPage = (function() {
     return properties;
   };
   StudentInformationPage.prototype.validate = function() {
-    return $("#StudentInformation input:'radio':checked").length === 5;
+    if ($("#StudentInformation input:'radio':checked").length === 5) {
+      return true;
+    } else {
+      return "All elements are required";
+    }
   };
   return StudentInformationPage;
 })();
-StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
 StudentInformationPage.deserialize = function(pageObject) {
   var studentInformationPage;
   studentInformationPage = new StudentInformationPage();
@@ -3314,7 +3382,7 @@ SchoolPage = (function() {
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       inputElement = _ref[_i];
       if ($(inputElement).val() === "") {
-        return false;
+        return "'" + ($("label[for=" + inputElement.id + "]").html()) + "' is empty";
       }
     }
     return true;
@@ -3352,15 +3420,27 @@ DateTimePage = (function() {
   return DateTimePage;
 })();
 ResultsPage = (function() {
-  function ResultsPage() {
-    ResultsPage.__super__.constructor.apply(this, arguments);
-  }
   __extends(ResultsPage, AssessmentPage);
+  function ResultsPage() {
+    ResultsPage.__super__.constructor.call(this);
+    this.header = "";
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>      </div>    ");
+  }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      console.log(JSON.stringify($.assessment.results()));
-      return $("div#" + this.pageId + " div[data-role='content']").html("<pre>" + JSON.stringify($.assessment.results(), null, 2) + "</pre>");
+      var validationResult;
+      $("div#" + this.pageId + " div[data-role='header'] a").hide();
+      validationResult = $.assessment.validate();
+      if (validationResult === true) {
+        $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
+        return $.assessment.saveResults(__bind(function(results) {
+          $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
+          return $("div#" + this.pageId + " div[data-role='content'] div.results pre").html(JSON.stringify(results, null, 2));
+        }, this));
+      } else {
+        return $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> " + validationResult + "<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.");
+      }
     }, this));
   };
   return ResultsPage;
@@ -3470,6 +3550,23 @@ LettersPage = (function() {
       }
     }
     return results;
+  };
+  LettersPage.prototype.validate = function() {
+    var results;
+    results = this.results();
+    if (results.time_remain === 60) {
+      return "The timer must be started";
+    }
+    if (this.timer.running) {
+      return "The timer is still running";
+    }
+    if (results.time_remain === 0) {
+      return true;
+    } else if (results.attempted != null) {
+      return true;
+    } else {
+      return "The last letter attempted has not been selected (double tap to select)";
+    }
   };
   return LettersPage;
 })();
@@ -3598,6 +3695,7 @@ Timer = (function() {
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
       if (this.seconds === 0) {
+        this.running = false;
         clearInterval(this.intervalId);
       }
       return this.renderSeconds();

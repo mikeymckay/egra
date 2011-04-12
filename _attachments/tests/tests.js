@@ -9,7 +9,7 @@ CouchDB["delete"] = function(documents) {
   for (_i = 0, _len = documents.length; _i < _len; _i++) {
     document = documents[_i];
     document.urlPath = document.urlPath.substring(document.urlPath.indexOf("/") + 1);
-    couchdb_url = $.couchDBDesignDocumentPath + document.urlPath;
+    couchdb_url = $.couchDBDatabasePath + document.urlPath;
     _results.push($.ajax({
       url: couchdb_url,
       type: 'GET',
@@ -194,14 +194,14 @@ $(document).ready(function() {
       equal(login.revision.length > 10, true);
       assessment.deleteFromCouchDB();
       return $.ajax({
-        url: $.couchDBDesignDocumentPath + login.urlPath,
+        url: $.couchDBDatabasePath + login.urlPath,
         type: 'GET'
       }, {
         dataType: 'json',
         complete: function(result) {
           equal(result.statusText, "error");
           return $.ajax({
-            url: $.couchDBDesignDocumentPath + assessment.urlPath,
+            url: $.couchDBDatabasePath + assessment.urlPath,
             type: 'GET',
             dataType: 'json',
             complete: function(result) {

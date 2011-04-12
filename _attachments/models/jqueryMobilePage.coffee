@@ -45,7 +45,7 @@ class JQueryMobilePage
     @loading = true
     @urlScheme = "http"
     @urlPath = @urlPath.substring(@urlPath.indexOf("/")+1)
-    url = $.couchDBDesignDocumentPath + @urlPath
+    url = $.couchDBDatabasePath + @urlPath
     $.ajax
       url: url,
       async: true,
@@ -131,7 +131,7 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
 
 
 JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
-  return JQueryMobilePage.loadFromHTTP({url:$.couchDBDesignDocumentPath+urlPath}, callback)
+  return JQueryMobilePage.loadFromHTTP({url:$.couchDBDatabasePath+urlPath}, callback)
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->
@@ -148,24 +148,49 @@ class AssessmentPage extends JQueryMobilePage
 ##
   validate: ->
     for inputElement in $("div##{@pageId} form input")
-      return false if $(inputElement).val() == ""
+      if $(inputElement).val() == ""
+        return "'#{$("label[for="+inputElement.id+"]").html()}' is empty"
     return true
 
   results: ->
-    return $("div##{@pageId} form").serialize()
+    objectData = {}
+    $.each $("div##{@pageId} form").serializeArray(), () ->
+      if this.value?
+        value = this.value
+      else
+        value = ''
+
+      if objectData[this.name]?
+        unless objectData[this.name].push
+          objectData[this.name] = [objectData[this.name]]
+
+        objectData[this.name].push value
+      else
+        objectData[this.name] = value
+
+    return objectData
 
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
-  passedValidation = $.assessment.currentPage.validate()
+  passedValidation = ($.assessment.currentPage.validate() is true)
   $('div.ui-footer button').toggleClass("passedValidation", passedValidation)
   $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b",passedValidation).toggleClass("ui-btn-up-c", !passedValidation)
 
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
 
 $('div.ui-footer button').live 'click', (event,ui) ->
-  button = $(event.currentTarget)
-  if button.hasClass("passedValidation")
+  console.log "YO"
+  validationResult = $.assessment.currentPage.validate()
+  if validationResult is true
+    button = $(event.currentTarget)
     $.mobile.changePage(button.attr("href"))
+  else
+    console.log validationResult
+    $("#_infoPage div[data-role='content']").html(
+      "Please fix the following before proceeding:<br/>" +
+      validationResult
+    )
+    $.mobile.changePage("#_infoPage")
 
 class JQueryLogin extends AssessmentPage
   constructor: ->
@@ -187,7 +212,12 @@ class StudentInformationPage extends AssessmentPage
     return properties
 
   validate: ->
-    return $("#StudentInformation input:'radio':checked").length == 5
+    if $("#StudentInformation input:'radio':checked").length == 5
+      return true
+    else
+      #console.log $("#StudentInformation input[type='radio']").not(":checked")
+      # return which element is not selected
+      return "All elements are required"
 
 StudentInformationPage.template = Handlebars.compile "
   <form>
@@ -196,7 +226,7 @@ StudentInformationPage.template = Handlebars.compile "
         <legend>{{label}}</legend>
         {{#options}}
           <label for='{{.}}'>{{.}}</label>
-          <input type='radio' name='{{../name}}' id='{{.}}'></input>
+          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
         {{/options}}
       </fieldset>
     {{/radioButtons}}
@@ -262,7 +292,8 @@ class SchoolPage extends AssessmentPage
 
   validate: ->
     for inputElement in $("div##{@pageId} form div.ui-field-contain input")
-      return false if $(inputElement).val() == ""
+      if $(inputElement).val() == ""
+        return "'#{$("label[for="+inputElement.id+"]").html()}' is empty"
     return true
 
 SchoolPage.deserialize = (pageObject) ->
@@ -307,12 +338,36 @@ class DateTimePage extends AssessmentPage
       
 
 class ResultsPage extends AssessmentPage
+  constructor: ->
+    super()
+    @header = ""
+    @content = Handlebars.compile "
+      <div class='resultsMessage'>
+      </div>
+      <div data-role='collapsible' data-collapsed='true' class='results'>
+        <h3>Results</h3>
+        <pre>
+        </pre>
+      </div>
+      <div data-inline='true'>
+        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>
+        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>
+      </div>
+    "
 
   load: (data) ->
     super(data)
+
     $("div##{@pageId}").live "pageshow", =>
-      console.log JSON.stringify($.assessment.results())
-      $("div##{@pageId} div[data-role='content']").html( "<pre>" + JSON.stringify($.assessment.results(),null,2) + "</pre>" )
+      $("div##{@pageId} div[data-role='header'] a").hide()
+      validationResult = $.assessment.validate()
+      if validationResult == true
+        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Validated")
+        $.assessment.saveResults (results) =>
+          $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
+          $("div##{@pageId} div[data-role='content'] div.results pre").html( JSON.stringify(results,null,2) )
+      else
+        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> #{validationResult}<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.")
 
 class InstructionsPage extends AssessmentPage
   propertiesForSerialization: ->
@@ -378,7 +433,18 @@ class LettersPage extends AssessmentPage
 
     return results
 
-    
+  validate: ->
+    results = @results()
+    if results.time_remain == 60
+      return "The timer must be started"
+    if @timer.running
+      return "The timer is still running"
+    if results.time_remain == 0
+      return true
+    else if results.attempted?
+      return true
+    else
+      return "The last letter attempted has not been selected (double tap to select)"
 
 LettersPage.deserialize = (pageObject) ->
   lettersPage = new LettersPage(pageObject.letters)

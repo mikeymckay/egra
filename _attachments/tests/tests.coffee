@@ -3,7 +3,7 @@ class CouchDB
 CouchDB.delete = (documents) ->
   for document in documents
     document.urlPath = document.urlPath.substring(document.urlPath.indexOf("/")+1)
-    couchdb_url = $.couchDBDesignDocumentPath + document.urlPath
+    couchdb_url = $.couchDBDatabasePath + document.urlPath
     # Figure out the revision number
     $.ajax
       url: couchdb_url,
@@ -203,14 +203,14 @@ $(document).ready ->
       assessment.deleteFromCouchDB()
       # Check that the page has been deleted
       $.ajax
-       url: $.couchDBDesignDocumentPath + login.urlPath,
+       url: $.couchDBDatabasePath + login.urlPath,
        type: 'GET',
         dataType: 'json',
         complete: (result) ->
           equal(result.statusText,"error") # not working!?
           # Check that the assessment has been deleted
           $.ajax
-            url: $.couchDBDesignDocumentPath + assessment.urlPath
+            url: $.couchDBDatabasePath + assessment.urlPath
             type: 'GET',
             dataType: 'json',
             complete: (result) ->

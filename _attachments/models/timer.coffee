@@ -26,7 +26,9 @@ class Timer
     @tick_value = 1
     decrement = =>
       @seconds -= @tick_value
-      clearInterval(@intervalId) if @seconds == 0
+      if @seconds == 0
+        @running = false
+        clearInterval(@intervalId)
       @renderSeconds()
     @intervalId = setInterval(decrement,@tick_value*1000)
 
