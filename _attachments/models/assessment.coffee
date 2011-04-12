@@ -1,7 +1,7 @@
 # Global assessment object
 $.assessment = null
 
-$.couchDBDesignDocumentPath = '/egra/'
+$.couchDBDatabasePath = '/egra/'
 
 class Assessment
   constructor: (@name) ->
@@ -27,13 +27,49 @@ class Assessment
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
 
+  insertPage: (page, pageNumber) ->
+    @pages.splice(pageNumber,0,page)
+    @setPages(@pages)
+
   url: ->
     "#{@urlScheme}://#{@urlPath}"
 
+  results: ->
+    results = {}
+    for page in @pages
+      results[page.pageId] = page.results()
+    return results
+
+  saveResults: ->
+    results = @results()
+    console.log JSON.stringify(results)
+    url = $.couchDBDatabasePath
+    $.ajax
+      url: url,
+      async: true,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(results),
+      error: ->
+        throw "Could not PUT to #{url}"
+      complete: =>
+        callback(results) if callback?
+
+  validate: ->
+    validationErrors = ""
+    for page in @pages
+      pageResult = page.validate()
+      validationErrors += "'#{page.name()}' page invalid: #{pageResult} <br/>" unless pageResult is true
+
+    unless validationErrors is ""
+      return validationErrors
+    else
+      return true
+
   toJSON: ->
-   JSON.stringify
-     name: @name,
-     urlPathsForPages: @urlPathsForPages
+    JSON.stringify
+      name: @name,
+      urlPathsForPages: @urlPathsForPages
 
   save: ->
     switch @urlScheme
@@ -49,7 +85,7 @@ class Assessment
 
   saveToCouchDB: (callback) ->
     @urlScheme = "http"
-    @urlPath = $.couchDBDesignDocumentPath + @urlPath unless @urlPath[0] == "/"
+    @urlPath = $.couchDBDatabasePath + @urlPath unless @urlPath[0] == "/"
     $.ajax
       url: @urlPath
       async: true,
@@ -76,7 +112,7 @@ class Assessment
     localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: ->
-    url = $.couchDBDesignDocumentPath + @urlPath + "?rev=#{@revision}"
+    url = $.couchDBDatabasePath + @urlPath + "?rev=#{@revision}"
     if @pages
       for page in @pages
         page.deleteFromCouchDB()
@@ -113,13 +149,23 @@ class Assessment
       # To the instantiated page object
       $('div').live 'pageshow', (event,ui) =>
         for page in @pages
-          if page.pageId is document.location.hash.substr(1)
+          if page.pageId is $(event.currentTarget).attr('id')
             @currentPage = page
 
       result = for page,i in @pages
         page.render()
-      callback(result.join("")) if callback?
-      return result.join("")
+      result = result.join("")
+      result += "
+        <div data-role='dialog' id='_infoPage'>
+          <div data-role='header'>	
+            <h1>Information</h1>
+          </div>
+          <div data-role='content'>	
+          </div><!-- /content -->
+        </div>
+      "
+      callback(result) if callback?
+      return result
 
 Assessment.load = (url, callback) ->
   try

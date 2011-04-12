@@ -20,16 +20,20 @@ class Timer
     @elementLocation = "div##{page.pageId} div.timer"
 
   start: ->
+    @showLetters()
     return if @running
     @running = true
     @tick_value = 1
     decrement = =>
       @seconds -= @tick_value
-      clearInterval(@intervalId) if @seconds == 0
+      if @seconds == 0
+        @running = false
+        clearInterval(@intervalId)
       @renderSeconds()
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
+    @hideLetters()
     @running = false
     clearInterval(@intervalId)
 
@@ -44,6 +48,13 @@ class Timer
     @id = "timer"
     @seconds = 60
     Mustache.to_html(@_template(),this)
+
+  hideLetters: ->
+    $("##{@page.pageId} .ui-checkbox span").removeClass("show")
+
+  showLetters: ->
+    console.log "$('##{@page.pageId} .ui-checkbox spanr').addClass('show')"
+    $("##{@page.pageId} .ui-checkbox span").addClass("show")
 
   _template: -> "
 <div class='timer'>

@@ -3,7 +3,7 @@ class CouchDB
 CouchDB.delete = (documents) ->
   for document in documents
     document.urlPath = document.urlPath.substring(document.urlPath.indexOf("/")+1)
-    couchdb_url = $.couchDBDesignDocumentPath + document.urlPath
+    couchdb_url = $.couchDBDatabasePath + document.urlPath
     # Figure out the revision number
     $.ajax
       url: couchdb_url,
@@ -51,6 +51,49 @@ $(document).ready ->
     equals anotherJqueryMobilePage.toJSON(),
       pageId: "pageId"
       pageType: "JQueryMobilePage"
+      urlPath: undefined
+      urlScheme: undefined
+
+
+  test "DateTimePage", ->
+    expect(3)
+    dateTimePage = new DateTimePage()
+    dateTimePage.pageId = "pageId"
+    expected_result = "
+    <div data-role='page' id='pageId'>  
+      <div data-role='header'>
+        <a href='#'></a>
+        <h1>pageId</h1>   
+      </div><!-- /header -->  
+      <div data-role='content'>
+        <form>
+          <div data-role='fieldcontain'>
+            <label for='year'>Year:</label>
+            <input type='number' name='year' id='year' />
+            <label for='month'>Month:</label>
+            <input type='text' name='month' id='month' />
+            <label for='day'>Day:</label>
+            <input type='number' name='date' id='date' />
+            <label for='time'>Time:</label>
+            <input type='number' name='time' id='time' />
+          </div>
+        </form>
+      </div><!-- /content -->  
+      <div data-role='footer'>
+        <a href='#'></a>
+      </div><!-- /header -->
+    </div><!-- /page -->"
+    equals dateTimePage.render(), expected_result
+    equals dateTimePage.toJSON(),
+      pageId: "pageId"
+      pageType: "DateTimePage"
+      urlPath: undefined
+      urlScheme: undefined
+
+    anotherDateTimePage = JQueryMobilePage.deserialize(dateTimePage.toJSON())
+    equals anotherDateTimePage.toJSON(),
+      pageId: "pageId"
+      pageType: "DateTimePage"
       urlPath: undefined
       urlScheme: undefined
 
@@ -160,14 +203,14 @@ $(document).ready ->
       assessment.deleteFromCouchDB()
       # Check that the page has been deleted
       $.ajax
-       url: $.couchDBDesignDocumentPath + login.urlPath,
+       url: $.couchDBDatabasePath + login.urlPath,
        type: 'GET',
         dataType: 'json',
         complete: (result) ->
           equal(result.statusText,"error") # not working!?
           # Check that the assessment has been deleted
           $.ajax
-            url: $.couchDBDesignDocumentPath + assessment.urlPath
+            url: $.couchDBDatabasePath + assessment.urlPath
             type: 'GET',
             dataType: 'json',
             complete: (result) ->

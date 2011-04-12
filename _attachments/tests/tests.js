@@ -9,7 +9,7 @@ CouchDB["delete"] = function(documents) {
   for (_i = 0, _len = documents.length; _i < _len; _i++) {
     document = documents[_i];
     document.urlPath = document.urlPath.substring(document.urlPath.indexOf("/") + 1);
-    couchdb_url = $.couchDBDesignDocumentPath + document.urlPath;
+    couchdb_url = $.couchDBDatabasePath + document.urlPath;
     _results.push($.ajax({
       url: couchdb_url,
       type: 'GET',
@@ -62,6 +62,27 @@ $(document).ready(function() {
     return equals(anotherJqueryMobilePage.toJSON(), {
       pageId: "pageId",
       pageType: "JQueryMobilePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
+  });
+  test("DateTimePage", function() {
+    var anotherDateTimePage, dateTimePage, expected_result;
+    expect(3);
+    dateTimePage = new DateTimePage();
+    dateTimePage.pageId = "pageId";
+    expected_result = "    <div data-role='page' id='pageId'>        <div data-role='header'>        <a href='#'></a>        <h1>pageId</h1>         </div><!-- /header -->        <div data-role='content'>        <form>          <div data-role='fieldcontain'>            <label for='year'>Year:</label>            <input type='number' name='year' id='year' />            <label for='month'>Month:</label>            <input type='text' name='month' id='month' />            <label for='day'>Day:</label>            <input type='number' name='date' id='date' />            <label for='time'>Time:</label>            <input type='number' name='time' id='time' />          </div>        </form>      </div><!-- /content -->        <div data-role='footer'>        <a href='#'></a>      </div><!-- /header -->    </div><!-- /page -->";
+    equals(dateTimePage.render(), expected_result);
+    equals(dateTimePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "DateTimePage",
+      urlPath: void 0,
+      urlScheme: void 0
+    });
+    anotherDateTimePage = JQueryMobilePage.deserialize(dateTimePage.toJSON());
+    return equals(anotherDateTimePage.toJSON(), {
+      pageId: "pageId",
+      pageType: "DateTimePage",
       urlPath: void 0,
       urlScheme: void 0
     });
@@ -173,14 +194,14 @@ $(document).ready(function() {
       equal(login.revision.length > 10, true);
       assessment.deleteFromCouchDB();
       return $.ajax({
-        url: $.couchDBDesignDocumentPath + login.urlPath,
+        url: $.couchDBDatabasePath + login.urlPath,
         type: 'GET'
       }, {
         dataType: 'json',
         complete: function(result) {
           equal(result.statusText, "error");
           return $.ajax({
-            url: $.couchDBDesignDocumentPath + assessment.urlPath,
+            url: $.couchDBDatabasePath + assessment.urlPath,
             type: 'GET',
             dataType: 'json',
             complete: function(result) {

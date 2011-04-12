@@ -24,6 +24,7 @@ Timer = (function() {
   };
   Timer.prototype.start = function() {
     var decrement;
+    this.showLetters();
     if (this.running) {
       return;
     }
@@ -32,6 +33,7 @@ Timer = (function() {
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
       if (this.seconds === 0) {
+        this.running = false;
         clearInterval(this.intervalId);
       }
       return this.renderSeconds();
@@ -39,6 +41,7 @@ Timer = (function() {
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
+    this.hideLetters();
     this.running = false;
     return clearInterval(this.intervalId);
   };
@@ -53,6 +56,13 @@ Timer = (function() {
     this.id = "timer";
     this.seconds = 60;
     return Mustache.to_html(this._template(), this);
+  };
+  Timer.prototype.hideLetters = function() {
+    return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
+  };
+  Timer.prototype.showLetters = function() {
+    console.log("$('#" + this.page.pageId + " .ui-checkbox spanr').addClass('show')");
+    return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
     return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";

@@ -1,4 +1,4 @@
-var AssessmentPage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage;
+var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -7,23 +7,6 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
-$("#Letters label").live('mousedown', function(eventData) {
-  var button;
-  button = $(eventData.currentTarget);
-  console.log(button);
-  button.removeClass('ui-btn-active');
-  return button.toggleClass(function() {
-    if (button.is('.first_click')) {
-      button.removeClass('first_click');
-      return 'second_click';
-    } else if (button.is('.second_click')) {
-      button.removeClass('second_click');
-      return '';
-    } else {
-      return 'first_click';
-    }
-  });
-});
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
     this.pageId = "";
@@ -34,6 +17,9 @@ JQueryMobilePage = (function() {
   };
   JQueryMobilePage.prototype.propertiesForSerialization = function() {
     return ["pageId", "pageType", "urlPath", "urlScheme"];
+  };
+  JQueryMobilePage.prototype.name = function() {
+    return this.pageId.underscore().titleize();
   };
   JQueryMobilePage.prototype.toJSON = function() {
     var object, property, _i, _len, _ref;
@@ -74,8 +60,7 @@ JQueryMobilePage = (function() {
     this.loading = true;
     this.urlScheme = "http";
     this.urlPath = this.urlPath.substring(this.urlPath.indexOf("/") + 1);
-    url = $.couchDBDesignDocumentPath + this.urlPath;
-    console.log(url);
+    url = $.couchDBDatabasePath + this.urlPath;
     return $.ajax({
       url: url,
       async: true,
@@ -116,7 +101,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>{{previousPage}}</a>    <h1>{{pageId}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <a href='\#{{nextPage}}'>{{nextPage}}</a>  </div><!-- /header --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
   };
   return JQueryMobilePage;
 })();
@@ -125,6 +110,10 @@ JQueryMobilePage.deserialize = function(pageObject) {
   switch (pageObject.pageType) {
     case "LettersPage":
       return LettersPage.deserialize(pageObject);
+    case "SchoolPage":
+      return SchoolPage.deserialize(pageObject);
+    case "StudentInformationPage":
+      return StudentInformationPage.deserialize(pageObject);
     default:
       result = new window[pageObject.pageType]();
       result.load(pageObject);
@@ -168,7 +157,7 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
 };
 JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
   return JQueryMobilePage.loadFromHTTP({
-    url: $.couchDBDesignDocumentPath + urlPath
+    url: $.couchDBDatabasePath + urlPath
   }, callback);
 };
 AssessmentPage = (function() {
@@ -179,18 +168,214 @@ AssessmentPage = (function() {
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    this.scorer = new Scorer();
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;'>" + (this.timer.render() + this.scorer.render()) + "</div>";
+    return this.controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>" + (this.timer.render()) + "</div>";
+  };
+  AssessmentPage.prototype.validate = function() {
+    var inputElement, _i, _len, _ref;
+    _ref = $("div#" + this.pageId + " form input");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      inputElement = _ref[_i];
+      if ($(inputElement).val() === "") {
+        return "'" + ($("label[for=" + inputElement.id + "]").html()) + "' is empty";
+      }
+    }
+    return true;
+  };
+  AssessmentPage.prototype.results = function() {
+    var objectData;
+    objectData = {};
+    $.each($("div#" + this.pageId + " form").serializeArray(), function() {
+      var value;
+      if (this.value != null) {
+        value = this.value;
+      } else {
+        value = '';
+      }
+      if (objectData[this.name] != null) {
+        if (!objectData[this.name].push) {
+          objectData[this.name] = [objectData[this.name]];
+        }
+        return objectData[this.name].push(value);
+      } else {
+        return objectData[this.name] = value;
+      }
+    });
+    return objectData;
   };
   return AssessmentPage;
 })();
+AssessmentPage.validateCurrentPageUpdateNextButton = function() {
+  var passedValidation;
+  if ($.assessment == null) {
+    return;
+  }
+  passedValidation = $.assessment.currentPage.validate() === true;
+  $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
+  return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
+};
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
+$('div.ui-footer button').live('click', function(event, ui) {
+  var button, validationResult;
+  console.log("YO");
+  validationResult = $.assessment.currentPage.validate();
+  if (validationResult === true) {
+    button = $(event.currentTarget);
+    return $.mobile.changePage(button.attr("href"));
+  } else {
+    console.log(validationResult);
+    $("#_infoPage div[data-role='content']").html("Please fix the following before proceeding:<br/>" + validationResult);
+    return $.mobile.changePage("#_infoPage");
+  }
+});
 JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password (not needed for demo):</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
   }
   return JQueryLogin;
+})();
+StudentInformationPage = (function() {
+  function StudentInformationPage() {
+    StudentInformationPage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(StudentInformationPage, AssessmentPage);
+  StudentInformationPage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
+    properties.push("radioButtons");
+    return properties;
+  };
+  StudentInformationPage.prototype.validate = function() {
+    if ($("#StudentInformation input:'radio':checked").length === 5) {
+      return true;
+    } else {
+      return "All elements are required";
+    }
+  };
+  return StudentInformationPage;
+})();
+StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+StudentInformationPage.deserialize = function(pageObject) {
+  var studentInformationPage;
+  studentInformationPage = new StudentInformationPage();
+  studentInformationPage.load(pageObject);
+  studentInformationPage.content = StudentInformationPage.template(studentInformationPage);
+  return studentInformationPage;
+};
+SchoolPage = (function() {
+  __extends(SchoolPage, AssessmentPage);
+  function SchoolPage(schools) {
+    this.schools = schools;
+    SchoolPage.__super__.constructor.call(this);
+    $("div#" + this.pageId + " li").live("mouseup", __bind(function(eventData) {
+      var dataAttribute, selectedElement, _i, _len, _ref, _results;
+      selectedElement = $(eventData.currentTarget);
+      _ref = ["name", "province", "district", "schoolId"];
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        dataAttribute = _ref[_i];
+        _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
+      }
+      return _results;
+    }, this));
+  }
+  SchoolPage.prototype.propertiesForSerialization = function() {
+    var properties, property, _i, _len, _ref;
+    properties = SchoolPage.__super__.propertiesForSerialization.call(this);
+    properties.push("schools");
+    properties.push("selectNameText");
+    _ref = ["name", "province", "district", "schoolId"];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      property = _ref[_i];
+      properties.push(property + "Text");
+    }
+    return properties;
+  };
+  SchoolPage.prototype._schoolTemplate = function() {
+    var dataAttribute, inputElements, listAttributes, listElement, properties, _i, _j, _len, _len2;
+    properties = ["name", "province", "district", "schoolId"];
+    listAttributes = "";
+    for (_i = 0, _len = properties.length; _i < _len; _i++) {
+      dataAttribute = properties[_i];
+      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
+    }
+    listElement = "<li " + listAttributes + ">{{name}}</li>";
+    inputElements = "";
+    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
+      dataAttribute = properties[_j];
+      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
+    }
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+  };
+  SchoolPage.prototype.validate = function() {
+    var inputElement, _i, _len, _ref;
+    _ref = $("div#" + this.pageId + " form div.ui-field-contain input");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      inputElement = _ref[_i];
+      if ($(inputElement).val() === "") {
+        return "'" + ($("label[for=" + inputElement.id + "]").html()) + "' is empty";
+      }
+    }
+    return true;
+  };
+  return SchoolPage;
+})();
+SchoolPage.deserialize = function(pageObject) {
+  var schoolPage;
+  schoolPage = new SchoolPage(pageObject.schools);
+  schoolPage.load(pageObject);
+  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
+  return schoolPage;
+};
+DateTimePage = (function() {
+  function DateTimePage() {
+    DateTimePage.__super__.constructor.apply(this, arguments);
+  }
+  __extends(DateTimePage, AssessmentPage);
+  DateTimePage.prototype.load = function(data) {
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
+    DateTimePage.__super__.load.call(this, data);
+    return $("div#" + this.pageId).live("pageshow", __bind(function() {
+      var dateTime, minutes;
+      dateTime = new Date();
+      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
+      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
+      $("div#" + this.pageId + " #day").val(dateTime.getDate());
+      minutes = dateTime.getMinutes();
+      if (minutes < 10) {
+        minutes = "0" + minutes;
+      }
+      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
+    }, this));
+  };
+  return DateTimePage;
+})();
+ResultsPage = (function() {
+  __extends(ResultsPage, AssessmentPage);
+  function ResultsPage() {
+    ResultsPage.__super__.constructor.call(this);
+    this.header = "";
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>      </div>    ");
+  }
+  ResultsPage.prototype.load = function(data) {
+    ResultsPage.__super__.load.call(this, data);
+    return $("div#" + this.pageId).live("pageshow", __bind(function() {
+      var validationResult;
+      $("div#" + this.pageId + " div[data-role='header'] a").hide();
+      validationResult = $.assessment.validate();
+      if (validationResult === true) {
+        $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
+        return $.assessment.saveResults(__bind(function(results) {
+          $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
+          return $("div#" + this.pageId + " div[data-role='content'] div.results pre").html(JSON.stringify(results, null, 2));
+        }, this));
+      } else {
+        return $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> " + validationResult + "<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.");
+      }
+    }, this));
+  };
+  return ResultsPage;
 })();
 InstructionsPage = (function() {
   function InstructionsPage() {
@@ -270,6 +455,51 @@ LettersPage = (function() {
       return this.loading = false;
     }, this));
   };
+  LettersPage.prototype.results = function() {
+    var checkbox, index, results, _len, _len2, _ref, _ref2;
+    results = {};
+    results.letters = new Array();
+    _ref = $("#Letters label");
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      checkbox = _ref[index];
+      results.letters[index] = false;
+    }
+    results.time_remain = this.timer.seconds;
+    if (this.timer.seconds) {
+      results.auto_stop = true;
+    }
+    results.attempted = null;
+    _ref2 = $("#Letters label");
+    for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
+      checkbox = _ref2[index];
+      checkbox = $(checkbox);
+      if (checkbox.hasClass("second_click")) {
+        results.attempted = index;
+        return results;
+      }
+      if (!checkbox.hasClass("first_click")) {
+        results.letters[index] = true;
+      }
+    }
+    return results;
+  };
+  LettersPage.prototype.validate = function() {
+    var results;
+    results = this.results();
+    if (results.time_remain === 60) {
+      return "The timer must be started";
+    }
+    if (this.timer.running) {
+      return "The timer is still running";
+    }
+    if (results.time_remain === 0) {
+      return true;
+    } else if (results.attempted != null) {
+      return true;
+    } else {
+      return "The last letter attempted has not been selected (double tap to select)";
+    }
+  };
   return LettersPage;
 })();
 LettersPage.deserialize = function(pageObject) {
@@ -278,6 +508,22 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
+$("#Letters label").live('mouseup', function(eventData) {
+  var checkbox;
+  checkbox = $(eventData.currentTarget);
+  checkbox.removeClass('ui-btn-active');
+  return checkbox.toggleClass(function() {
+    if (checkbox.is('.first_click')) {
+      checkbox.removeClass('first_click');
+      return 'second_click';
+    } else if (checkbox.is('.second_click')) {
+      checkbox.removeClass('second_click');
+      return '';
+    } else {
+      return 'first_click';
+    }
+  });
+});
 JQueryCheckbox = (function() {
   function JQueryCheckbox() {}
   JQueryCheckbox.prototype.render = function() {
@@ -311,9 +557,9 @@ JQueryCheckboxGroup = (function() {
   };
   JQueryCheckboxGroup.prototype.three_way_render = function() {
     var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#FF0000";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#009900";
-    return this.render() + ("    <style>      #Letters label.first_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.first_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.first_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.first_click_color + "')\";       }      #Letters label.second_click{        background-image: -moz-linear-gradient(top, #FFFFFF, " + this.second_click_color + ");         background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, " + this.second_click_color + "));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='" + this.second_click_color + "')\";      }      #Letters .ui-btn-active{        background-image: none;      }    </style>    ");
+    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#F7C942";
+    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#5E87B0";
+    return this.render();
   };
   return JQueryCheckboxGroup;
 })();

@@ -1,7 +1,7 @@
 var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
-$.couchDBDesignDocumentPath = '/egra/';
+$.couchDBDatabasePath = '/egra/';
 Assessment = (function() {
   function Assessment(name) {
     this.name = name;
@@ -43,8 +43,60 @@ Assessment = (function() {
     }
     return _results;
   };
+  Assessment.prototype.insertPage = function(page, pageNumber) {
+    this.pages.splice(pageNumber, 0, page);
+    return this.setPages(this.pages);
+  };
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
+  };
+  Assessment.prototype.results = function() {
+    var page, results, _i, _len, _ref;
+    results = {};
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      results[page.pageId] = page.results();
+    }
+    return results;
+  };
+  Assessment.prototype.saveResults = function() {
+    var results, url;
+    results = this.results();
+    console.log(JSON.stringify(results));
+    url = $.couchDBDatabasePath;
+    return $.ajax({
+      url: url,
+      async: true,
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(results),
+      error: function() {
+        throw "Could not PUT to " + url;
+      },
+      complete: __bind(function() {
+        if (typeof callback != "undefined" && callback !== null) {
+          return callback(results);
+        }
+      }, this)
+    });
+  };
+  Assessment.prototype.validate = function() {
+    var page, pageResult, validationErrors, _i, _len, _ref;
+    validationErrors = "";
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      pageResult = page.validate();
+      if (pageResult !== true) {
+        validationErrors += "'" + (page.name()) + "' page invalid: " + pageResult + " <br/>";
+      }
+    }
+    if (validationErrors !== "") {
+      return validationErrors;
+    } else {
+      return true;
+    }
   };
   Assessment.prototype.toJSON = function() {
     return JSON.stringify({
@@ -75,7 +127,7 @@ Assessment = (function() {
   Assessment.prototype.saveToCouchDB = function(callback) {
     this.urlScheme = "http";
     if (this.urlPath[0] !== "/") {
-      this.urlPath = $.couchDBDesignDocumentPath + this.urlPath;
+      this.urlPath = $.couchDBDatabasePath + this.urlPath;
     }
     $.ajax({
       url: this.urlPath,
@@ -117,7 +169,7 @@ Assessment = (function() {
   };
   Assessment.prototype.deleteFromCouchDB = function() {
     var page, url, _i, _len, _ref;
-    url = $.couchDBDesignDocumentPath + this.urlPath + ("?rev=" + this.revision);
+    url = $.couchDBDatabasePath + this.urlPath + ("?rev=" + this.revision);
     if (this.pages) {
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -173,7 +225,7 @@ Assessment = (function() {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
-          _results.push(page.pageId === document.location.hash.substr(1) ? this.currentPage = page : void 0);
+          _results.push(page.pageId === $(event.currentTarget).attr('id') ? this.currentPage = page : void 0);
         }
         return _results;
       }, this));
@@ -187,10 +239,12 @@ Assessment = (function() {
         }
         return _results;
       }).call(this);
+      result = result.join("");
+      result += "        <div data-role='dialog' id='_infoPage'>          <div data-role='header'>	            <h1>Information</h1>          </div>          <div data-role='content'>	          </div><!-- /content -->        </div>      ";
       if (callback != null) {
-        callback(result.join(""));
+        callback(result);
       }
-      return result.join("");
+      return result;
     }, this));
   };
   return Assessment;
