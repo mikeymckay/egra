@@ -50,6 +50,11 @@ Assessment = (function() {
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
   };
+  Assessment.prototype.hasUserAuthenticated = function() {
+    var loginResults;
+    loginResults = $.assessment.pages[0].results();
+    return loginResults.username !== "" && loginResults.password !== "";
+  };
   Assessment.prototype.results = function() {
     var page, results, _i, _len, _ref;
     results = {};
@@ -219,15 +224,16 @@ Assessment = (function() {
     return this.onReady(__bind(function() {
       var i, page, result;
       $.assessment = this;
-      $('div').live('pageshow', __bind(function(event, ui) {
-        var page, _i, _len, _ref, _results;
+      $('div').live('pagebeforeshow', __bind(function(event, ui) {
+        var page, _i, _len, _ref;
         _ref = this.pages;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
-          _results.push(page.pageId === $(event.currentTarget).attr('id') ? this.currentPage = page : void 0);
+          if (page.pageId === $(event.currentTarget).attr('id')) {
+            this.currentPage = page;
+            return;
+          }
         }
-        return _results;
       }, this));
       result = (function() {
         var _len, _ref, _results;
@@ -246,6 +252,29 @@ Assessment = (function() {
       }
       return result;
     }, this));
+  };
+  Assessment.prototype.handleURLParameters = function() {
+    var a, d, e, param, q, r, value, _ref, _results;
+    if (this.urlParams != null) {
+      return;
+    }
+    this.urlParams = {};
+    a = /\+/g;
+    r = /([^&=]+)=?([^&]*)/g;
+    d = function(s) {
+      return decodeURIComponent(s.replace(a, " "));
+    };
+    q = window.location.search.substring(1);
+    while ((e = r.exec(q))) {
+      this.urlParams[d(e[1])] = d(e[2]);
+    }
+    _ref = this.urlParams;
+    _results = [];
+    for (param in _ref) {
+      value = _ref[param];
+      _results.push($("input#" + param).val(value));
+    }
+    return _results;
   };
   return Assessment;
 })();

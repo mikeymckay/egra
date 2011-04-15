@@ -33,6 +33,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
     dataType: 'json',
     success: __bind(function(result) {
       var couchDocument, documents;
+      console.log("SUCCESS");
       documents = (function() {
         var _i, _len, _ref, _results;
         _ref = result.rows;
@@ -43,7 +44,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

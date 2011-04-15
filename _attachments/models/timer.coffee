@@ -1,7 +1,7 @@
 throw "No assessment loaded" if $.assessment is undefined
 
 # Live handler for buttons in timer control
-$("div.timer button").live 'click', (eventData) ->
+$("div.timer button").live 'mousedown', (eventData) ->
   buttonPressed = eventData.target.innerHTML
 # Call the timer method that has the same name as the button just pressed, i.e. "start" 
   $.assessment.currentPage.timer[buttonPressed]()
@@ -53,7 +53,6 @@ class Timer
     $("##{@page.pageId} .ui-checkbox span").removeClass("show")
 
   showLetters: ->
-    console.log "$('##{@page.pageId} .ui-checkbox spanr').addClass('show')"
     $("##{@page.pageId} .ui-checkbox span").addClass("show")
 
   _template: -> "

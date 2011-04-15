@@ -14,7 +14,6 @@ $(document).ready ->
     else
       EarlyGradeReadingAssessment.loadFromCouch()
 
-
 class EarlyGradeReadingAssessment
 EarlyGradeReadingAssessment.showMenu = ->
   url = "/egra/_all_docs"
@@ -24,6 +23,7 @@ EarlyGradeReadingAssessment.showMenu = ->
     type: 'GET',
     dataType: 'json',
     success: (result) =>
+      console.log "SUCCESS"
       documents = ("<a href='/egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
       $("body").html("
         <div data-role='page' id='menu'>
@@ -36,6 +36,8 @@ EarlyGradeReadingAssessment.showMenu = ->
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
             #{documents.join("<br/>")}
           </div><!-- /content -->
+          <div data-role='footer'>
+          </div><!-- /footer -->
         </div><!-- /page -->
       ")
       $.mobile.initializePage()

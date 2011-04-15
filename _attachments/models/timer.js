@@ -3,7 +3,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 if ($.assessment === void 0) {
   throw "No assessment loaded";
 }
-$("div.timer button").live('click', function(eventData) {
+$("div.timer button").live('mousedown', function(eventData) {
   var buttonPressed;
   buttonPressed = eventData.target.innerHTML;
   return $.assessment.currentPage.timer[buttonPressed]();
@@ -61,7 +61,6 @@ Timer = (function() {
     return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
   };
   Timer.prototype.showLetters = function() {
-    console.log("$('#" + this.page.pageId + " .ui-checkbox spanr').addClass('show')");
     return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {

@@ -34,6 +34,10 @@ class Assessment
   url: ->
     "#{@urlScheme}://#{@urlPath}"
 
+  hasUserAuthenticated: ->
+    loginResults = $.assessment.pages[0].results()
+    return loginResults.username != "" and loginResults.password != ""
+
   results: ->
     results = {}
     for page in @pages
@@ -147,10 +151,11 @@ class Assessment
 
       # Make sure that whenever a new page is shown we have access
       # To the instantiated page object
-      $('div').live 'pageshow', (event,ui) =>
+      $('div').live 'pagebeforeshow', (event,ui) =>
         for page in @pages
           if page.pageId is $(event.currentTarget).attr('id')
             @currentPage = page
+            return
 
       result = for page,i in @pages
         page.render()
@@ -166,6 +171,24 @@ class Assessment
       "
       callback(result) if callback?
       return result
+
+  handleURLParameters: ->
+    # Fill in forms from GET parameters
+    # Taken from:
+    # http://stackoverflow.com/questions/901115/get-querystring-values-in-javascript
+    return if @urlParams?
+    @urlParams = {}
+    a = /\+/g
+    r = /([^&=]+)=?([^&]*)/g
+    d = (s) ->
+      return decodeURIComponent(s.replace(a, " "))
+    q = window.location.search.substring(1)
+    while (e = r.exec(q))
+      @urlParams[d(e[1])] = d(e[2])
+
+    for param,value of @urlParams
+      $("input##{param}").val(value)
+
 
 Assessment.load = (url, callback) ->
   try

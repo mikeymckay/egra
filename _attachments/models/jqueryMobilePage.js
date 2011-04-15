@@ -232,6 +232,12 @@ JQueryLogin = (function() {
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    $("div").live("pageshow", function() {
+      $.assessment.handleURLParameters();
+      if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
+        return $.mobile.changePage("#Login");
+      }
+    });
   }
   return JQueryLogin;
 })();
@@ -268,7 +274,7 @@ SchoolPage = (function() {
   function SchoolPage(schools) {
     this.schools = schools;
     SchoolPage.__super__.constructor.call(this);
-    $("div#" + this.pageId + " li").live("mouseup", __bind(function(eventData) {
+    $("div#" + this.pageId + " li").live("mousedown", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
       _ref = ["name", "province", "district", "schoolId"];
@@ -355,7 +361,6 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage() {
     ResultsPage.__super__.constructor.call(this);
-    this.header = "";
     this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
@@ -363,6 +368,8 @@ ResultsPage = (function() {
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var validationResult;
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
+      console.log($("div#" + this.pageId + " div[data-role='footer'] span"));
+      $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
       if (validationResult === true) {
         $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
@@ -508,7 +515,7 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
-$("#Letters label").live('mouseup', function(eventData) {
+$("#Letters label").live('mousedown', function(eventData) {
   var checkbox;
   checkbox = $(eventData.currentTarget);
   checkbox.removeClass('ui-btn-active');
@@ -538,7 +545,7 @@ JQueryCheckboxGroup = (function() {
   function JQueryCheckboxGroup() {}
   JQueryCheckboxGroup.prototype.render = function() {
     var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 10;
+    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 5;
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
     fieldset_close = "</fieldset>";
     fieldsets = "";

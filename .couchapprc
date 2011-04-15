@@ -3,6 +3,9 @@
     "default" : {
       "db" : "http://localhost:5984/egra"
     },
+    "galaxy" : {
+      "db" : "http://galaxy:5984/egra"
+    },
     "public" : {
       "db" : "http://mikeymckay:con7qzw.@mikeymckay.couchone.com/egra"
     }

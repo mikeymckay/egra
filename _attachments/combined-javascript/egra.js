@@ -2789,6 +2789,11 @@ Assessment = (function() {
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
   };
+  Assessment.prototype.hasUserAuthenticated = function() {
+    var loginResults;
+    loginResults = $.assessment.pages[0].results();
+    return loginResults.username !== "" && loginResults.password !== "";
+  };
   Assessment.prototype.results = function() {
     var page, results, _i, _len, _ref;
     results = {};
@@ -2958,15 +2963,16 @@ Assessment = (function() {
     return this.onReady(__bind(function() {
       var i, page, result;
       $.assessment = this;
-      $('div').live('pageshow', __bind(function(event, ui) {
-        var page, _i, _len, _ref, _results;
+      $('div').live('pagebeforeshow', __bind(function(event, ui) {
+        var page, _i, _len, _ref;
         _ref = this.pages;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           page = _ref[_i];
-          _results.push(page.pageId === $(event.currentTarget).attr('id') ? this.currentPage = page : void 0);
+          if (page.pageId === $(event.currentTarget).attr('id')) {
+            this.currentPage = page;
+            return;
+          }
         }
-        return _results;
       }, this));
       result = (function() {
         var _len, _ref, _results;
@@ -2985,6 +2991,29 @@ Assessment = (function() {
       }
       return result;
     }, this));
+  };
+  Assessment.prototype.handleURLParameters = function() {
+    var a, d, e, param, q, r, value, _ref, _results;
+    if (this.urlParams != null) {
+      return;
+    }
+    this.urlParams = {};
+    a = /\+/g;
+    r = /([^&=]+)=?([^&]*)/g;
+    d = function(s) {
+      return decodeURIComponent(s.replace(a, " "));
+    };
+    q = window.location.search.substring(1);
+    while ((e = r.exec(q))) {
+      this.urlParams[d(e[1])] = d(e[2]);
+    }
+    _ref = this.urlParams;
+    _results = [];
+    for (param in _ref) {
+      value = _ref[param];
+      _results.push($("input#" + param).val(value));
+    }
+    return _results;
   };
   return Assessment;
 })();
@@ -3300,6 +3329,12 @@ JQueryLogin = (function() {
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    $("div").live("pageshow", function() {
+      $.assessment.handleURLParameters();
+      if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
+        return $.mobile.changePage("#Login");
+      }
+    });
   }
   return JQueryLogin;
 })();
@@ -3336,7 +3371,7 @@ SchoolPage = (function() {
   function SchoolPage(schools) {
     this.schools = schools;
     SchoolPage.__super__.constructor.call(this);
-    $("div#" + this.pageId + " li").live("mouseup", __bind(function(eventData) {
+    $("div#" + this.pageId + " li").live("mousedown", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
       _ref = ["name", "province", "district", "schoolId"];
@@ -3423,7 +3458,6 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage() {
     ResultsPage.__super__.constructor.call(this);
-    this.header = "";
     this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
@@ -3431,6 +3465,8 @@ ResultsPage = (function() {
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var validationResult;
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
+      console.log($("div#" + this.pageId + " div[data-role='footer'] span"));
+      $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
       if (validationResult === true) {
         $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
@@ -3576,7 +3612,7 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
-$("#Letters label").live('mouseup', function(eventData) {
+$("#Letters label").live('mousedown', function(eventData) {
   var checkbox;
   checkbox = $(eventData.currentTarget);
   checkbox.removeClass('ui-btn-active');
@@ -3606,7 +3642,7 @@ JQueryCheckboxGroup = (function() {
   function JQueryCheckboxGroup() {}
   JQueryCheckboxGroup.prototype.render = function() {
     var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 10;
+    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 5;
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
     fieldset_close = "</fieldset>";
     fieldsets = "";
@@ -3665,7 +3701,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 if ($.assessment === void 0) {
   throw "No assessment loaded";
 }
-$("div.timer button").live('click', function(eventData) {
+$("div.timer button").live('mousedown', function(eventData) {
   var buttonPressed;
   buttonPressed = eventData.target.innerHTML;
   return $.assessment.currentPage.timer[buttonPressed]();
@@ -3723,7 +3759,6 @@ Timer = (function() {
     return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
   };
   Timer.prototype.showLetters = function() {
-    console.log("$('#" + this.page.pageId + " .ui-checkbox spanr').addClass('show')");
     return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
@@ -3890,6 +3925,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
     dataType: 'json',
     success: __bind(function(result) {
       var couchDocument, documents;
+      console.log("SUCCESS");
       documents = (function() {
         var _i, _len, _ref, _results;
         _ref = result.rows;
@@ -3900,7 +3936,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

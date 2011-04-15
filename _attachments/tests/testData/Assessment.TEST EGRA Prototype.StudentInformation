@@ -53,7 +53,7 @@
     {
       "label": "Month of Birth",
       "name": "monthOfBirth",
-      "type": "vertical",
+      "type": "horizontal",
       "options": [
         "Unknown",
         "January",

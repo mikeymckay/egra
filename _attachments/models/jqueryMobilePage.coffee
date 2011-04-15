@@ -205,6 +205,11 @@ class JQueryLogin extends AssessmentPage
   </div>
 </form>
 "
+    $("div").live "pageshow", ->
+      $.assessment.handleURLParameters()
+      unless $.assessment.hasUserAuthenticated() or ($.assessment.currentPage.pageId is "Login")
+        $.mobile.changePage("#Login")
+
 class StudentInformationPage extends AssessmentPage
   propertiesForSerialization: ->
     properties = super()
@@ -242,7 +247,7 @@ StudentInformationPage.deserialize = (pageObject) ->
 class SchoolPage extends AssessmentPage
   constructor: (@schools) ->
     super()
-    $("div##{@pageId} li").live "mouseup", (eventData) =>
+    $("div##{@pageId} li").live "mousedown", (eventData) =>
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
@@ -340,7 +345,6 @@ class DateTimePage extends AssessmentPage
 class ResultsPage extends AssessmentPage
   constructor: ->
     super()
-    @header = ""
     @content = Handlebars.compile "
       <div class='resultsMessage'>
       </div>
@@ -359,7 +363,10 @@ class ResultsPage extends AssessmentPage
     super(data)
 
     $("div##{@pageId}").live "pageshow", =>
+      # Hide the back and next buttons
       $("div##{@pageId} div[data-role='header'] a").hide()
+      console.log $("div##{@pageId} div[data-role='footer'] span")
+      $("div##{@pageId} div[data-role='footer'] div").hide()
       validationResult = $.assessment.validate()
       if validationResult == true
         $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Validated")
@@ -451,7 +458,7 @@ LettersPage.deserialize = (pageObject) ->
   lettersPage.load(pageObject)
   return lettersPage
   
-$("#Letters label").live 'mouseup', (eventData) ->
+$("#Letters label").live 'mousedown', (eventData) ->
   checkbox = $(eventData.currentTarget)
   checkbox.removeClass('ui-btn-active')
   checkbox.toggleClass ->
@@ -476,7 +483,7 @@ class JQueryCheckbox
 
 class JQueryCheckboxGroup
   render: ->
-    @fieldset_size ?= 10
+    @fieldset_size ?= 5
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>"
     fieldset_close = "</fieldset>"
     fieldsets = ""
