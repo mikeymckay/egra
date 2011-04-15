@@ -179,13 +179,11 @@ AssessmentPage.validateCurrentPageUpdateNextButton = ->
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
 
 $('div.ui-footer button').live 'click', (event,ui) ->
-  console.log "YO"
   validationResult = $.assessment.currentPage.validate()
   if validationResult is true
     button = $(event.currentTarget)
     $.mobile.changePage(button.attr("href"))
   else
-    console.log validationResult
     $("#_infoPage div[data-role='content']").html(
       "Please fix the following before proceeding:<br/>" +
       validationResult
@@ -209,6 +207,12 @@ class JQueryLogin extends AssessmentPage
       $.assessment.handleURLParameters()
       unless $.assessment.hasUserAuthenticated() or ($.assessment.currentPage.pageId is "Login")
         $.mobile.changePage("#Login")
+
+  user: ->
+    @results().username
+
+  password: ->
+    @results().password
 
 class StudentInformationPage extends AssessmentPage
   propertiesForSerialization: ->
@@ -354,8 +358,12 @@ class ResultsPage extends AssessmentPage
         </pre>
       </div>
       <div data-inline='true'>
-        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>
-        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>
+        <!-- TODO insert username/password into GET string so we don't have to retype -->
+        <!--
+        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
+        -->
+        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname}?newAssessment=true'>Begin Another Assessment</a>
+        <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
       </div>
     "
 

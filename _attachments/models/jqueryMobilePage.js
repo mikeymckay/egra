@@ -216,13 +216,11 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
 $('div.ui-footer button').live('click', function(event, ui) {
   var button, validationResult;
-  console.log("YO");
   validationResult = $.assessment.currentPage.validate();
   if (validationResult === true) {
     button = $(event.currentTarget);
     return $.mobile.changePage(button.attr("href"));
   } else {
-    console.log(validationResult);
     $("#_infoPage div[data-role='content']").html("Please fix the following before proceeding:<br/>" + validationResult);
     return $.mobile.changePage("#_infoPage");
   }
@@ -239,6 +237,12 @@ JQueryLogin = (function() {
       }
     });
   }
+  JQueryLogin.prototype.user = function() {
+    return this.results().username;
+  };
+  JQueryLogin.prototype.password = function() {
+    return this.results().password;
+  };
   return JQueryLogin;
 })();
 StudentInformationPage = (function() {
@@ -361,7 +365,7 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage() {
     ResultsPage.__super__.constructor.call(this);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <a data-inline='true' data-role='button' href='#DateTime'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' href='#UserSummary'>Summary</a>      </div>    ");
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + document.location.pathname + "?newAssessment=true'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);

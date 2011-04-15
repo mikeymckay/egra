@@ -34,8 +34,17 @@ class Assessment
   url: ->
     "#{@urlScheme}://#{@urlPath}"
 
+  loginPage: ->
+    $.assessment.pages[0]
+
+  currentUser: ->
+    return @loginPage().results().username
+
+  currentPassword: ->
+    return @loginPage().results().password
+
   hasUserAuthenticated: ->
-    loginResults = $.assessment.pages[0].results()
+    loginResults = @loginPage().results()
     return loginResults.username != "" and loginResults.password != ""
 
   results: ->
@@ -44,9 +53,8 @@ class Assessment
       results[page.pageId] = page.results()
     return results
 
-  saveResults: ->
+  saveResults: (callback) ->
     results = @results()
-    console.log JSON.stringify(results)
     url = $.couchDBDatabasePath
     $.ajax
       url: url,
@@ -56,7 +64,7 @@ class Assessment
       data: JSON.stringify(results),
       error: ->
         throw "Could not PUT to #{url}"
-      complete: =>
+      complete: ->
         callback(results) if callback?
 
   validate: ->
@@ -188,6 +196,15 @@ class Assessment
 
     for param,value of @urlParams
       $("input##{param}").val(value)
+
+    if @urlParams.newAssessment
+      console.log $.assessment.currentPage.pageId
+# TODO Refactor
+      unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
+        $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
+        document.location = document.location.href
+
+
 
 
 Assessment.load = (url, callback) ->

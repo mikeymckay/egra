@@ -50,9 +50,18 @@ Assessment = (function() {
   Assessment.prototype.url = function() {
     return "" + this.urlScheme + "://" + this.urlPath;
   };
+  Assessment.prototype.loginPage = function() {
+    return $.assessment.pages[0];
+  };
+  Assessment.prototype.currentUser = function() {
+    return this.loginPage().results().username;
+  };
+  Assessment.prototype.currentPassword = function() {
+    return this.loginPage().results().password;
+  };
   Assessment.prototype.hasUserAuthenticated = function() {
     var loginResults;
-    loginResults = $.assessment.pages[0].results();
+    loginResults = this.loginPage().results();
     return loginResults.username !== "" && loginResults.password !== "";
   };
   Assessment.prototype.results = function() {
@@ -65,10 +74,9 @@ Assessment = (function() {
     }
     return results;
   };
-  Assessment.prototype.saveResults = function() {
+  Assessment.prototype.saveResults = function(callback) {
     var results, url;
     results = this.results();
-    console.log(JSON.stringify(results));
     url = $.couchDBDatabasePath;
     return $.ajax({
       url: url,
@@ -79,11 +87,11 @@ Assessment = (function() {
       error: function() {
         throw "Could not PUT to " + url;
       },
-      complete: __bind(function() {
-        if (typeof callback != "undefined" && callback !== null) {
+      complete: function() {
+        if (callback != null) {
           return callback(results);
         }
-      }, this)
+      }
     });
   };
   Assessment.prototype.validate = function() {
@@ -254,7 +262,7 @@ Assessment = (function() {
     }, this));
   };
   Assessment.prototype.handleURLParameters = function() {
-    var a, d, e, param, q, r, value, _ref, _results;
+    var a, d, e, param, q, r, value, _ref;
     if (this.urlParams != null) {
       return;
     }
@@ -269,12 +277,19 @@ Assessment = (function() {
       this.urlParams[d(e[1])] = d(e[2]);
     }
     _ref = this.urlParams;
-    _results = [];
     for (param in _ref) {
       value = _ref[param];
-      _results.push($("input#" + param).val(value));
+      $("input#" + param).val(value);
     }
-    return _results;
+    if (this.urlParams.newAssessment) {
+      console.log($.assessment.currentPage.pageId);
+      if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
+        if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
+          $.mobile.changePage("DateTime");
+        }
+        return document.location = document.location.href;
+      }
+    }
   };
   return Assessment;
 })();
