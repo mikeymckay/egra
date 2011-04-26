@@ -10,10 +10,11 @@ MIN = ${DIR}/${NAME}.min.js
 #CSSMIN = ${NAME}.min.css
 
 FILES = _attachments/jquery-1.5.min.js \
+  _attachments/css.js \
   _attachments/mustache.js \
   _attachments/handlebars.js \
   _attachments/inflection.js \
-  _attachments/mustache.js \
+  _attachments/underscore.js \
   _attachments/models/template.js \
   _attachments/models/assessment.js \
   _attachments/models/jqueryMobilePage.js \

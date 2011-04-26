@@ -34,7 +34,7 @@ Assessment = (function() {
       if (index !== 0) {
         page.previousPage = this.pages[index - 1].pageId;
       }
-      if (pages.length !== index + 1) {
+      if (this.pages.length !== index + 1) {
         page.nextPage = this.pages[index + 1].pageId;
       }
       page.urlScheme = this.urlScheme;
@@ -282,7 +282,6 @@ Assessment = (function() {
       $("input#" + param).val(value);
     }
     if (this.urlParams.newAssessment) {
-      console.log($.assessment.currentPage.pageId);
       if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
         if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
           $.mobile.changePage("DateTime");
@@ -349,11 +348,11 @@ Assessment.loadFromHTTP = function(url, callback) {
       var pages, urlPath, _i, _len, _ref;
       assessment = new Assessment(result.name);
       pages = [];
-      console.log(result.urlPathsForPages);
       _ref = result.urlPathsForPages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         urlPath = _ref[_i];
         url = baseUrl + urlPath;
+        console.log(url);
         JQueryMobilePage.loadFromHTTP({
           url: url,
           async: false

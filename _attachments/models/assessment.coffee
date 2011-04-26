@@ -22,7 +22,7 @@ class Assessment
       page.assessment = this
       page.pageNumber = index
       page.previousPage = @pages[index - 1].pageId unless index == 0
-      page.nextPage = @pages[index + 1].pageId unless pages.length == index + 1
+      page.nextPage = @pages[index + 1].pageId unless @pages.length == index + 1
       page.urlScheme = @urlScheme
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
@@ -198,7 +198,6 @@ class Assessment
       $("input##{param}").val(value)
 
     if @urlParams.newAssessment
-      console.log $.assessment.currentPage.pageId
 # TODO Refactor
       unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
@@ -248,9 +247,9 @@ Assessment.loadFromHTTP = (url, callback) ->
     success: (result) ->
       assessment = new Assessment(result.name)
       pages = []
-      console.log result.urlPathsForPages
       for urlPath in result.urlPathsForPages
         url = baseUrl + urlPath
+        console.log url
         JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
           result.assessment = assessment
           pages.push result

@@ -137,11 +137,17 @@ class AssessmentPage extends JQueryMobilePage
   addTimer: ->
     @timer = new Timer()
     @timer.setPage(this)
-#    @scorer = new Scorer()
-#    @scorer.setPage(this)
 
-    @controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>#{@timer.render()}</div>"
-    #@controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
+    @controls = "
+      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>
+        <div class='timer'>
+          #{@timer.render()}
+        </div>
+        <br/>
+        <br/>
+        <div class='message'>
+        </div>
+      </div>"
 
 ##
 # By default we expect all input fields to be filled
@@ -182,6 +188,7 @@ $('div.ui-footer button').live 'click', (event,ui) ->
   validationResult = $.assessment.currentPage.validate()
   if validationResult is true
     button = $(event.currentTarget)
+    console.log button
     $.mobile.changePage(button.attr("href"))
   else
     $("#_infoPage div[data-role='content']").html(
@@ -373,7 +380,6 @@ class ResultsPage extends AssessmentPage
     $("div##{@pageId}").live "pageshow", =>
       # Hide the back and next buttons
       $("div##{@pageId} div[data-role='header'] a").hide()
-      console.log $("div##{@pageId} div[data-role='footer'] span")
       $("div##{@pageId} div[data-role='footer'] div").hide()
       validationResult = $.assessment.validate()
       if validationResult == true
@@ -432,19 +438,27 @@ class LettersPage extends AssessmentPage
       @loading = false
 
   results: ->
+    return false unless @timer.hasStartedAndStopped()
     results = {}
     results.letters = new Array()
-    # Initialize to all wrong
-    results.letters[index] = false for checkbox,index in $("#Letters label")
     results.time_remain = @timer.seconds
     results.auto_stop = true if @timer.seconds
+    # Initialize to all wrong
+    results.letters[index] = false for checkbox,index in $("##{@pageId} label")
     results.attempted = null
-    for checkbox,index in $("#Letters label")
+    for checkbox,index in $("##{@pageId} label")
       checkbox = $(checkbox)
+      results.letters[index] = true unless checkbox.hasClass("ui-btn-active")
       if checkbox.hasClass("last-attempted")
-        results.attempted = index
+        results.attempted = index + 1
+        $("##{@pageId} .controls .message").html("
+          Correct: #{_.select(results.letters, (result) -> result).length}<br/>
+          Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
+          Attempted: #{results.attempted}<br/>
+        ")
         return results
-      results.letters[index] = true unless checkbox.hasClass("first_click")
+      else
+        $("##{@pageId} .controls .message").html("Select last letter attempted")
 
     return results
 
@@ -459,7 +473,7 @@ class LettersPage extends AssessmentPage
     else if results.attempted?
       return true
     else
-      return "The last letter attempted has not been selected (double tap to select)"
+      return "The last letter attempted has not been selected"
 
   $("#Letters label").live 'mousedown', (eventData) ->
     checkbox = $(eventData.currentTarget)

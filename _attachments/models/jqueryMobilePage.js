@@ -168,7 +168,7 @@ AssessmentPage = (function() {
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>" + (this.timer.render()) + "</div>";
+    return this.controls = "      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>        <div class='timer'>          " + (this.timer.render()) + "        </div>        <br/>        <br/>        <div class='message'>        </div>      </div>";
   };
   AssessmentPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -219,6 +219,7 @@ $('div.ui-footer button').live('click', function(event, ui) {
   validationResult = $.assessment.currentPage.validate();
   if (validationResult === true) {
     button = $(event.currentTarget);
+    console.log(button);
     return $.mobile.changePage(button.attr("href"));
   } else {
     $("#_infoPage div[data-role='content']").html("Please fix the following before proceeding:<br/>" + validationResult);
@@ -372,7 +373,6 @@ ResultsPage = (function() {
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var validationResult;
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
-      console.log($("div#" + this.pageId + " div[data-role='footer'] span"));
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
       if (validationResult === true) {
@@ -468,28 +468,38 @@ LettersPage = (function() {
   };
   LettersPage.prototype.results = function() {
     var checkbox, index, results, _len, _len2, _ref, _ref2;
+    if (!this.timer.hasStartedAndStopped()) {
+      return false;
+    }
     results = {};
     results.letters = new Array();
-    _ref = $("#Letters label");
-    for (index = 0, _len = _ref.length; index < _len; index++) {
-      checkbox = _ref[index];
-      results.letters[index] = false;
-    }
     results.time_remain = this.timer.seconds;
     if (this.timer.seconds) {
       results.auto_stop = true;
     }
+    _ref = $("#" + this.pageId + " label");
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      checkbox = _ref[index];
+      results.letters[index] = false;
+    }
     results.attempted = null;
-    _ref2 = $("#Letters label");
+    _ref2 = $("#" + this.pageId + " label");
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       checkbox = _ref2[index];
       checkbox = $(checkbox);
-      if (checkbox.hasClass("last-attempted")) {
-        results.attempted = index;
-        return results;
-      }
-      if (!checkbox.hasClass("first_click")) {
+      if (!checkbox.hasClass("ui-btn-active")) {
         results.letters[index] = true;
+      }
+      if (checkbox.hasClass("last-attempted")) {
+        results.attempted = index + 1;
+        $("#" + this.pageId + " .controls .message").html("          Correct: " + (_.select(results.letters, function(result) {
+          return result;
+        }).length) + "<br/>          Incorrect: " + (_.select(results.letters, function(result) {
+          return !result;
+        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>        ");
+        return results;
+      } else {
+        $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
       }
     }
     return results;
@@ -508,7 +518,7 @@ LettersPage = (function() {
     } else if (results.attempted != null) {
       return true;
     } else {
-      return "The last letter attempted has not been selected (double tap to select)";
+      return "The last letter attempted has not been selected";
     }
   };
   $("#Letters label").live('mousedown', function(eventData) {
