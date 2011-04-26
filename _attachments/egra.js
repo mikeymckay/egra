@@ -7,11 +7,11 @@ $(document).ready(function() {
   switch (document.location.search) {
     case "?deleteFromCouch=true":
       return EarlyGradeReadingAssessment.deleteFromCouch(function() {
-        return EarlyGradeReadingAssessment.showMenu();
+        return document.location = "index.html?showMenu=true";
       });
     case "?loadFromTestDataSaveToCouch=true":
       return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
-        return EarlyGradeReadingAssessment.showMenu();
+        return document.location = "index.html?showMenu=true";
       });
     case "?showMenu=true":
       return EarlyGradeReadingAssessment.showMenu();
@@ -25,6 +25,7 @@ EarlyGradeReadingAssessment = (function() {
 })();
 EarlyGradeReadingAssessment.showMenu = function() {
   var url;
+  console.log("SHOWING MENU");
   url = "/egra/_all_docs";
   return $.ajax({
     url: url,
@@ -40,11 +41,11 @@ EarlyGradeReadingAssessment.showMenu = function() {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           couchDocument = _ref[_i];
-          _results.push("<a href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+          _results.push("<a rel='external' href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

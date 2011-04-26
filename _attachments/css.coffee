@@ -17,17 +17,14 @@ $("head").append "
     #Letters .ui-checkbox span{
       color: transparent;
     }
-
-    #Letters label.first_click{
-      background-image: -moz-linear-gradient(top, #FFFFFF, #{first_click_color}); 
-      background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{first_click_color}')\"; 
-    }
-    #Letters label.second_click{
-      background-image: -moz-linear-gradient(top, #FFFFFF, #{second_click_color}); 
-      background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{second_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{second_click_color}')\";
-    }
     #Letters .ui-btn-active{
       background-image: none;
     }
+
+    #Letters .ui-checkbox .last-attempted{
+      outline: 5px solid #{yellow};
+      outline-offset: -10px;
+    }
+
   </style>
   "

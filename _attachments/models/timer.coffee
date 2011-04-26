@@ -33,9 +33,11 @@ class Timer
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
-    @hideLetters()
     @running = false
     clearInterval(@intervalId)
+
+  hasStartedAndStopped: ->
+    return (@seconds != 60) and (@running == false)
 
   reset: ->
     @seconds = 60

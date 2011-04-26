@@ -229,7 +229,7 @@ JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
     $("div").live("pageshow", function() {
       $.assessment.handleURLParameters();
       if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
@@ -432,7 +432,7 @@ LettersPage = (function() {
       return _results;
     }).call(this);
     this.addTimer();
-    this.content = lettersCheckboxes.three_way_render();
+    this.content = lettersCheckboxes.render();
   }
   LettersPage.prototype.propertiesForSerialization = function() {
     var properties;
@@ -462,7 +462,7 @@ LettersPage = (function() {
         }
         return _results;
       }).call(this);
-      this.content = lettersCheckboxes.three_way_render();
+      this.content = lettersCheckboxes.render();
       return this.loading = false;
     }, this));
   };
@@ -484,7 +484,7 @@ LettersPage = (function() {
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       checkbox = _ref2[index];
       checkbox = $(checkbox);
-      if (checkbox.hasClass("second_click")) {
+      if (checkbox.hasClass("last-attempted")) {
         results.attempted = index;
         return results;
       }
@@ -511,6 +511,16 @@ LettersPage = (function() {
       return "The last letter attempted has not been selected (double tap to select)";
     }
   };
+  $("#Letters label").live('mousedown', function(eventData) {
+    var checkbox, timer;
+    checkbox = $(eventData.currentTarget);
+    timer = $.assessment.currentPage.timer;
+    if (timer.hasStartedAndStopped()) {
+      $("#Letters label").removeClass('last-attempted');
+      checkbox.toggleClass('last-attempted');
+      return false;
+    }
+  });
   return LettersPage;
 })();
 LettersPage.deserialize = function(pageObject) {
@@ -519,22 +529,6 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
-$("#Letters label").live('mousedown', function(eventData) {
-  var checkbox;
-  checkbox = $(eventData.currentTarget);
-  checkbox.removeClass('ui-btn-active');
-  return checkbox.toggleClass(function() {
-    if (checkbox.is('.first_click')) {
-      checkbox.removeClass('first_click');
-      return 'second_click';
-    } else if (checkbox.is('.second_click')) {
-      checkbox.removeClass('second_click');
-      return '';
-    } else {
-      return 'first_click';
-    }
-  });
-});
 JQueryCheckbox = (function() {
   function JQueryCheckbox() {}
   JQueryCheckbox.prototype.render = function() {
@@ -565,12 +559,6 @@ JQueryCheckboxGroup = (function() {
       }
     }
     return "<div data-role='content'>	  <form>    " + fieldsets + "  </form></div>    ";
-  };
-  JQueryCheckboxGroup.prototype.three_way_render = function() {
-    var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#F7C942";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#5E87B0";
-    return this.render();
   };
   return JQueryCheckboxGroup;
 })();

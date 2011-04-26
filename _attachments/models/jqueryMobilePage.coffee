@@ -197,7 +197,7 @@ class JQueryLogin extends AssessmentPage
 <form>
   <div data-role='fieldcontain'>
     <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='Enumia' />
+    <input type='text' name='username' id='username' value='' />
     <label for='password'>Password:</label>
     <input type='password' name='password' id='password' value='' />
   </div>
@@ -409,7 +409,7 @@ class LettersPage extends AssessmentPage
       checkbox.content = letter
       checkbox
     @addTimer()
-    @content = lettersCheckboxes.three_way_render()
+    @content = lettersCheckboxes.render()
 
   propertiesForSerialization: ->
     properties = super()
@@ -428,7 +428,7 @@ class LettersPage extends AssessmentPage
         checkbox.unique_name = "checkbox_" + index
         checkbox.content = letter
         checkbox
-      @content = lettersCheckboxes.three_way_render()
+      @content = lettersCheckboxes.render()
       @loading = false
 
   results: ->
@@ -441,7 +441,7 @@ class LettersPage extends AssessmentPage
     results.attempted = null
     for checkbox,index in $("#Letters label")
       checkbox = $(checkbox)
-      if checkbox.hasClass("second_click")
+      if checkbox.hasClass("last-attempted")
         results.attempted = index
         return results
       results.letters[index] = true unless checkbox.hasClass("first_click")
@@ -461,24 +461,18 @@ class LettersPage extends AssessmentPage
     else
       return "The last letter attempted has not been selected (double tap to select)"
 
+  $("#Letters label").live 'mousedown', (eventData) ->
+    checkbox = $(eventData.currentTarget)
+    timer = $.assessment.currentPage.timer
+    if timer.hasStartedAndStopped()
+      $("#Letters label").removeClass('last-attempted')
+      checkbox.toggleClass('last-attempted')
+      return false
+
 LettersPage.deserialize = (pageObject) ->
   lettersPage = new LettersPage(pageObject.letters)
   lettersPage.load(pageObject)
   return lettersPage
-  
-$("#Letters label").live 'mousedown', (eventData) ->
-  checkbox = $(eventData.currentTarget)
-  checkbox.removeClass('ui-btn-active')
-  checkbox.toggleClass ->
-    if(checkbox.is('.first_click'))
-      checkbox.removeClass('first_click')
-      return 'second_click'
-    else if(checkbox.is('.second_click'))
-      checkbox.removeClass('second_click')
-      return ''
-    else
-      return 'first_click'
-
 
 class JQueryCheckbox
   render: ->
@@ -508,37 +502,3 @@ class JQueryCheckboxGroup
   </form>
 </div>
     "
-
-  three_way_render: ->
-    @first_click_color ?= "#F7C942"
-    @second_click_color ?= "#5E87B0"
-
-    this.render()
-#    this.render() +
-## TODO rewrite as coffeescript and use jquery .live for binding click event
-#    "
-#    <style>
-#      #Letters .ui-checkbox span.show{
-#        color: black;
-#      }
-#
-#      #Letters .ui-checkbox span{
-#        color: transparent;
-#      }
-#
-#      #Letters label.first_click{
-#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
-#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@first_click_color}')\"; 
-#      }
-#      #Letters label.second_click{
-#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@second_click_color}); 
-#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@second_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@second_click_color}')\";
-#      }
-#      #Letters .ui-btn-active{
-#        background-image: none;
-#      }
-#    </style>
-#    "
-#
-#
-#

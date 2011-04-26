@@ -349,6 +349,7 @@ Assessment.loadFromHTTP = function(url, callback) {
       var pages, urlPath, _i, _len, _ref;
       assessment = new Assessment(result.name);
       pages = [];
+      console.log(result.urlPathsForPages);
       _ref = result.urlPathsForPages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         urlPath = _ref[_i];

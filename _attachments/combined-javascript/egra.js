@@ -3088,6 +3088,7 @@ Assessment.loadFromHTTP = function(url, callback) {
       var pages, urlPath, _i, _len, _ref;
       assessment = new Assessment(result.name);
       pages = [];
+      console.log(result.urlPathsForPages);
       _ref = result.urlPathsForPages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         urlPath = _ref[_i];
@@ -3341,7 +3342,7 @@ JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
     $("div").live("pageshow", function() {
       $.assessment.handleURLParameters();
       if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
@@ -3544,7 +3545,7 @@ LettersPage = (function() {
       return _results;
     }).call(this);
     this.addTimer();
-    this.content = lettersCheckboxes.three_way_render();
+    this.content = lettersCheckboxes.render();
   }
   LettersPage.prototype.propertiesForSerialization = function() {
     var properties;
@@ -3574,7 +3575,7 @@ LettersPage = (function() {
         }
         return _results;
       }).call(this);
-      this.content = lettersCheckboxes.three_way_render();
+      this.content = lettersCheckboxes.render();
       return this.loading = false;
     }, this));
   };
@@ -3596,7 +3597,7 @@ LettersPage = (function() {
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       checkbox = _ref2[index];
       checkbox = $(checkbox);
-      if (checkbox.hasClass("second_click")) {
+      if (checkbox.hasClass("last-attempted")) {
         results.attempted = index;
         return results;
       }
@@ -3623,6 +3624,16 @@ LettersPage = (function() {
       return "The last letter attempted has not been selected (double tap to select)";
     }
   };
+  $("#Letters label").live('mousedown', function(eventData) {
+    var checkbox, timer;
+    checkbox = $(eventData.currentTarget);
+    timer = $.assessment.currentPage.timer;
+    if (timer.hasStartedAndStopped()) {
+      $("#Letters label").removeClass('last-attempted');
+      checkbox.toggleClass('last-attempted');
+      return false;
+    }
+  });
   return LettersPage;
 })();
 LettersPage.deserialize = function(pageObject) {
@@ -3631,22 +3642,6 @@ LettersPage.deserialize = function(pageObject) {
   lettersPage.load(pageObject);
   return lettersPage;
 };
-$("#Letters label").live('mousedown', function(eventData) {
-  var checkbox;
-  checkbox = $(eventData.currentTarget);
-  checkbox.removeClass('ui-btn-active');
-  return checkbox.toggleClass(function() {
-    if (checkbox.is('.first_click')) {
-      checkbox.removeClass('first_click');
-      return 'second_click';
-    } else if (checkbox.is('.second_click')) {
-      checkbox.removeClass('second_click');
-      return '';
-    } else {
-      return 'first_click';
-    }
-  });
-});
 JQueryCheckbox = (function() {
   function JQueryCheckbox() {}
   JQueryCheckbox.prototype.render = function() {
@@ -3677,12 +3672,6 @@ JQueryCheckboxGroup = (function() {
       }
     }
     return "<div data-role='content'>	  <form>    " + fieldsets + "  </form></div>    ";
-  };
-  JQueryCheckboxGroup.prototype.three_way_render = function() {
-    var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#F7C942";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#5E87B0";
-    return this.render();
   };
   return JQueryCheckboxGroup;
 })();var Scorer;
@@ -3758,9 +3747,11 @@ Timer = (function() {
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
-    this.hideLetters();
     this.running = false;
     return clearInterval(this.intervalId);
+  };
+  Timer.prototype.hasStartedAndStopped = function() {
+    return (this.seconds !== 60) && (this.running === false);
   };
   Timer.prototype.reset = function() {
     this.seconds = 60;
@@ -3918,11 +3909,11 @@ $(document).ready(function() {
   switch (document.location.search) {
     case "?deleteFromCouch=true":
       return EarlyGradeReadingAssessment.deleteFromCouch(function() {
-        return EarlyGradeReadingAssessment.showMenu();
+        return document.location = "index.html?showMenu=true";
       });
     case "?loadFromTestDataSaveToCouch=true":
       return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
-        return EarlyGradeReadingAssessment.showMenu();
+        return document.location = "index.html?showMenu=true";
       });
     case "?showMenu=true":
       return EarlyGradeReadingAssessment.showMenu();
@@ -3936,6 +3927,7 @@ EarlyGradeReadingAssessment = (function() {
 })();
 EarlyGradeReadingAssessment.showMenu = function() {
   var url;
+  console.log("SHOWING MENU");
   url = "/egra/_all_docs";
   return $.ajax({
     url: url,
@@ -3951,11 +3943,11 @@ EarlyGradeReadingAssessment.showMenu = function() {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           couchDocument = _ref[_i];
-          _results.push("<a href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+          _results.push("<a rel='external' href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

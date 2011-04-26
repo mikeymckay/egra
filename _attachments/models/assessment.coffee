@@ -248,6 +248,7 @@ Assessment.loadFromHTTP = (url, callback) ->
     success: (result) ->
       assessment = new Assessment(result.name)
       pages = []
+      console.log result.urlPathsForPages
       for urlPath in result.urlPathsForPages
         url = baseUrl + urlPath
         JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
