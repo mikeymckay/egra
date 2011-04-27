@@ -11,12 +11,13 @@ $(document).ready ->
         document.location = "index.html?showMenu=true"
     when "?showMenu=true"
       EarlyGradeReadingAssessment.showMenu()
+    when "?printout=true"
+      EarlyGradeReadingAssessment.print()
     else
       EarlyGradeReadingAssessment.loadFromCouch()
 
 class EarlyGradeReadingAssessment
 EarlyGradeReadingAssessment.showMenu = ->
-  console.log "SHOWING MENU"
   url = "/egra/_all_docs"
   $.ajax
     url: url,
@@ -24,7 +25,6 @@ EarlyGradeReadingAssessment.showMenu = ->
     type: 'GET',
     dataType: 'json',
     success: (result) =>
-      console.log "SUCCESS"
       documents = ("<a rel='external' href='/egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
       $("body").html("
         <div data-role='page' id='menu'>
@@ -32,9 +32,10 @@ EarlyGradeReadingAssessment.showMenu = ->
             <h1>Admin Menu</h1>
           </div><!-- /header -->
           <div data-role='content'>	
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
             #{documents.join("<br/>")}
           </div><!-- /content -->
           <div data-role='footer'>
@@ -44,6 +45,26 @@ EarlyGradeReadingAssessment.showMenu = ->
       $.mobile.initializePage()
     error: ->
       throw "Could not GET #{url}"
+
+EarlyGradeReadingAssessment.print = ->
+  Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+    assessment.toPaper (result) ->
+      style = "
+        body{
+          font-family: Arial;
+        }
+        .page-break{
+          display: block;
+          page-break-before: always;
+        }
+        input{
+          height: 50px;  
+          border: 1px
+        }
+      "
+      $("body").html(result)
+      # Remove the jquery mobile stylesheet
+      $("link").remove()
 
 EarlyGradeReadingAssessment.loadFromCouch = ->
   Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->

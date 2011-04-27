@@ -265,6 +265,26 @@ Assessment = (function() {
     $('.ui-content').toggleClass("red");
     return setTimeout("$('.ui-content').toggleClass('red')", 1000);
   };
+  Assessment.prototype.toPaper = function(callback) {
+    return this.onReady(__bind(function() {
+      var i, page, result;
+      result = (function() {
+        var _len, _ref, _results;
+        _ref = this.pages;
+        _results = [];
+        for (i = 0, _len = _ref.length; i < _len; i++) {
+          page = _ref[i];
+          _results.push(("<h1>" + (page.name()) + "</h1>") + page.toPaper());
+        }
+        return _results;
+      }).call(this);
+      result = result.join("<div class='page-break'><hr/></div>");
+      if (callback != null) {
+        callback(result);
+      }
+      return result;
+    }, this));
+  };
   Assessment.prototype.handleURLParameters = function() {
     var a, d, e, param, q, r, value, _ref;
     if (this.urlParams != null) {
@@ -356,7 +376,6 @@ Assessment.loadFromHTTP = function(url, callback) {
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         urlPath = _ref[_i];
         url = baseUrl + urlPath;
-        console.log(url);
         JQueryMobilePage.loadFromHTTP({
           url: url,
           async: false

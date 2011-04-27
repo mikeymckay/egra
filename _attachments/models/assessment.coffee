@@ -184,6 +184,14 @@ class Assessment
     $('.ui-content').toggleClass("red")
     setTimeout("$('.ui-content').toggleClass('red')",1000)
 
+  toPaper: (callback) ->
+    @onReady =>
+      result = for page,i in @pages
+        "<h1>#{page.name()}</h1>" + page.toPaper()
+      result = result.join("<div class='page-break'><hr/></div>")
+      callback(result) if callback?
+      return result
+
   handleURLParameters: ->
     # Fill in forms from GET parameters
     # Taken from:
@@ -253,7 +261,6 @@ Assessment.loadFromHTTP = (url, callback) ->
       pages = []
       for urlPath in result.urlPathsForPages
         url = baseUrl + urlPath
-        console.log url
         JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
           result.assessment = assessment
           pages.push result

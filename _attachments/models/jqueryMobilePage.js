@@ -103,6 +103,9 @@ JQueryMobilePage = (function() {
   JQueryMobilePage.prototype._template = function() {
     return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
   };
+  JQueryMobilePage.prototype.toPaper = function() {
+    return this.content;
+  };
   return JQueryMobilePage;
 })();
 JQueryMobilePage.deserialize = function(pageObject) {

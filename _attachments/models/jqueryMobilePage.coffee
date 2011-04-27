@@ -89,6 +89,8 @@ class JQueryMobilePage
   </div><!-- /header -->
 </div><!-- /page -->
 "
+  toPaper: ->
+    @content
 
 #TODO Fix this - why can't we use load?
 JQueryMobilePage.deserialize = (pageObject) ->

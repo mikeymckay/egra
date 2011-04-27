@@ -15,6 +15,8 @@ $(document).ready(function() {
       });
     case "?showMenu=true":
       return EarlyGradeReadingAssessment.showMenu();
+    case "?printout=true":
+      return EarlyGradeReadingAssessment.print();
     default:
       return EarlyGradeReadingAssessment.loadFromCouch();
   }
@@ -25,7 +27,6 @@ EarlyGradeReadingAssessment = (function() {
 })();
 EarlyGradeReadingAssessment.showMenu = function() {
   var url;
-  console.log("SHOWING MENU");
   url = "/egra/_all_docs";
   return $.ajax({
     url: url,
@@ -34,7 +35,6 @@ EarlyGradeReadingAssessment.showMenu = function() {
     dataType: 'json',
     success: __bind(function(result) {
       var couchDocument, documents;
-      console.log("SUCCESS");
       documents = (function() {
         var _i, _len, _ref, _results;
         _ref = result.rows;
@@ -45,12 +45,22 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {
       throw "Could not GET " + url;
     }
+  });
+};
+EarlyGradeReadingAssessment.print = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+    return assessment.toPaper(function(result) {
+      var style;
+      style = "        body{          font-family: Arial;        }        .page-break{          display: block;          page-break-before: always;        }        input{          height: 50px;            border: 1px        }      ";
+      $("body").html(result);
+      return $("link").remove();
+    });
   });
 };
 EarlyGradeReadingAssessment.loadFromCouch = function() {
