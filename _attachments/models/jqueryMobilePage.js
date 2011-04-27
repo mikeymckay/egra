@@ -433,6 +433,12 @@ LettersPage = (function() {
     }).call(this);
     this.addTimer();
     this.content = lettersCheckboxes.render();
+    $("#Letters label").live('mousedown', __bind(function(eventData) {
+      if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
+        $("#Letters label").removeClass('last-attempted');
+        return $(eventData.currentTarget).toggleClass('last-attempted');
+      }
+    }, this));
   }
   LettersPage.prototype.propertiesForSerialization = function() {
     var properties;
@@ -467,16 +473,24 @@ LettersPage = (function() {
     }, this));
   };
   LettersPage.prototype.results = function() {
-    var checkbox, index, results, _len, _len2, _ref, _ref2;
+    var checkbox, firstTenPercent, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
+    results = {};
+    items = $("#" + this.pageId + " label");
+    tenPercentOfItems = items.length / 10;
+    firstTenPercent = items.slice(0, (tenPercentOfItems - 1 + 1) || 9e9);
+    if (_.select(firstTenPercent, function(item) {
+      return $(item).hasClass("ui-btn-active");
+    }).length === tenPercentOfItems) {
+      results.auto_stop = true;
+      $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
+      this.timer.stop();
+      $.assessment.flash();
+    }
     if (!this.timer.hasStartedAndStopped()) {
       return false;
     }
-    results = {};
     results.letters = new Array();
     results.time_remain = this.timer.seconds;
-    if (this.timer.seconds) {
-      results.auto_stop = true;
-    }
     _ref = $("#" + this.pageId + " label");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       checkbox = _ref[index];
@@ -496,7 +510,7 @@ LettersPage = (function() {
           return result;
         }).length) + "<br/>          Incorrect: " + (_.select(results.letters, function(result) {
           return !result;
-        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>        ");
+        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>          Autostopped: " + results.auto_stop + "        ");
         return results;
       } else {
         $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
@@ -521,16 +535,6 @@ LettersPage = (function() {
       return "The last letter attempted has not been selected";
     }
   };
-  $("#Letters label").live('mousedown', function(eventData) {
-    var checkbox, timer;
-    checkbox = $(eventData.currentTarget);
-    timer = $.assessment.currentPage.timer;
-    if (timer.hasStartedAndStopped()) {
-      $("#Letters label").removeClass('last-attempted');
-      checkbox.toggleClass('last-attempted');
-      return false;
-    }
-  });
   return LettersPage;
 })();
 LettersPage.deserialize = function(pageObject) {

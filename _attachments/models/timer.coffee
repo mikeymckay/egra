@@ -27,8 +27,8 @@ class Timer
     decrement = =>
       @seconds -= @tick_value
       if @seconds == 0
-        @running = false
-        clearInterval(@intervalId)
+        @stop()
+        $.assessment.flash()
       @renderSeconds()
     @intervalId = setInterval(decrement,@tick_value*1000)
 

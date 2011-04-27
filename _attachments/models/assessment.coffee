@@ -180,6 +180,10 @@ class Assessment
       callback(result) if callback?
       return result
 
+  flash: ->
+    $('.ui-content').toggleClass("red")
+    setTimeout("$('.ui-content').toggleClass('red')",1000)
+
   handleURLParameters: ->
     # Fill in forms from GET parameters
     # Taken from:

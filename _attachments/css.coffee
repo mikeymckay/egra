@@ -6,6 +6,7 @@ blue = "#5E87B0"
 yellow = "#F7C942"
 first_click_color = yellow
 second_click_color = blue
+red = "red"
 
 $("head").append "
   <style>
@@ -24,6 +25,11 @@ $("head").append "
     #Letters .ui-checkbox .last-attempted{
       outline: 5px solid #{yellow};
       outline-offset: -10px;
+    }
+
+    .red {
+      color: #{red};
+      background-color: #{red};
     }
 
   </style>

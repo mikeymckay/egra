@@ -417,6 +417,11 @@ class LettersPage extends AssessmentPage
     @addTimer()
     @content = lettersCheckboxes.render()
 
+    $("#Letters label").live 'mousedown', (eventData) =>
+      if $.assessment.currentPage.timer.hasStartedAndStopped()
+        $("#Letters label").removeClass('last-attempted')
+        $(eventData.currentTarget).toggleClass('last-attempted')
+
   propertiesForSerialization: ->
     properties = super()
     properties.push("letters")
@@ -438,11 +443,21 @@ class LettersPage extends AssessmentPage
       @loading = false
 
   results: ->
-    return false unless @timer.hasStartedAndStopped()
     results = {}
+
+    # Check if the first 10% are all wrong, if so auto_stop
+    items = $("##{@pageId} label")
+    tenPercentOfItems = items.length/10
+    firstTenPercent = items[0..tenPercentOfItems-1]
+    if _.select(firstTenPercent, (item) -> $(item).hasClass("ui-btn-active")).length == tenPercentOfItems
+      results.auto_stop = true
+      $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
+      @timer.stop()
+      $.assessment.flash()
+
+    return false unless @timer.hasStartedAndStopped()
     results.letters = new Array()
     results.time_remain = @timer.seconds
-    results.auto_stop = true if @timer.seconds
     # Initialize to all wrong
     results.letters[index] = false for checkbox,index in $("##{@pageId} label")
     results.attempted = null
@@ -455,6 +470,7 @@ class LettersPage extends AssessmentPage
           Correct: #{_.select(results.letters, (result) -> result).length}<br/>
           Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
           Attempted: #{results.attempted}<br/>
+          Autostopped: #{results.auto_stop}
         ")
         return results
       else
@@ -475,13 +491,6 @@ class LettersPage extends AssessmentPage
     else
       return "The last letter attempted has not been selected"
 
-  $("#Letters label").live 'mousedown', (eventData) ->
-    checkbox = $(eventData.currentTarget)
-    timer = $.assessment.currentPage.timer
-    if timer.hasStartedAndStopped()
-      $("#Letters label").removeClass('last-attempted')
-      checkbox.toggleClass('last-attempted')
-      return false
 
 LettersPage.deserialize = (pageObject) ->
   lettersPage = new LettersPage(pageObject.letters)

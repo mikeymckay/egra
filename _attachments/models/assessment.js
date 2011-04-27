@@ -261,6 +261,10 @@ Assessment = (function() {
       return result;
     }, this));
   };
+  Assessment.prototype.flash = function() {
+    $('.ui-content').toggleClass("red");
+    return setTimeout("$('.ui-content').toggleClass('red')", 1000);
+  };
   Assessment.prototype.handleURLParameters = function() {
     var a, d, e, param, q, r, value, _ref;
     if (this.urlParams != null) {
