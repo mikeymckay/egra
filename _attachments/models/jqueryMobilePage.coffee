@@ -190,7 +190,6 @@ $('div.ui-footer button').live 'click', (event,ui) ->
   validationResult = $.assessment.currentPage.validate()
   if validationResult is true
     button = $(event.currentTarget)
-    console.log button
     $.mobile.changePage(button.attr("href"))
   else
     $("#_infoPage div[data-role='content']").html(

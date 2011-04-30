@@ -222,7 +222,6 @@ $('div.ui-footer button').live('click', function(event, ui) {
   validationResult = $.assessment.currentPage.validate();
   if (validationResult === true) {
     button = $(event.currentTarget);
-    console.log(button);
     return $.mobile.changePage(button.attr("href"));
   } else {
     $("#_infoPage div[data-role='content']").html("Please fix the following before proceeding:<br/>" + validationResult);
