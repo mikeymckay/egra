@@ -182,7 +182,7 @@ class Assessment
 
   flash: ->
     $('.ui-content').toggleClass("red")
-    setTimeout("$('.ui-content').toggleClass('red')",1000)
+    setTimeout("$('.ui-content').toggleClass('red')",2000)
 
   toPaper: (callback) ->
     @onReady =>

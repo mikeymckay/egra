@@ -263,7 +263,7 @@ Assessment = (function() {
   };
   Assessment.prototype.flash = function() {
     $('.ui-content').toggleClass("red");
-    return setTimeout("$('.ui-content').toggleClass('red')", 1000);
+    return setTimeout("$('.ui-content').toggleClass('red')", 2000);
   };
   Assessment.prototype.toPaper = function(callback) {
     return this.onReady(__bind(function() {

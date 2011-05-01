@@ -278,7 +278,7 @@ class SchoolPage extends AssessmentPage
     listAttributes = ""
     for dataAttribute in properties
       listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
-    listElement = "<li #{listAttributes}>{{name}}</li>"
+    listElement = "<li #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
 
     inputElements = ""
     for dataAttribute in properties
@@ -339,7 +339,7 @@ class DateTimePage extends AssessmentPage
   </div>
   <div data-role='fieldcontain'>
     <label for='time'>Time:</label>
-    <input type='number' name='time' id='time' />
+    <input type='text' name='time' id='time' />
   </div>
 </form>
 "
@@ -418,10 +418,15 @@ class LettersPage extends AssessmentPage
     @addTimer()
     @content = lettersCheckboxes.render()
 
+    # TODO fix this to not use Letters - need to figure out how
     $("#Letters label").live 'mousedown', (eventData) =>
       if $.assessment.currentPage.timer.hasStartedAndStopped()
         $("#Letters label").removeClass('last-attempted')
         $(eventData.currentTarget).toggleClass('last-attempted')
+
+    #$("#Letters button .toggle-line").live 'mousedown', (eventData) =>
+    #  console.log "FPP"
+    #  return false
 
   propertiesForSerialization: ->
     properties = super()
@@ -471,7 +476,7 @@ class LettersPage extends AssessmentPage
           Correct: #{_.select(results.letters, (result) -> result).length}<br/>
           Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
           Attempted: #{results.attempted}<br/>
-          Autostopped: #{results.auto_stop}
+          Autostopped: #{results.auto_stop || false}
         ")
         return results
       else
@@ -511,6 +516,7 @@ class JQueryCheckboxGroup
   render: ->
     @fieldset_size ?= 5
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>"
+    #fieldset_close = "<button class='toggle-line' data-icon='delete' data-iconpos='notext'>Toggle Line</button></fieldset>"
     fieldset_close = "</fieldset>"
     fieldsets = ""
 

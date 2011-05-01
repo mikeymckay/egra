@@ -22,7 +22,7 @@ yellow = "#F7C942";
 first_click_color = yellow;
 second_click_color = blue;
 red = "red";
-$("head").append("  <style>    #Letters .ui-checkbox span.show{      color: black;    }    #Letters .ui-checkbox span{      color: transparent;    }    #Letters .ui-btn-active{      background-image: none;    }    #Letters .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    .red {      color: " + red + ";      background-color: " + red + ";    }  </style>  ");/*
+$("head").append("  <style>    #Letters .ui-checkbox span.show{      color: black;    }    #Letters .ui-checkbox span{      color: lightgray;    }    #Letters .ui-btn-active{      background-image: none;    }    #Letters .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    #Letters .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    .red {      color: " + red + ";      background-color: " + red + ";    }  </style>  ");/*
   mustache.js — Logic-less templates in JavaScript
 
   See http://mustache.github.com/ for more info.
@@ -2711,7 +2711,7 @@ Assessment = (function() {
   };
   Assessment.prototype.flash = function() {
     $('.ui-content').toggleClass("red");
-    return setTimeout("$('.ui-content').toggleClass('red')", 1000);
+    return setTimeout("$('.ui-content').toggleClass('red')", 2000);
   };
   Assessment.prototype.toPaper = function(callback) {
     return this.onReady(__bind(function() {
@@ -3157,7 +3157,7 @@ SchoolPage = (function() {
       dataAttribute = properties[_i];
       listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
     }
-    listElement = "<li " + listAttributes + ">{{name}}</li>";
+    listElement = "<li " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
     inputElements = "";
     for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
       dataAttribute = properties[_j];
@@ -3191,7 +3191,7 @@ DateTimePage = (function() {
   }
   __extends(DateTimePage, AssessmentPage);
   DateTimePage.prototype.load = function(data) {
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
     DateTimePage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var dateTime, minutes;
@@ -3356,7 +3356,7 @@ LettersPage = (function() {
           return result;
         }).length) + "<br/>          Incorrect: " + (_.select(results.letters, function(result) {
           return !result;
-        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>          Autostopped: " + results.auto_stop + "        ");
+        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>          Autostopped: " + (results.auto_stop || false) + "        ");
         return results;
       } else {
         $("#" + this.pageId + " .controls .message").html("Select last letter attempted");

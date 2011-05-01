@@ -16,7 +16,7 @@ $("head").append "
     }
 
     #Letters .ui-checkbox span{
-      color: transparent;
+      color: lightgray;
     }
     #Letters .ui-btn-active{
       background-image: none;
@@ -25,6 +25,11 @@ $("head").append "
     #Letters .ui-checkbox .last-attempted{
       outline: 5px solid #{yellow};
       outline-offset: -10px;
+    }
+
+    #Letters .ui-btn-icon-notext{
+      margin-left: 20px;
+      vertical-align: middle;
     }
 
     .red {
