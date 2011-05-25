@@ -1,0 +1,78 @@
+{
+  "pageType": "StudentInformationPage",
+  "pageId": "StudentInformation",
+  "_rev": "57-bb63735899087323884f63f3a654a1c3",
+  "_id": "Assessment.EGRA Prototype.StudentInformation",
+  "radioButtons": [
+    {
+      "name": "grade",
+      "label": "Grade",
+      "type": "horizontal",
+      "options": [
+        "1st",
+        "2nd",
+        "3rd"
+      ]
+    },
+    {
+      "name": "class",
+      "label": "Class",
+      "type": "horizontal",
+      "options": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "name": "gender",
+      "label": "Gender",
+      "type": "horizontal",
+      "options": [
+        "Female",
+        "Male"
+      ]
+    },
+    {
+      "name": "yearOfBirth",
+      "label": "Year of birth",
+      "type": "horizontal",
+      "options": [
+        "Unknown",
+        "1997",
+        "1998",
+        "1999",
+        "2000",
+        "2001",
+        "2002",
+        "2003",
+        "2004",
+        "2005",
+        "2006",
+        "2007"
+      ]
+    },
+    {
+      "name": "monthOfBirth",
+      "label": "Month of Birth",
+      "type": "horizontal",
+      "options": [
+        "Unknown",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    }
+  ],
+  "urlPath": "Assessment.EGRA Prototype.StudentInformation",
+  "urlScheme": "http"
+}

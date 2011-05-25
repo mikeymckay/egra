@@ -37,5 +37,10 @@ $("head").append "
       background-color: #{red};
     }
 
+    #InitialSound .ui-controlgroup-label{
+      font-size: large;
+    }
+    
+
   </style>
   "

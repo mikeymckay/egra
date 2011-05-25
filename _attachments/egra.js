@@ -41,11 +41,11 @@ EarlyGradeReadingAssessment.showMenu = function() {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           couchDocument = _ref[_i];
-          _results.push("<a rel='external' href='/egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+          _results.push("<a rel='external' href='/_utils/document.html?egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

@@ -1,0 +1,15 @@
+{
+  "name": "EGRA Prototype",
+  "_rev": "189-8ed7236412de6cbacafd98aa0b153241",
+  "_id": "Assessment.EGRA Prototype",
+  "urlPathsForPages": [
+    "Assessment.EGRA Prototype.Login",
+    "Assessment.EGRA Prototype.DateTime",
+    "Assessment.EGRA Prototype.School",
+    "Assessment.EGRA Prototype.Instructions",
+    "Assessment.EGRA Prototype.InitialSound",
+    "Assessment.EGRA Prototype.StudentInformation",
+    "Assessment.EGRA Prototype.Letters",
+    "Assessment.EGRA Prototype.Results"
+  ]
+}

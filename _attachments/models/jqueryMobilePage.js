@@ -1,4 +1,4 @@
-var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage;
+var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage, UntimedSubtest;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -117,6 +117,8 @@ JQueryMobilePage.deserialize = function(pageObject) {
       return SchoolPage.deserialize(pageObject);
     case "StudentInformationPage":
       return StudentInformationPage.deserialize(pageObject);
+    case "UntimedSubtest":
+      return UntimedSubtest.deserialize(pageObject);
     default:
       result = new window[pageObject.pageType]();
       result.load(pageObject);
@@ -144,12 +146,16 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
     dataType: 'json',
     success: function(result) {
       var jqueryMobilePage;
-      jqueryMobilePage = JQueryMobilePage.deserialize(result);
-      jqueryMobilePage.urlPath = urlPath;
-      jqueryMobilePage.urlScheme = "http";
-      jqueryMobilePage.revision = result._rev;
-      if (callback != null) {
-        return callback(jqueryMobilePage);
+      try {
+        jqueryMobilePage = JQueryMobilePage.deserialize(result);
+        jqueryMobilePage.urlPath = urlPath;
+        jqueryMobilePage.urlScheme = "http";
+        jqueryMobilePage.revision = result._rev;
+        if (callback != null) {
+          return callback(jqueryMobilePage);
+        }
+      } catch (error) {
+        return console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
       }
     },
     error: function() {
@@ -413,6 +419,55 @@ InstructionsPage = (function() {
   };
   return InstructionsPage;
 })();
+UntimedSubtest = (function() {
+  __extends(UntimedSubtest, AssessmentPage);
+  function UntimedSubtest(questions) {
+    var answer, index, question, questionName, subtestId;
+    this.questions = questions;
+    UntimedSubtest.__super__.constructor.call(this);
+    subtestId = Math.floor(Math.random() * 1000);
+    this.content = ((function() {
+      var _len, _ref, _results;
+      _ref = this.questions;
+      _results = [];
+      for (index = 0, _len = _ref.length; index < _len; index++) {
+        question = _ref[index];
+        questionName = subtestId + "-question-" + index;
+        _results.push(("      <div data-role='fieldcontain'>        <fieldset data-role='controlgroup' data-type='horizontal'>          <legend>" + question + "</legend>      ") + ((function() {
+          var _i, _len, _ref, _results;
+          _ref = ["Correct", "Incorrect", "No response"];
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            answer = _ref[_i];
+            _results.push("        <label for='" + questionName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + questionName + "' id='" + questionName + "-" + answer + "' value='" + answer + "' />        ");
+          }
+          return _results;
+        })()).join("") + "          </fieldset>      </div>      ");
+      }
+      return _results;
+    }).call(this)).join("");
+  }
+  UntimedSubtest.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = UntimedSubtest.__super__.propertiesForSerialization.call(this);
+    properties.push("letters");
+    return properties;
+  };
+  UntimedSubtest.prototype.results = function() {
+    var results;
+    return results = {};
+  };
+  UntimedSubtest.prototype.validate = function() {
+    return true;
+  };
+  return UntimedSubtest;
+})();
+UntimedSubtest.deserialize = function(pageObject) {
+  var untimedSubtest;
+  untimedSubtest = new UntimedSubtest(pageObject.questions);
+  untimedSubtest.load(pageObject);
+  return untimedSubtest;
+};
 LettersPage = (function() {
   __extends(LettersPage, AssessmentPage);
   function LettersPage(letters) {

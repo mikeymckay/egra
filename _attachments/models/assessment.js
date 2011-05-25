@@ -370,23 +370,27 @@ Assessment.loadFromHTTP = function(url, callback) {
     dataType: 'json',
     success: function(result) {
       var pages, urlPath, _i, _len, _ref;
-      assessment = new Assessment(result.name);
-      pages = [];
-      _ref = result.urlPathsForPages;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        urlPath = _ref[_i];
-        url = baseUrl + urlPath;
-        JQueryMobilePage.loadFromHTTP({
-          url: url,
-          async: false
-        }, __bind(function(result) {
-          result.assessment = assessment;
-          return pages.push(result);
-        }, this));
-      }
-      assessment.setPages(pages);
-      if (callback != null) {
-        return callback(assessment);
+      try {
+        assessment = new Assessment(result.name);
+        pages = [];
+        _ref = result.urlPathsForPages;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          urlPath = _ref[_i];
+          url = baseUrl + urlPath;
+          JQueryMobilePage.loadFromHTTP({
+            url: url,
+            async: false
+          }, __bind(function(result) {
+            result.assessment = assessment;
+            return pages.push(result);
+          }, this));
+        }
+        assessment.setPages(pages);
+        if (callback != null) {
+          return callback(assessment);
+        }
+      } catch (error) {
+        return console.log("Error in Assessment.loadFromHTTP:" + error);
       }
     },
     error: function() {

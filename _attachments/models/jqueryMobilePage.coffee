@@ -101,6 +101,8 @@ JQueryMobilePage.deserialize = (pageObject) ->
       return SchoolPage.deserialize(pageObject)
     when "StudentInformationPage"
       return StudentInformationPage.deserialize(pageObject)
+    when "UntimedSubtest"
+      return UntimedSubtest.deserialize(pageObject)
     else
       result = new window[pageObject.pageType]()
       result.load(pageObject)
@@ -122,11 +124,14 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      jqueryMobilePage = JQueryMobilePage.deserialize(result)
-      jqueryMobilePage.urlPath = urlPath
-      jqueryMobilePage.urlScheme = "http"
-      jqueryMobilePage.revision = result._rev
-      callback(jqueryMobilePage) if callback?
+      try
+        jqueryMobilePage = JQueryMobilePage.deserialize(result)
+        jqueryMobilePage.urlPath = urlPath
+        jqueryMobilePage.urlScheme = "http"
+        jqueryMobilePage.revision = result._rev
+        callback(jqueryMobilePage) if callback?
+      catch error
+        console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
     error: ->
       throw "Failed to load: #{urlPath}"
   $.ajax options
@@ -404,6 +409,46 @@ class InstructionsPage extends AssessmentPage
     googleSpreadsheet.load (result) =>
       @content = result.data[0].replace(/\n/g, "<br/>")
       @loading = false
+
+
+class UntimedSubtest extends AssessmentPage
+  constructor: (@questions) ->
+    super()
+    subtestId = Math.floor(Math.random()*1000)
+    @content = (for question,index in @questions
+      questionName = subtestId + "-question-" + index
+      "
+      <div data-role='fieldcontain'>
+        <fieldset data-role='controlgroup' data-type='horizontal'>
+          <legend>#{question}</legend>
+      " +
+      (for answer in ["Correct", "Incorrect", "No response"]
+        "
+        <label for='#{questionName}-#{answer}'>#{answer}</label>
+        <input type='radio' name='#{questionName}' id='#{questionName}-#{answer}' value='#{answer}' />
+        "
+      ).join("") +
+      "
+          </fieldset>
+      </div>
+      "
+    ).join("")
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("letters")
+    return properties
+
+  results: ->
+    results = {}
+
+  validate: ->
+    true
+
+UntimedSubtest.deserialize = (pageObject) ->
+  untimedSubtest = new UntimedSubtest(pageObject.questions)
+  untimedSubtest.load(pageObject)
+  return untimedSubtest
 
 
 class LettersPage extends AssessmentPage

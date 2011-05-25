@@ -216,8 +216,6 @@ class Assessment
         document.location = document.location.href
 
 
-
-
 Assessment.load = (url, callback) ->
   try
     urlScheme = url.substring(0,url.indexOf("://"))
@@ -257,15 +255,19 @@ Assessment.loadFromHTTP = (url, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      assessment = new Assessment(result.name)
-      pages = []
-      for urlPath in result.urlPathsForPages
-        url = baseUrl + urlPath
-        JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
-          result.assessment = assessment
-          pages.push result
-      assessment.setPages(pages)
-      callback(assessment) if callback?
+      try
+        assessment = new Assessment(result.name)
+        pages = []
+        for urlPath in result.urlPathsForPages
+          url = baseUrl + urlPath
+          JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
+            result.assessment = assessment
+            pages.push result
+        assessment.setPages(pages)
+        callback(assessment) if callback?
+      catch error
+        console.log "Error in Assessment.loadFromHTTP:" + error
+
     error: ->
       throw "Failed to load: #{url}"
   return assessment

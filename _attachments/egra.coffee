@@ -25,7 +25,7 @@ EarlyGradeReadingAssessment.showMenu = ->
     type: 'GET',
     dataType: 'json',
     success: (result) =>
-      documents = ("<a rel='external' href='/egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
+      documents = ("<a rel='external' href='/_utils/document.html?egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
       $("body").html("
         <div data-role='page' id='menu'>
           <div data-role='header'>
@@ -33,8 +33,10 @@ EarlyGradeReadingAssessment.showMenu = ->
           </div><!-- /header -->
           <div data-role='content'>	
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
+            -->
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
             #{documents.join("<br/>")}
           </div><!-- /content -->
