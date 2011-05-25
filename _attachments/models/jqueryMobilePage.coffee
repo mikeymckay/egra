@@ -415,12 +415,12 @@ class UntimedSubtest extends AssessmentPage
   constructor: (@questions) ->
     super()
     subtestId = Math.floor(Math.random()*1000)
-    @content = (for question,index in @questions
+    @content = "<form>" + (for question,index in @questions
       questionName = subtestId + "-question-" + index
       "
       <div data-role='fieldcontain'>
-        <fieldset data-role='controlgroup' data-type='horizontal'>
-          <legend>#{question}</legend>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+            <legend>#{question}</legend>
       " +
       (for answer in ["Correct", "Incorrect", "No response"]
         "
@@ -432,18 +432,18 @@ class UntimedSubtest extends AssessmentPage
           </fieldset>
       </div>
       "
-    ).join("")
+    ).join("") + "</form>"
 
   propertiesForSerialization: ->
     properties = super()
     properties.push("letters")
     return properties
 
-  results: ->
-    results = {}
-
   validate: ->
-    true
+    if _.size(@results()) == @questions.length
+      return true
+    else "Only #{_.size(@results())} out of the #{@questions.length} questions were answered"
+
 
 UntimedSubtest.deserialize = (pageObject) ->
   untimedSubtest = new UntimedSubtest(pageObject.questions)

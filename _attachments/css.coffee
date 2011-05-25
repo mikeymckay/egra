@@ -38,7 +38,7 @@ $("head").append "
     }
 
     #InitialSound .ui-controlgroup-label{
-      font-size: large;
+      font-size: x-large;
     }
     
 

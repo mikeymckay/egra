@@ -22,7 +22,7 @@ yellow = "#F7C942";
 first_click_color = yellow;
 second_click_color = blue;
 red = "red";
-$("head").append("  <style>    #Letters .ui-checkbox span.show{      color: black;    }    #Letters .ui-checkbox span{      color: lightgray;    }    #Letters .ui-btn-active{      background-image: none;    }    #Letters .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    #Letters .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    .red {      color: " + red + ";      background-color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: large;    }      </style>  ");/*
+$("head").append("  <style>    #Letters .ui-checkbox span.show{      color: black;    }    #Letters .ui-checkbox span{      color: lightgray;    }    #Letters .ui-btn-active{      background-image: none;    }    #Letters .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    #Letters .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    .red {      color: " + red + ";      background-color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }      </style>  ");/*
   mustache.js — Logic-less templates in JavaScript
 
   See http://mustache.github.com/ for more info.
@@ -3274,14 +3274,14 @@ UntimedSubtest = (function() {
     this.questions = questions;
     UntimedSubtest.__super__.constructor.call(this);
     subtestId = Math.floor(Math.random() * 1000);
-    this.content = ((function() {
+    this.content = "<form>" + ((function() {
       var _len, _ref, _results;
       _ref = this.questions;
       _results = [];
       for (index = 0, _len = _ref.length; index < _len; index++) {
         question = _ref[index];
         questionName = subtestId + "-question-" + index;
-        _results.push(("      <div data-role='fieldcontain'>        <fieldset data-role='controlgroup' data-type='horizontal'>          <legend>" + question + "</legend>      ") + ((function() {
+        _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + question + "</legend>      ") + ((function() {
           var _i, _len, _ref, _results;
           _ref = ["Correct", "Incorrect", "No response"];
           _results = [];
@@ -3293,7 +3293,7 @@ UntimedSubtest = (function() {
         })()).join("") + "          </fieldset>      </div>      ");
       }
       return _results;
-    }).call(this)).join("");
+    }).call(this)).join("") + "</form>";
   }
   UntimedSubtest.prototype.propertiesForSerialization = function() {
     var properties;
@@ -3301,12 +3301,12 @@ UntimedSubtest = (function() {
     properties.push("letters");
     return properties;
   };
-  UntimedSubtest.prototype.results = function() {
-    var results;
-    return results = {};
-  };
   UntimedSubtest.prototype.validate = function() {
-    return true;
+    if (_.size(this.results()) === this.questions.length) {
+      return true;
+    } else {
+      return "Only " + (_.size(this.results())) + " out of the " + this.questions.length + " questions were answered";
+    }
   };
   return UntimedSubtest;
 })();
