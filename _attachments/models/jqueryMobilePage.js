@@ -1,4 +1,4 @@
-var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage, UntimedSubtest;
+var AssessmentPage, DateTimePage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, UntimedSubtest;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -91,7 +91,7 @@ JQueryMobilePage = (function() {
       url: url,
       type: 'DELETE',
       complete: function() {
-        if (typeof callback != "undefined" && callback !== null) {
+        if (typeof callback !== "undefined" && callback !== null) {
           return callback();
         }
       },
@@ -119,6 +119,8 @@ JQueryMobilePage.deserialize = function(pageObject) {
       return StudentInformationPage.deserialize(pageObject);
     case "UntimedSubtest":
       return UntimedSubtest.deserialize(pageObject);
+    case "PhonemePage":
+      return PhonemePage.deserialize(pageObject);
     default:
       result = new window[pageObject.pageType]();
       result.load(pageObject);
@@ -170,10 +172,10 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
   }, callback);
 };
 AssessmentPage = (function() {
+  __extends(AssessmentPage, JQueryMobilePage);
   function AssessmentPage() {
     AssessmentPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(AssessmentPage, JQueryMobilePage);
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
@@ -255,10 +257,10 @@ JQueryLogin = (function() {
   return JQueryLogin;
 })();
 StudentInformationPage = (function() {
+  __extends(StudentInformationPage, AssessmentPage);
   function StudentInformationPage() {
     StudentInformationPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(StudentInformationPage, AssessmentPage);
   StudentInformationPage.prototype.propertiesForSerialization = function() {
     var properties;
     properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
@@ -266,7 +268,7 @@ StudentInformationPage = (function() {
     return properties;
   };
   StudentInformationPage.prototype.validate = function() {
-    if ($("#StudentInformation input:'radio':checked").length === 5) {
+    if ($("#StudentInformation input:'radio':checked").length === 7) {
       return true;
     } else {
       return "All elements are required";
@@ -348,10 +350,10 @@ SchoolPage.deserialize = function(pageObject) {
   return schoolPage;
 };
 DateTimePage = (function() {
+  __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
-  __extends(DateTimePage, AssessmentPage);
   DateTimePage.prototype.load = function(data) {
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
     DateTimePage.__super__.load.call(this, data);
@@ -396,18 +398,18 @@ ResultsPage = (function() {
   };
   return ResultsPage;
 })();
-InstructionsPage = (function() {
-  function InstructionsPage() {
-    InstructionsPage.__super__.constructor.apply(this, arguments);
+TextPage = (function() {
+  __extends(TextPage, AssessmentPage);
+  function TextPage() {
+    TextPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(InstructionsPage, AssessmentPage);
-  InstructionsPage.prototype.propertiesForSerialization = function() {
+  TextPage.prototype.propertiesForSerialization = function() {
     var properties;
-    properties = InstructionsPage.__super__.propertiesForSerialization.call(this);
+    properties = TextPage.__super__.propertiesForSerialization.call(this);
     properties.push("content");
     return properties;
   };
-  InstructionsPage.prototype.updateFromGoogle = function() {
+  TextPage.prototype.updateFromGoogle = function() {
     var googleSpreadsheet;
     this.loading = true;
     googleSpreadsheet = new GoogleSpreadsheet();
@@ -417,7 +419,7 @@ InstructionsPage = (function() {
       return this.loading = false;
     }, this));
   };
-  return InstructionsPage;
+  return TextPage;
 })();
 UntimedSubtest = (function() {
   __extends(UntimedSubtest, AssessmentPage);
@@ -434,14 +436,14 @@ UntimedSubtest = (function() {
         question = _ref[index];
         questionName = subtestId + "-question-" + index;
         _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + question + "</legend>      ") + ((function() {
-          var _i, _len, _ref, _results;
-          _ref = ["Correct", "Incorrect", "No response"];
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            answer = _ref[_i];
-            _results.push("        <label for='" + questionName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + questionName + "' id='" + questionName + "-" + answer + "' value='" + answer + "' />        ");
+          var _i, _len2, _ref2, _results2;
+          _ref2 = ["Correct", "Incorrect", "No response"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            answer = _ref2[_i];
+            _results2.push("        <label for='" + questionName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + questionName + "' id='" + questionName + "-" + answer + "' value='" + answer + "' />        ");
           }
-          return _results;
+          return _results2;
         })()).join("") + "          </fieldset>      </div>      ");
       }
       return _results;
@@ -450,7 +452,7 @@ UntimedSubtest = (function() {
   UntimedSubtest.prototype.propertiesForSerialization = function() {
     var properties;
     properties = UntimedSubtest.__super__.propertiesForSerialization.call(this);
-    properties.push("letters");
+    properties.push("questions");
     return properties;
   };
   UntimedSubtest.prototype.validate = function() {
@@ -467,6 +469,81 @@ UntimedSubtest.deserialize = function(pageObject) {
   untimedSubtest = new UntimedSubtest(pageObject.questions);
   untimedSubtest.load(pageObject);
   return untimedSubtest;
+};
+PhonemePage = (function() {
+  __extends(PhonemePage, AssessmentPage);
+  function PhonemePage(words) {
+    var answer, index, item, phoneme, phonemeIndex, phonemeName, wordName;
+    this.words = words;
+    PhonemePage.__super__.constructor.call(this);
+    this.subtestId = "phonemic-awareness";
+    phonemeIndex = 1;
+    this.content = ("<form id='" + this.subtestId + "'>") + ((function() {
+      var _len, _ref, _results;
+      _ref = this.words;
+      _results = [];
+      for (index = 0, _len = _ref.length; index < _len; index++) {
+        item = _ref[index];
+        wordName = this.subtestId + "-number-sound-" + (index + 1);
+        _results.push(("      <div data-role='fieldcontain'>          <legend>" + item["word"] + " - " + item["number-of-sounds"] + "</legend>          <fieldset data-role='controlgroup' data-type='horizontal'>      ") + ((function() {
+          var _i, _len2, _ref2, _results2;
+          _ref2 = ["Correct", "Incorrect"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            answer = _ref2[_i];
+            _results2.push("        <label for='" + wordName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + wordName + "' id='" + wordName + "-" + answer + "' value='" + answer + "' />        ");
+          }
+          return _results2;
+        })()).join("") + "          </fieldset>          <fieldset data-role='controlgroup' data-type='horizontal'>      " + ((function() {
+          var _i, _len2, _ref2, _results2;
+          _ref2 = item["phonemes"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            phoneme = _ref2[_i];
+            phonemeName = this.subtestId + "-phoneme-sound-" + phonemeIndex++;
+            _results2.push("          <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />          <label for='" + phonemeName + "'>" + phoneme + "</label>        ");
+          }
+          return _results2;
+        }).call(this)).join("") + "          </fieldset>      </div>      <hr/>      ");
+      }
+      return _results;
+    }).call(this)).join("") + "</form>";
+  }
+  PhonemePage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = PhonemePage.__super__.propertiesForSerialization.call(this);
+    properties.push("words");
+    return properties;
+  };
+  PhonemePage.prototype.results = function() {
+    var input, results, _i, _len, _ref;
+    results = PhonemePage.__super__.results.call(this);
+    _ref = $("form#" + this.subtestId + " input:checkbox");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      input = _ref[_i];
+      results["" + input.name] = input.value !== "on";
+    }
+    return results;
+  };
+  PhonemePage.prototype.validate = function() {
+    var index, item, results, _len, _ref;
+    results = this.results();
+    _ref = this.words;
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      item = _ref[index];
+      if (results[this.subtestId + "-number-sound-" + (index + 1)] == null) {
+        return "You must select Correct or Incorrect for item #" + (index + 1) + ": <b>" + item["word"] + "</b>";
+      }
+    }
+    return true;
+  };
+  return PhonemePage;
+})();
+PhonemePage.deserialize = function(pageObject) {
+  var page;
+  page = new PhonemePage(pageObject.words);
+  page.load(pageObject);
+  return page;
 };
 LettersPage = (function() {
   __extends(LettersPage, AssessmentPage);
@@ -614,7 +691,11 @@ JQueryCheckboxGroup = (function() {
   function JQueryCheckboxGroup() {}
   JQueryCheckboxGroup.prototype.render = function() {
     var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 5;
+        if ((_ref = this.fieldset_size) != null) {
+      _ref;
+    } else {
+      this.fieldset_size = 5;
+    };
     fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
     fieldset_close = "</fieldset>";
     fieldsets = "";

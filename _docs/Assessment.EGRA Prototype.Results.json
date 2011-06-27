@@ -1,8 +1,10 @@
 {
   "pageType": "ResultsPage",
   "pageId": "Results",
-  "_rev": "37-ce73a3ea8dda500378e0f389d30f499e",
+  "_rev": "13-321987e3ff46e6d37c1e0429c3b2fd84",
   "_id": "Assessment.EGRA Prototype.Results",
   "urlPath": "Assessment.EGRA Prototype.Results",
-  "urlScheme": "http"
+  "urlScheme": "http",
+  "couchapp": {
+  }
 }

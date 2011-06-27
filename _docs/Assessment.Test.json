@@ -1,0 +1,10 @@
+{
+  "name": "Test",
+  "_id": "Assessment.Test",
+  "urlPathsForPages": [
+    "Assessment.EGRA Prototype.Phonemes",
+    "Assessment.EGRA Prototype.Results"
+  ],
+  "couchapp": {
+  }
+}

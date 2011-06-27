@@ -13,6 +13,8 @@ $(document).ready ->
       EarlyGradeReadingAssessment.showMenu()
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
+    when "?loadTest=true"
+      EarlyGradeReadingAssessment.loadTest()
     else
       EarlyGradeReadingAssessment.loadFromCouch()
 
@@ -33,6 +35,7 @@ EarlyGradeReadingAssessment.showMenu = ->
           </div><!-- /header -->
           <div data-role='content'>	
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadTest=true'>Load 'Assessment.Test' from Couch</a>
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
@@ -70,6 +73,12 @@ EarlyGradeReadingAssessment.print = ->
 
 EarlyGradeReadingAssessment.loadFromCouch = ->
   Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+    assessment.render (result) ->
+      $("body").html(result)
+      $.mobile.initializePage()
+
+EarlyGradeReadingAssessment.loadTest = ->
+  Assessment.loadFromHTTP "/egra/Assessment.Test", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
       $.mobile.initializePage()

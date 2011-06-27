@@ -40,6 +40,10 @@ $("head").append "
     #InitialSound .ui-controlgroup-label{
       font-size: x-large;
     }
+
+    #Phonemes legend{
+      font-size: x-large;
+    }
     
 
   </style>

@@ -103,6 +103,8 @@ JQueryMobilePage.deserialize = (pageObject) ->
       return StudentInformationPage.deserialize(pageObject)
     when "UntimedSubtest"
       return UntimedSubtest.deserialize(pageObject)
+    when "PhonemePage"
+      return PhonemePage.deserialize(pageObject)
     else
       result = new window[pageObject.pageType]()
       result.load(pageObject)
@@ -234,7 +236,8 @@ class StudentInformationPage extends AssessmentPage
     return properties
 
   validate: ->
-    if $("#StudentInformation input:'radio':checked").length == 5
+    
+    if $("#StudentInformation input:'radio':checked").length == 7
       return true
     else
       #console.log $("#StudentInformation input[type='radio']").not(":checked")
@@ -396,7 +399,7 @@ class ResultsPage extends AssessmentPage
       else
         $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> #{validationResult}<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.")
 
-class InstructionsPage extends AssessmentPage
+class TextPage extends AssessmentPage
   propertiesForSerialization: ->
     properties = super()
     properties.push("content")
@@ -436,7 +439,7 @@ class UntimedSubtest extends AssessmentPage
 
   propertiesForSerialization: ->
     properties = super()
-    properties.push("letters")
+    properties.push("questions")
     return properties
 
   validate: ->
@@ -449,6 +452,71 @@ UntimedSubtest.deserialize = (pageObject) ->
   untimedSubtest = new UntimedSubtest(pageObject.questions)
   untimedSubtest.load(pageObject)
   return untimedSubtest
+
+
+
+class PhonemePage extends AssessmentPage
+  constructor: (@words) ->
+    super()
+    @subtestId = "phonemic-awareness"
+    phonemeIndex = 1
+    @content = "<form id='#{@subtestId}'>" + (for item,index in @words
+      wordName = @subtestId + "-number-sound-" + (index+1)
+      "
+      <div data-role='fieldcontain'>
+          <legend>#{item["word"]} - #{item["number-of-sounds"]}</legend>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+      " +
+      (for answer in ["Correct", "Incorrect"]
+        "
+        <label for='#{wordName}-#{answer}'>#{answer}</label>
+        <input type='radio' name='#{wordName}' id='#{wordName}-#{answer}' value='#{answer}' />
+        "
+      ).join("") +
+      "
+          </fieldset>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+      " +
+      (for phoneme in item["phonemes"]
+        phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
+        "
+          <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
+          <label for='#{phonemeName}'>#{phoneme}</label>
+        "
+      ).join("") +
+      "
+          </fieldset>
+      </div>
+      <hr/>
+      "
+    ).join("") + "</form>"
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("words")
+    return properties
+
+  results: ->
+    results = super()
+    for input in $("form##{@subtestId} input:checkbox")
+      # checked means they got it wrong, so set to false
+      results["#{input.name}"] = (input.value != "on")
+    return results
+
+  validate: ->
+    results = @results()
+    for item,index in @words
+      unless results[@subtestId + "-number-sound-" + (index+1)]?
+        return "You must select Correct or Incorrect for item ##{index+1}: <b>#{item["word"]}</b>"
+    return true
+
+
+PhonemePage.deserialize = (pageObject) ->
+  page = new PhonemePage(pageObject.words)
+  page.load(pageObject)
+  return page
+
+
 
 
 class LettersPage extends AssessmentPage

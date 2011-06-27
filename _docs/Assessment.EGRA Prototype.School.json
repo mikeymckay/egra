@@ -1,7 +1,7 @@
 {
   "pageType": "SchoolPage",
   "pageId": "School",
-  "_rev": "1-df92825bb53d08e393173427accf55a5",
+  "_rev": "5-c0e9b64ed9afe98226c31a7f9453912e",
   "schools": [
     {
       "name": "Lilongwe",
@@ -81,6 +81,8 @@
   "schoolIdText": "ID",
   "urlPath": "Assessment.EGRA Prototype.School",
   "urlScheme": "http",
+  "districtText": "District",
   "provinceText": "Province",
-  "districtText": "District"
+  "couchapp": {
+  }
 }

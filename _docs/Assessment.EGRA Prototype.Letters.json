@@ -1,7 +1,7 @@
 {
   "pageType": "LettersPage",
   "pageId": "Letters",
-  "_rev": "193-26269e46d28aa3c225da1c3cab6fc87a",
+  "_rev": "19-df1129cb53249b38f11d4ed99ffb377d",
   "letters": [
     "形",
     "f",
@@ -106,5 +106,7 @@
   ],
   "_id": "Assessment.EGRA Prototype.Letters",
   "urlPath": "Assessment.EGRA Prototype.Letters",
-  "urlScheme": "http"
+  "urlScheme": "http",
+  "couchapp": {
+  }
 }
