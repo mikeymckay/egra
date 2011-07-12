@@ -16,7 +16,8 @@ $(document).ready ->
     when "?loadTest=true"
       EarlyGradeReadingAssessment.loadTest()
     else
-      EarlyGradeReadingAssessment.loadFromCouch()
+# Have to remove the question mark
+      EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1))
 
 class EarlyGradeReadingAssessment
 EarlyGradeReadingAssessment.showMenu = ->
@@ -34,7 +35,8 @@ EarlyGradeReadingAssessment.showMenu = ->
             <h1>Admin Menu</h1>
           </div><!-- /header -->
           <div data-role='content'>	
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadTest=true'>Load 'Assessment.Test' from Couch</a>
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
@@ -71,8 +73,9 @@ EarlyGradeReadingAssessment.print = ->
       # Remove the jquery mobile stylesheet
       $("link").remove()
 
-EarlyGradeReadingAssessment.loadFromCouch = ->
-  Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+EarlyGradeReadingAssessment.loadFromCouch = (path) ->
+  Assessment.loadFromHTTP "/egra/#{path}", (assessment) ->
+  #Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
       $.mobile.initializePage()

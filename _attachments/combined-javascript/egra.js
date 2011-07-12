@@ -2812,6 +2812,7 @@ Assessment.loadFromHTTP = function(url, callback) {
   var assessment, baseUrl;
   assessment = null;
   baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
+  console.log(url);
   $.ajax({
     url: url,
     type: 'GET',
@@ -2821,6 +2822,7 @@ Assessment.loadFromHTTP = function(url, callback) {
       try {
         assessment = new Assessment(result.name);
         pages = [];
+        console.log(result);
         _ref = result.urlPathsForPages;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           urlPath = _ref[_i];
@@ -3809,7 +3811,7 @@ $(document).ready(function() {
     case "?loadTest=true":
       return EarlyGradeReadingAssessment.loadTest();
     default:
-      return EarlyGradeReadingAssessment.loadFromCouch();
+      return EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1));
   }
 });
 EarlyGradeReadingAssessment = (function() {
@@ -3836,7 +3838,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadTest=true'>Load 'Assessment.Test' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadTest=true'>Load 'Assessment.Test' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {
@@ -3854,8 +3856,8 @@ EarlyGradeReadingAssessment.print = function() {
     });
   });
 };
-EarlyGradeReadingAssessment.loadFromCouch = function() {
-  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+EarlyGradeReadingAssessment.loadFromCouch = function(path) {
+  return Assessment.loadFromHTTP("/egra/" + path, function(assessment) {
     return assessment.render(function(result) {
       $("body").html(result);
       return $.mobile.initializePage();

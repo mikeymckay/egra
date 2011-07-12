@@ -250,6 +250,7 @@ Assessment.loadFromLocalStorage = (urlPath) ->
 Assessment.loadFromHTTP = (url, callback) ->
   assessment = null
   baseUrl = url.substring(0,url.lastIndexOf("/")+1)
+  console.log url
   $.ajax
     url: url,
     type: 'GET',
@@ -258,6 +259,7 @@ Assessment.loadFromHTTP = (url, callback) ->
       try
         assessment = new Assessment(result.name)
         pages = []
+        console.log result
         for urlPath in result.urlPathsForPages
           url = baseUrl + urlPath
           JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
