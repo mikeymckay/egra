@@ -1,0 +1,22 @@
+{
+  "name": "The Gambia EGRA May 2011",
+  "_id": "Assessment.The Gambia EGRA May 2011",
+  "urlPathsForPages": [
+    "Assessment.The Gambia EGRA May 2011.Login",
+    "Assessment.The Gambia EGRA May 2011.DateTime",
+    "Assessment.The Gambia EGRA May 2011.School",
+    "Assessment.The Gambia EGRA May 2011.EnumeratorReminders",
+    "Assessment.The Gambia EGRA May 2011.EnumeratorIntroduction",
+    "Assessment.The Gambia EGRA May 2011.StudentConsent",
+    "Assessment.The Gambia EGRA May 2011.StudentInformation",
+    "Assessment.The Gambia EGRA May 2011.LettersInstructions",
+    "Assessment.The Gambia EGRA May 2011.Letters",
+    "Assessment.The Gambia EGRA May 2011.PhonemesInstructions",
+    "Assessment.The Gambia EGRA May 2011.Phonemes",
+    "Assessment.The Gambia EGRA May 2011.FamiliarWordsInstructions",
+    "Assessment.The Gambia EGRA May 2011.FamiliarWords",
+    "Assessment.The Gambia EGRA May 2011.Results"
+  ],
+  "couchapp": {
+  }
+}
