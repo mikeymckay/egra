@@ -22,7 +22,7 @@ yellow = "#F7C942";
 first_click_color = yellow;
 second_click_color = blue;
 red = "red";
-$("head").append("  <style>    #Letters .ui-checkbox span.show{      color: black;    }    #Letters .ui-checkbox span{      color: lightgray;    }    #Letters .ui-btn-active{      background-image: none;    }    #Letters .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    #Letters .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    .red {      color: " + red + ";      background-color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }      </style>  ");/*
+$("head").append("  <style>    .toggle-grid-with-timer .ui-checkbox span.show{      color: black;    }    .toggle-grid-with-timer .ui-checkbox span{      color: lightgray;    }    .toggle-grid-with-timer .ui-btn-active{      background-image: none;    }    .toggle-grid-with-timer .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    .toggle-grid-with-timer .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    .red {      color: " + red + ";      background-color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }      </style>  ");/*
   mustache.js — Logic-less templates in JavaScript
 
   See http://mustache.github.com/ for more info.
@@ -2812,7 +2812,6 @@ Assessment.loadFromHTTP = function(url, callback) {
   var assessment, baseUrl;
   assessment = null;
   baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
-  console.log(url);
   $.ajax({
     url: url,
     type: 'GET',
@@ -2822,7 +2821,6 @@ Assessment.loadFromHTTP = function(url, callback) {
       try {
         assessment = new Assessment(result.name);
         pages = [];
-        console.log(result);
         _ref = result.urlPathsForPages;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           urlPath = _ref[_i];
@@ -2848,7 +2846,7 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};var AssessmentPage, DateTimePage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, UntimedSubtest;
+};var AssessmentPage, DateTimePage, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -2859,8 +2857,8 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 };
 JQueryMobilePage = (function() {
   function JQueryMobilePage() {
-    this.pageId = "";
-    this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1];
+    this.pageId || (this.pageId = "");
+    this.pageType || (this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]);
   }
   JQueryMobilePage.prototype.render = function() {
     return Mustache.to_html(this._template(), this);
@@ -2961,8 +2959,8 @@ JQueryMobilePage = (function() {
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "LettersPage":
-      return LettersPage.deserialize(pageObject);
+    case "ToggleGridWithTimer":
+      return ToggleGridWithTimer.deserialize(pageObject);
     case "SchoolPage":
       return SchoolPage.deserialize(pageObject);
     case "StudentInformationPage":
@@ -3007,7 +3005,8 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
           return callback(jqueryMobilePage);
         }
       } catch (error) {
-        return console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
+        console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
+        return console.log(result);
       }
     },
     error: function() {
@@ -3259,16 +3258,6 @@ TextPage = (function() {
     properties.push("content");
     return properties;
   };
-  TextPage.prototype.updateFromGoogle = function() {
-    var googleSpreadsheet;
-    this.loading = true;
-    googleSpreadsheet = new GoogleSpreadsheet();
-    googleSpreadsheet.url(this.url);
-    return googleSpreadsheet.load(__bind(function(result) {
-      this.content = result.data[0].replace(/\n/g, "<br/>");
-      return this.loading = false;
-    }, this));
-  };
   return TextPage;
 })();
 UntimedSubtest = (function() {
@@ -3395,68 +3384,44 @@ PhonemePage.deserialize = function(pageObject) {
   page.load(pageObject);
   return page;
 };
-LettersPage = (function() {
-  __extends(LettersPage, AssessmentPage);
-  function LettersPage(letters) {
-    var checkbox, index, letter, lettersCheckboxes;
-    this.letters = letters;
-    LettersPage.__super__.constructor.call(this);
-    lettersCheckboxes = new JQueryCheckboxGroup();
-    lettersCheckboxes.checkboxes = (function() {
-      var _len, _ref, _results;
-      _ref = this.letters;
-      _results = [];
-      for (index = 0, _len = _ref.length; index < _len; index++) {
-        letter = _ref[index];
-        checkbox = new JQueryCheckbox();
-        checkbox.unique_name = "checkbox_" + index;
-        checkbox.content = letter;
-        _results.push(checkbox);
-      }
-      return _results;
-    }).call(this);
+ToggleGridWithTimer = (function() {
+  __extends(ToggleGridWithTimer, AssessmentPage);
+  function ToggleGridWithTimer(options) {
+    var checkboxName, index, letter, result, _len, _ref;
+    this.letters = options.letters;
+    this.pageId = options.pageId;
+    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
+    ToggleGridWithTimer.__super__.constructor.call(this);
     this.addTimer();
-    this.content = lettersCheckboxes.render();
-    $("#Letters label").live('mousedown', __bind(function(eventData) {
+    result = "";
+    _ref = this.letters;
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      letter = _ref[index];
+      checkboxName = "checkbox_" + index;
+      if (index % this.numberOfColumns === 0) {
+        result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
+      }
+      result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
+      if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
+        result += "</fieldset>";
+      }
+    }
+    this.content = "      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      ";
+    console.log(this.content);
+    $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
-        $("#Letters label").removeClass('last-attempted');
+        $("#" + this.pageId + " label").removeClass('last-attempted');
         return $(eventData.currentTarget).toggleClass('last-attempted');
       }
     }, this));
   }
-  LettersPage.prototype.propertiesForSerialization = function() {
+  ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
     var properties;
-    properties = LettersPage.__super__.propertiesForSerialization.call(this);
+    properties = ToggleGridWithTimer.__super__.propertiesForSerialization.call(this);
     properties.push("letters");
     return properties;
   };
-  LettersPage.prototype.updateFromGoogle = function() {
-    var googleSpreadsheet;
-    this.loading = true;
-    googleSpreadsheet = new GoogleSpreadsheet();
-    googleSpreadsheet.url(this.url);
-    return googleSpreadsheet.load(__bind(function(result) {
-      var checkbox, index, letter, lettersCheckboxes;
-      this.letters = result.data;
-      lettersCheckboxes = new JQueryCheckboxGroup();
-      lettersCheckboxes.checkboxes = (function() {
-        var _len, _ref, _results;
-        _ref = this.letters;
-        _results = [];
-        for (index = 0, _len = _ref.length; index < _len; index++) {
-          letter = _ref[index];
-          checkbox = new JQueryCheckbox();
-          checkbox.unique_name = "checkbox_" + index;
-          checkbox.content = letter;
-          _results.push(checkbox);
-        }
-        return _results;
-      }).call(this);
-      this.content = lettersCheckboxes.render();
-      return this.loading = false;
-    }, this));
-  };
-  LettersPage.prototype.results = function() {
+  ToggleGridWithTimer.prototype.results = function() {
     var checkbox, firstTenPercent, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
     items = $("#" + this.pageId + " label");
@@ -3502,7 +3467,7 @@ LettersPage = (function() {
     }
     return results;
   };
-  LettersPage.prototype.validate = function() {
+  ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
     if (results.time_remain === 60) {
@@ -3519,51 +3484,14 @@ LettersPage = (function() {
       return "The last letter attempted has not been selected";
     }
   };
-  return LettersPage;
+  return ToggleGridWithTimer;
 })();
-LettersPage.deserialize = function(pageObject) {
+ToggleGridWithTimer.deserialize = function(pageObject) {
   var lettersPage;
-  lettersPage = new LettersPage(pageObject.letters);
+  lettersPage = new ToggleGridWithTimer(pageObject);
   lettersPage.load(pageObject);
   return lettersPage;
-};
-JQueryCheckbox = (function() {
-  function JQueryCheckbox() {}
-  JQueryCheckbox.prototype.render = function() {
-    return Mustache.to_html(this._template(), this);
-  };
-  JQueryCheckbox.prototype._template = function() {
-    return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
-  };
-  return JQueryCheckbox;
-})();
-JQueryCheckboxGroup = (function() {
-  function JQueryCheckboxGroup() {}
-  JQueryCheckboxGroup.prototype.render = function() {
-    var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-        if ((_ref = this.fieldset_size) != null) {
-      _ref;
-    } else {
-      this.fieldset_size = 5;
-    };
-    fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
-    fieldset_close = "</fieldset>";
-    fieldsets = "";
-    _ref2 = this.checkboxes;
-    for (index = 0, _len = _ref2.length; index < _len; index++) {
-      checkbox = _ref2[index];
-      if (index % this.fieldset_size === 0) {
-        fieldsets += fieldset_open;
-      }
-      fieldsets += checkbox.render();
-      if ((index + 1) % this.fieldset_size === 0 || index === this.checkboxes.length - 1) {
-        fieldsets += fieldset_close;
-      }
-    }
-    return "<div data-role='content'>	  <form>    " + fieldsets + "  </form></div>    ";
-  };
-  return JQueryCheckboxGroup;
-})();var Scorer;
+};var Scorer;
 Scorer = (function() {
   function Scorer() {}
   Scorer.prototype.update = function() {
@@ -3808,8 +3736,6 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.showMenu();
     case "?printout=true":
       return EarlyGradeReadingAssessment.print();
-    case "?loadTest=true":
-      return EarlyGradeReadingAssessment.loadTest();
     default:
       return EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1));
   }
@@ -3838,7 +3764,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadTest=true'>Load 'Assessment.Test' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Load 'Assessment.Test' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

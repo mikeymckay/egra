@@ -364,7 +364,6 @@ Assessment.loadFromHTTP = function(url, callback) {
   var assessment, baseUrl;
   assessment = null;
   baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
-  console.log(url);
   $.ajax({
     url: url,
     type: 'GET',
@@ -374,7 +373,6 @@ Assessment.loadFromHTTP = function(url, callback) {
       try {
         assessment = new Assessment(result.name);
         pages = [];
-        console.log(result);
         _ref = result.urlPathsForPages;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           urlPath = _ref[_i];

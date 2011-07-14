@@ -1,5 +1,5 @@
 {
-  "pageType": "LettersPage",
+  "pageType": "ToggleGridWithTimer",
   "pageId": "Letters",
   "_rev": "19-df1129cb53249b38f11d4ed99ffb377d",
   "letters": [

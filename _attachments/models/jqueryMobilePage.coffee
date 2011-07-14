@@ -1,7 +1,7 @@
 class JQueryMobilePage
   constructor: ->
-    @pageId = ""
-    @pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]
+    @pageId ||= ""
+    @pageType ||= this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
     Mustache.to_html(@_template(),this)
@@ -95,8 +95,8 @@ class JQueryMobilePage
 #TODO Fix this - why can't we use load?
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
-    when "LettersPage"
-      return LettersPage.deserialize(pageObject)
+    when "ToggleGridWithTimer"
+      return ToggleGridWithTimer.deserialize(pageObject)
     when "SchoolPage"
       return SchoolPage.deserialize(pageObject)
     when "StudentInformationPage"
@@ -134,6 +134,7 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         callback(jqueryMobilePage) if callback?
       catch error
         console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
+        console.log result
     error: ->
       throw "Failed to load: #{urlPath}"
   $.ajax options
@@ -405,15 +406,6 @@ class TextPage extends AssessmentPage
     properties.push("content")
     return properties
 
-  updateFromGoogle: ->
-    @loading = true
-    googleSpreadsheet = new GoogleSpreadsheet()
-    googleSpreadsheet.url(@url)
-    googleSpreadsheet.load (result) =>
-      @content = result.data[0].replace(/\n/g, "<br/>")
-      @loading = false
-
-
 class UntimedSubtest extends AssessmentPage
   constructor: (@questions) ->
     super()
@@ -511,55 +503,48 @@ class PhonemePage extends AssessmentPage
     return true
 
 
+
 PhonemePage.deserialize = (pageObject) ->
   page = new PhonemePage(pageObject.words)
   page.load(pageObject)
   return page
 
 
-
-
-class LettersPage extends AssessmentPage
-  constructor: (@letters) ->
+class ToggleGridWithTimer extends AssessmentPage
+  constructor: (options) ->
+    @letters = options.letters
+    @pageId = options.pageId
+    @numberOfColumns = options?.numberOfColumns || 5
     super()
-    lettersCheckboxes = new JQueryCheckboxGroup()
-    lettersCheckboxes.checkboxes = for letter,index in @letters
-      checkbox = new JQueryCheckbox()
-      checkbox.unique_name = "checkbox_" + index
-      checkbox.content = letter
-      checkbox
     @addTimer()
-    @content = lettersCheckboxes.render()
 
-    # TODO fix this to not use Letters - need to figure out how
-    $("#Letters label").live 'mousedown', (eventData) =>
+    result = ""
+    for letter,index in @letters
+      checkboxName = "checkbox_" + index
+
+      result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
+      result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
+      result += "</fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+
+    @content =  "
+      <div class='toggle-grid-with-timer' data-role='content'>	
+        <form>
+          #{result}
+        </form>
+      </div>
+      "
+
+    console.log @content
+
+    $("##{@pageId} label").live 'mousedown', (eventData) =>
       if $.assessment.currentPage.timer.hasStartedAndStopped()
-        $("#Letters label").removeClass('last-attempted')
+        $("##{@pageId} label").removeClass('last-attempted')
         $(eventData.currentTarget).toggleClass('last-attempted')
-
-    #$("#Letters button .toggle-line").live 'mousedown', (eventData) =>
-    #  console.log "FPP"
-    #  return false
 
   propertiesForSerialization: ->
     properties = super()
     properties.push("letters")
     return properties
-
-  updateFromGoogle: ->
-    @loading = true
-    googleSpreadsheet = new GoogleSpreadsheet()
-    googleSpreadsheet.url(@url)
-    googleSpreadsheet.load (result) =>
-      @letters = result.data
-      lettersCheckboxes = new JQueryCheckboxGroup()
-      lettersCheckboxes.checkboxes = for letter,index in @letters
-        checkbox = new JQueryCheckbox()
-        checkbox.unique_name = "checkbox_" + index
-        checkbox.content = letter
-        checkbox
-      @content = lettersCheckboxes.render()
-      @loading = false
 
   results: ->
     results = {}
@@ -611,37 +596,7 @@ class LettersPage extends AssessmentPage
       return "The last letter attempted has not been selected"
 
 
-LettersPage.deserialize = (pageObject) ->
-  lettersPage = new LettersPage(pageObject.letters)
+ToggleGridWithTimer.deserialize = (pageObject) ->
+  lettersPage = new ToggleGridWithTimer(pageObject)
   lettersPage.load(pageObject)
   return lettersPage
-
-class JQueryCheckbox
-  render: ->
-    Mustache.to_html(@_template(),this)
-
-  _template: -> "
-<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' />
-<label for='{{unique_name}}'>{{{content}}}</label>
-"
-
-class JQueryCheckboxGroup
-  render: ->
-    @fieldset_size ?= 5
-    fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>"
-    #fieldset_close = "<button class='toggle-line' data-icon='delete' data-iconpos='notext'>Toggle Line</button></fieldset>"
-    fieldset_close = "</fieldset>"
-    fieldsets = ""
-
-    for checkbox,index in @checkboxes
-      fieldsets += fieldset_open if index % @fieldset_size == 0
-      fieldsets += checkbox.render()
-      fieldsets += fieldset_close if ((index + 1) % @fieldset_size == 0 or index == @checkboxes.length-1)
-    
-    "
-<div data-role='content'>	
-  <form>
-    #{fieldsets}
-  </form>
-</div>
-    "

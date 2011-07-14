@@ -13,8 +13,6 @@ $(document).ready ->
       EarlyGradeReadingAssessment.showMenu()
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
-    when "?loadTest=true"
-      EarlyGradeReadingAssessment.loadTest()
     else
 # Have to remove the question mark
       EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1))
@@ -37,7 +35,7 @@ EarlyGradeReadingAssessment.showMenu = ->
           <div data-role='content'>	
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadTest=true'>Load 'Assessment.Test' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Load 'Assessment.Test' from Couch</a>
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>

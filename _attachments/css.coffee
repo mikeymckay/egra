@@ -11,23 +11,23 @@ red = "red"
 $("head").append "
   <style>
 
-    #Letters .ui-checkbox span.show{
+    .toggle-grid-with-timer .ui-checkbox span.show{
       color: black;
     }
 
-    #Letters .ui-checkbox span{
+    .toggle-grid-with-timer .ui-checkbox span{
       color: lightgray;
     }
-    #Letters .ui-btn-active{
+    .toggle-grid-with-timer .ui-btn-active{
       background-image: none;
     }
 
-    #Letters .ui-checkbox .last-attempted{
+    .toggle-grid-with-timer .ui-checkbox .last-attempted{
       outline: 5px solid #{yellow};
       outline-offset: -10px;
     }
 
-    #Letters .ui-btn-icon-notext{
+    .toggle-grid-with-timer .ui-btn-icon-notext{
       margin-left: 20px;
       vertical-align: middle;
     }
