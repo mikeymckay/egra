@@ -1,7 +1,8 @@
 class JQueryMobilePage
-  constructor: ->
-    @pageId ||= ""
-    @pageType ||= this.constructor.toString().match(/function +(.*?)\(/)[1]
+  # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
+  constructor: (options) ->
+    @pageId = options?.pageId || ""
+    @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
     Mustache.to_html(@_template(),this)
@@ -103,10 +104,12 @@ JQueryMobilePage.deserialize = (pageObject) ->
       return StudentInformationPage.deserialize(pageObject)
     when "UntimedSubtest"
       return UntimedSubtest.deserialize(pageObject)
+    when "UntimedSubtestLinked"
+      return UntimedSubtestLinked.deserialize(pageObject)
     when "PhonemePage"
       return PhonemePage.deserialize(pageObject)
     else
-      result = new window[pageObject.pageType]()
+      result = new window[pageObject.pageType](pageObject)
       result.load(pageObject)
       return result
 
@@ -406,12 +409,19 @@ class TextPage extends AssessmentPage
     properties.push("content")
     return properties
 
+class ConsentPage extends TextPage
+  validate: ->
+    if $("div##{@pageId} input[@name='childConsents']:checked").val()
+      return true
+    else
+      return "You must answer the consent question"
+
 class UntimedSubtest extends AssessmentPage
-  constructor: (@questions) ->
-    super()
-    subtestId = Math.floor(Math.random()*1000)
+  constructor: (options) ->
+    @questions = options.questions
+    super(options)
     @content = "<form>" + (for question,index in @questions
-      questionName = subtestId + "-question-" + index
+      questionName = @pageId + "-question-" + index
       "
       <div data-role='fieldcontain'>
           <fieldset data-role='controlgroup' data-type='horizontal'>
@@ -441,7 +451,46 @@ class UntimedSubtest extends AssessmentPage
 
 
 UntimedSubtest.deserialize = (pageObject) ->
-  untimedSubtest = new UntimedSubtest(pageObject.questions)
+  untimedSubtest = new UntimedSubtest(pageObject)
+  untimedSubtest.load(pageObject)
+  return untimedSubtest
+
+class UntimedSubtestLinked extends UntimedSubtest
+  constructor: (options) ->
+    @linkedToPageId = options.linkedToPageId
+    @questionIndices = options.questionIndices
+    super(options)
+
+    linkedPageName = @linkedToPageId.underscore().titleize()
+    @content += "<div id='#{@pageId}-not-enough-progress-message' style='display:hidden'>Not enough progress was made on #{linkedPageName} to show questions from #{@name()}. Continue by pressing Next.</div>"
+
+    $("##{@pageId}").live 'pageshow', (eventData) =>
+      attemptedOnLinkedPage = $.assessment.getPage(@linkedToPageId).results().attempted
+      @numberInputFieldsShown = 0
+      for inputElement in $("##{@pageId} input[type='radio']")
+        if attemptedOnLinkedPage < @questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-")+1)]
+          $(inputElement).parents("div[data-role='fieldcontain']").hide()
+        else
+          $(inputElement).parents("div[data-role='fieldcontain']").show()
+          @numberInputFieldsShown++
+      $("div##{@pageId}-not-enough-progress-message").toggle(@numberInputFieldsShown == 0)
+      
+  propertiesForSerialization: ->
+    properties = super()
+    properties = properties.concat(["questions","linkedToPageId","questionIndices"])
+    return properties
+
+  validate: ->
+    # Each question has three radio buttons, so divide by 3
+    numberOfQuestionsShown = @numberInputFieldsShown/3
+    numberOfQuestionsAnswered = _.size(@results())
+    if numberOfQuestionsAnswered == numberOfQuestionsShown
+      return true
+    else "Only #{numberOfQuestionsAnswered} out of the #{numberOfQuestionsShown} questions were answered"
+
+
+UntimedSubtestLinked.deserialize = (pageObject) ->
+  untimedSubtest = new UntimedSubtestLinked(pageObject)
   untimedSubtest.load(pageObject)
   return untimedSubtest
 
@@ -513,9 +562,9 @@ PhonemePage.deserialize = (pageObject) ->
 class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
-    @pageId = options.pageId
+    #@pageId = options.pageId
     @numberOfColumns = options?.numberOfColumns || 5
-    super()
+    super(options)
     @addTimer()
 
     result = ""
@@ -534,8 +583,7 @@ class ToggleGridWithTimer extends AssessmentPage
       </div>
       "
 
-    console.log @content
-
+    
     $("##{@pageId} label").live 'mousedown', (eventData) =>
       if $.assessment.currentPage.timer.hasStartedAndStopped()
         $("##{@pageId} label").removeClass('last-attempted')
@@ -600,3 +648,101 @@ ToggleGridWithTimer.deserialize = (pageObject) ->
   lettersPage = new ToggleGridWithTimer(pageObject)
   lettersPage.load(pageObject)
   return lettersPage
+
+
+
+class Dictation extends AssessmentPage
+  constructor: (options) ->
+    @message = options.message
+    super(options)
+
+    @content =  "#{@message}<br/><input name='result' type='text'></input>"
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("message")
+    return properties
+
+  results: ->
+    results = {}
+    enteredData = $("div##{@pageId} input[type=text]").val()
+
+    if enteredData.match(/boys/i)
+      results["Wrote boys correctly"] = 2
+    else
+      if enteredData.match(/bo|oy|by/i)
+        results["Wrote boys correctly"] = 1
+
+    if enteredData.match(/bikes/i)
+      results["Wrote bikes correctly"] = 2
+    else
+      if enteredData.match(/bi|ik|kes/i)
+        results["Wrote bikes correctly"] = 1
+
+    numberOfSpaces = enteredData.split(" ").length - 1
+    if numberOfSpaces >= 8
+      results["Used appropriate spacing between words"] = 2
+    else
+      if numberOfSpaces > 3 and numberOfSpaces < 8
+        results["Used appropriate spacing between words"] = 1
+      else
+        results["Used appropriate spacing between words"] = 0
+
+    # TODO
+    results["Used appropriate direction of text (left to right)"] = 2
+
+    if enteredData.match(/The/)
+      results["Used capital letter for the word 'The'"] = 2
+    else
+      results["Used capital letter for the word 'The'"] = 0
+
+    if enteredData.match(/\. *$/)
+      results["Used full stop (.) at end of sentence."] = 2
+    else
+      results["Used full stop (.) at end of sentence."] = 0
+    return results
+
+  validate: ->
+    return true
+
+Dictation.deserialize = (pageObject) ->
+  dictationPage = new Dictation(pageObject)
+  dictationPage.load(pageObject)
+  return dictationPage
+
+
+
+class Interview extends AssessmentPage
+  constructor: (options) ->
+    @radioButtons = options.radioButtons
+    super(options)
+    @content = Interview.template(this)
+    
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("radioButtons")
+    return properties
+
+  validate: ->
+    return true
+
+Interview.template = Handlebars.compile "
+  <form>
+    {{#radioButtons}}
+      <fieldset data-type='{{type}}' data-role='controlgroup'>
+        <legend>{{label}}</legend>
+        {{#options}}
+          <label for='{{.}}'>{{.}}</label>
+          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+        {{/options}}
+      </fieldset>
+    {{/radioButtons}}
+  </form>
+"
+
+Interview.deserialize = (pageObject) ->
+  interview = new Interview(pageObject)
+  interview.load(pageObject)
+  interview.content = Interview.template(interview)
+  return interview

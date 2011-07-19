@@ -43,6 +43,16 @@ Assessment = (function() {
     }
     return _results;
   };
+  Assessment.prototype.getPage = function(pageId) {
+    var page, _i, _len, _ref;
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      if (page.pageId === pageId) {
+        return page;
+      }
+    }
+  };
   Assessment.prototype.insertPage = function(page, pageNumber) {
     this.pages.splice(pageNumber, 0, page);
     return this.setPages(this.pages);

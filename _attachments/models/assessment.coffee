@@ -27,6 +27,10 @@ class Assessment
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
 
+  getPage: (pageId) ->
+    for page in @pages
+      return page if page.pageId is pageId
+
   insertPage: (page, pageNumber) ->
     @pages.splice(pageNumber,0,page)
     @setPages(@pages)

@@ -2491,6 +2491,16 @@ Assessment = (function() {
     }
     return _results;
   };
+  Assessment.prototype.getPage = function(pageId) {
+    var page, _i, _len, _ref;
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      if (page.pageId === pageId) {
+        return page;
+      }
+    }
+  };
   Assessment.prototype.insertPage = function(page, pageNumber) {
     this.pages.splice(pageNumber, 0, page);
     return this.setPages(this.pages);
@@ -2846,7 +2856,7 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};var AssessmentPage, DateTimePage, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest;
+};var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -2856,9 +2866,9 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   return child;
 };
 JQueryMobilePage = (function() {
-  function JQueryMobilePage() {
-    this.pageId || (this.pageId = "");
-    this.pageType || (this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]);
+  function JQueryMobilePage(options) {
+    this.pageId = (options != null ? options.pageId : void 0) || "";
+    this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
     return Mustache.to_html(this._template(), this);
@@ -2967,10 +2977,12 @@ JQueryMobilePage.deserialize = function(pageObject) {
       return StudentInformationPage.deserialize(pageObject);
     case "UntimedSubtest":
       return UntimedSubtest.deserialize(pageObject);
+    case "UntimedSubtestLinked":
+      return UntimedSubtestLinked.deserialize(pageObject);
     case "PhonemePage":
       return PhonemePage.deserialize(pageObject);
     default:
-      result = new window[pageObject.pageType]();
+      result = new window[pageObject.pageType](pageObject);
       result.load(pageObject);
       return result;
   }
@@ -3260,20 +3272,33 @@ TextPage = (function() {
   };
   return TextPage;
 })();
+ConsentPage = (function() {
+  __extends(ConsentPage, TextPage);
+  function ConsentPage() {
+    ConsentPage.__super__.constructor.apply(this, arguments);
+  }
+  ConsentPage.prototype.validate = function() {
+    if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
+      return true;
+    } else {
+      return "You must answer the consent question";
+    }
+  };
+  return ConsentPage;
+})();
 UntimedSubtest = (function() {
   __extends(UntimedSubtest, AssessmentPage);
-  function UntimedSubtest(questions) {
-    var answer, index, question, questionName, subtestId;
-    this.questions = questions;
-    UntimedSubtest.__super__.constructor.call(this);
-    subtestId = Math.floor(Math.random() * 1000);
+  function UntimedSubtest(options) {
+    var answer, index, question, questionName;
+    this.questions = options.questions;
+    UntimedSubtest.__super__.constructor.call(this, options);
     this.content = "<form>" + ((function() {
       var _len, _ref, _results;
       _ref = this.questions;
       _results = [];
       for (index = 0, _len = _ref.length; index < _len; index++) {
         question = _ref[index];
-        questionName = subtestId + "-question-" + index;
+        questionName = this.pageId + "-question-" + index;
         _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + question + "</legend>      ") + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = ["Correct", "Incorrect", "No response"];
@@ -3305,7 +3330,57 @@ UntimedSubtest = (function() {
 })();
 UntimedSubtest.deserialize = function(pageObject) {
   var untimedSubtest;
-  untimedSubtest = new UntimedSubtest(pageObject.questions);
+  untimedSubtest = new UntimedSubtest(pageObject);
+  untimedSubtest.load(pageObject);
+  return untimedSubtest;
+};
+UntimedSubtestLinked = (function() {
+  __extends(UntimedSubtestLinked, UntimedSubtest);
+  function UntimedSubtestLinked(options) {
+    var linkedPageName;
+    this.linkedToPageId = options.linkedToPageId;
+    this.questionIndices = options.questionIndices;
+    UntimedSubtestLinked.__super__.constructor.call(this, options);
+    linkedPageName = this.linkedToPageId.underscore().titleize();
+    this.content += "<div id='" + this.pageId + "-not-enough-progress-message' style='display:hidden'>Not enough progress was made on " + linkedPageName + " to show questions from " + (this.name()) + ". Continue by pressing Next.</div>";
+    $("#" + this.pageId).live('pageshow', __bind(function(eventData) {
+      var attemptedOnLinkedPage, inputElement, _i, _len, _ref;
+      attemptedOnLinkedPage = $.assessment.getPage(this.linkedToPageId).results().attempted;
+      this.numberInputFieldsShown = 0;
+      _ref = $("#" + this.pageId + " input[type='radio']");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        inputElement = _ref[_i];
+        if (attemptedOnLinkedPage < this.questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-") + 1)]) {
+          $(inputElement).parents("div[data-role='fieldcontain']").hide();
+        } else {
+          $(inputElement).parents("div[data-role='fieldcontain']").show();
+          this.numberInputFieldsShown++;
+        }
+      }
+      return $("div#" + this.pageId + "-not-enough-progress-message").toggle(this.numberInputFieldsShown === 0);
+    }, this));
+  }
+  UntimedSubtestLinked.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = UntimedSubtestLinked.__super__.propertiesForSerialization.call(this);
+    properties = properties.concat(["questions", "linkedToPageId", "questionIndices"]);
+    return properties;
+  };
+  UntimedSubtestLinked.prototype.validate = function() {
+    var numberOfQuestionsAnswered, numberOfQuestionsShown;
+    numberOfQuestionsShown = this.numberInputFieldsShown / 3;
+    numberOfQuestionsAnswered = _.size(this.results());
+    if (numberOfQuestionsAnswered === numberOfQuestionsShown) {
+      return true;
+    } else {
+      return "Only " + numberOfQuestionsAnswered + " out of the " + numberOfQuestionsShown + " questions were answered";
+    }
+  };
+  return UntimedSubtestLinked;
+})();
+UntimedSubtestLinked.deserialize = function(pageObject) {
+  var untimedSubtest;
+  untimedSubtest = new UntimedSubtestLinked(pageObject);
   untimedSubtest.load(pageObject);
   return untimedSubtest;
 };
@@ -3389,9 +3464,8 @@ ToggleGridWithTimer = (function() {
   function ToggleGridWithTimer(options) {
     var checkboxName, index, letter, result, _len, _ref;
     this.letters = options.letters;
-    this.pageId = options.pageId;
     this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
-    ToggleGridWithTimer.__super__.constructor.call(this);
+    ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
     result = "";
     _ref = this.letters;
@@ -3407,7 +3481,6 @@ ToggleGridWithTimer = (function() {
       }
     }
     this.content = "      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      ";
-    console.log(this.content);
     $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
         $("#" + this.pageId + " label").removeClass('last-attempted');
@@ -3491,6 +3564,97 @@ ToggleGridWithTimer.deserialize = function(pageObject) {
   lettersPage = new ToggleGridWithTimer(pageObject);
   lettersPage.load(pageObject);
   return lettersPage;
+};
+Dictation = (function() {
+  __extends(Dictation, AssessmentPage);
+  function Dictation(options) {
+    this.message = options.message;
+    Dictation.__super__.constructor.call(this, options);
+    this.content = "" + this.message + "<br/><input name='result' type='text'></input>";
+  }
+  Dictation.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = Dictation.__super__.propertiesForSerialization.call(this);
+    properties.push("message");
+    return properties;
+  };
+  Dictation.prototype.results = function() {
+    var enteredData, numberOfSpaces, results;
+    results = {};
+    enteredData = $("div#" + this.pageId + " input[type=text]").val();
+    if (enteredData.match(/boys/i)) {
+      results["Wrote boys correctly"] = 2;
+    } else {
+      if (enteredData.match(/bo|oy|by/i)) {
+        results["Wrote boys correctly"] = 1;
+      }
+    }
+    if (enteredData.match(/bikes/i)) {
+      results["Wrote bikes correctly"] = 2;
+    } else {
+      if (enteredData.match(/bi|ik|kes/i)) {
+        results["Wrote bikes correctly"] = 1;
+      }
+    }
+    numberOfSpaces = enteredData.split(" ").length - 1;
+    if (numberOfSpaces >= 8) {
+      results["Used appropriate spacing between words"] = 2;
+    } else {
+      if (numberOfSpaces > 3 && numberOfSpaces < 8) {
+        results["Used appropriate spacing between words"] = 1;
+      } else {
+        results["Used appropriate spacing between words"] = 0;
+      }
+    }
+    results["Used appropriate direction of text (left to right)"] = 2;
+    if (enteredData.match(/The/)) {
+      results["Used capital letter for the word 'The'"] = 2;
+    } else {
+      results["Used capital letter for the word 'The'"] = 0;
+    }
+    if (enteredData.match(/\. *$/)) {
+      results["Used full stop (.) at end of sentence."] = 2;
+    } else {
+      results["Used full stop (.) at end of sentence."] = 0;
+    }
+    return results;
+  };
+  Dictation.prototype.validate = function() {
+    return true;
+  };
+  return Dictation;
+})();
+Dictation.deserialize = function(pageObject) {
+  var dictationPage;
+  dictationPage = new Dictation(pageObject);
+  dictationPage.load(pageObject);
+  return dictationPage;
+};
+Interview = (function() {
+  __extends(Interview, AssessmentPage);
+  function Interview(options) {
+    this.radioButtons = options.radioButtons;
+    Interview.__super__.constructor.call(this, options);
+    this.content = Interview.template(this);
+  }
+  Interview.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = Interview.__super__.propertiesForSerialization.call(this);
+    properties.push("radioButtons");
+    return properties;
+  };
+  Interview.prototype.validate = function() {
+    return true;
+  };
+  return Interview;
+})();
+Interview.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+Interview.deserialize = function(pageObject) {
+  var interview;
+  interview = new Interview(pageObject);
+  interview.load(pageObject);
+  interview.content = Interview.template(interview);
+  return interview;
 };var Scorer;
 Scorer = (function() {
   function Scorer() {}

@@ -2,10 +2,7 @@
   "name": "Test",
   "_id": "Assessment.Test",
   "urlPathsForPages": [
-    "Assessment.The Gambia EGRA May 2011.Letters",
-    "Assessment.The Gambia EGRA May 2011.FamiliarWords",
-    "Assessment.EGRA Prototype.Phonemes",
-    "Assessment.EGRA Prototype.Results"
+    "Assessment.The Gambia EGRA May 2011.Letters"
   ],
   "couchapp": {
   }
