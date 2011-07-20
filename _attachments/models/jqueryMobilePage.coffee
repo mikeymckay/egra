@@ -1,3 +1,5 @@
+footerMessage = "Good effort, let's go onto the next page"
+
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
   constructor: (options) ->
@@ -85,15 +87,16 @@ class JQueryMobilePage
     {{{content}}}
   </div><!-- /content -->
   <div data-role='footer'>
-    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->
+    {{footerMessage}}
     <button href='\#{{nextPage}}'>Next</button>
-  </div><!-- /header -->
+  </div><!-- /footer -->
 </div><!-- /page -->
 "
   toPaper: ->
     @content
 
-#TODO Fix this - why can't we use load?
+#TODO Fix this
+# Should not need these separate deserialize just use the last generic one and the constructor
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
     when "ToggleGridWithTimer"
@@ -269,12 +272,14 @@ StudentInformationPage.deserialize = (pageObject) ->
   return studentInformationPage
 
 class SchoolPage extends AssessmentPage
-  constructor: (@schools) ->
-    super()
+  constructor: (options) ->
+    super(options)
+    @schools = options.schools
     $("div##{@pageId} li").live "mousedown", (eventData) =>
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
+
 
   propertiesForSerialization: ->
     properties = super()
@@ -307,7 +312,7 @@ class SchoolPage extends AssessmentPage
         {{selectSchoolText}}
       </h4>
     </div>
-    <ul data-filter='true' data-role='listview'>
+    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>
       {{#schools}}
         #{listElement}
       {{/schools}}
@@ -319,6 +324,7 @@ class SchoolPage extends AssessmentPage
     </form>
   "
 
+
   validate: ->
     for inputElement in $("div##{@pageId} form div.ui-field-contain input")
       if $(inputElement).val() == ""
@@ -326,10 +332,20 @@ class SchoolPage extends AssessmentPage
     return true
 
 SchoolPage.deserialize = (pageObject) ->
-  schoolPage = new SchoolPage(pageObject.schools)
+  schoolPage = new SchoolPage(pageObject)
   schoolPage.load(pageObject)
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(),schoolPage)
   return schoolPage
+
+
+# HACK!
+SchoolPage.hideListUntilSearch = ->
+  if $("#School input[data-type='search']").val() != ""
+    $("#School ul").show()
+    clearInterval(hideListUntilSearchInterval)
+
+hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch,500)
+
 
 #TODO Internationalize
 class DateTimePage extends AssessmentPage
@@ -420,6 +436,7 @@ class UntimedSubtest extends AssessmentPage
   constructor: (options) ->
     @questions = options.questions
     super(options)
+    @footerMessage = footerMessage
     @content = "<form>" + (for question,index in @questions
       questionName = @pageId + "-question-" + index
       "
@@ -459,6 +476,7 @@ class UntimedSubtestLinked extends UntimedSubtest
   constructor: (options) ->
     @linkedToPageId = options.linkedToPageId
     @questionIndices = options.questionIndices
+    @footerMessage = footerMessage
     super(options)
 
     linkedPageName = @linkedToPageId.underscore().titleize()
@@ -500,6 +518,7 @@ class PhonemePage extends AssessmentPage
   constructor: (@words) ->
     super()
     @subtestId = "phonemic-awareness"
+    @footerMessage = footerMessage
     phonemeIndex = 1
     @content = "<form id='#{@subtestId}'>" + (for item,index in @words
       wordName = @subtestId + "-number-sound-" + (index+1)
@@ -564,6 +583,7 @@ class ToggleGridWithTimer extends AssessmentPage
     @letters = options.letters
     #@pageId = options.pageId
     @numberOfColumns = options?.numberOfColumns || 5
+    @footerMessage = footerMessage
     super(options)
     @addTimer()
 
@@ -618,12 +638,12 @@ class ToggleGridWithTimer extends AssessmentPage
       results.letters[index] = true unless checkbox.hasClass("ui-btn-active")
       if checkbox.hasClass("last-attempted")
         results.attempted = index + 1
-        $("##{@pageId} .controls .message").html("
-          Correct: #{_.select(results.letters, (result) -> result).length}<br/>
-          Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
-          Attempted: #{results.attempted}<br/>
-          Autostopped: #{results.auto_stop || false}
-        ")
+#        $("##{@pageId} .controls .message").html("
+#          Attempted: #{results.attempted}<br/>
+#          Correct: #{_.select(results.letters, (result) -> result).length}<br/>
+#          Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
+#          Autostopped: #{results.auto_stop || false}
+#        ")
         return results
       else
         $("##{@pageId} .controls .message").html("Select last letter attempted")
@@ -654,6 +674,7 @@ ToggleGridWithTimer.deserialize = (pageObject) ->
 class Dictation extends AssessmentPage
   constructor: (options) ->
     @message = options.message
+    @footerMessage = footerMessage
     super(options)
 
     @content =  "#{@message}<br/><input name='result' type='text'></input>"

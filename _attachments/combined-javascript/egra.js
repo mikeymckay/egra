@@ -2856,7 +2856,7 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked;
+};var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage, hideListUntilSearchInterval;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -2865,6 +2865,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
+footerMessage = "Good effort, let's go onto the next page";
 JQueryMobilePage = (function() {
   function JQueryMobilePage(options) {
     this.pageId = (options != null ? options.pageId : void 0) || "";
@@ -2959,7 +2960,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->";
   };
   JQueryMobilePage.prototype.toPaper = function() {
     return this.content;
@@ -3147,9 +3148,9 @@ StudentInformationPage.deserialize = function(pageObject) {
 };
 SchoolPage = (function() {
   __extends(SchoolPage, AssessmentPage);
-  function SchoolPage(schools) {
-    this.schools = schools;
-    SchoolPage.__super__.constructor.call(this);
+  function SchoolPage(options) {
+    SchoolPage.__super__.constructor.call(this, options);
+    this.schools = options.schools;
     $("div#" + this.pageId + " li").live("mousedown", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
@@ -3188,7 +3189,7 @@ SchoolPage = (function() {
       dataAttribute = properties[_j];
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
   };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -3205,11 +3206,18 @@ SchoolPage = (function() {
 })();
 SchoolPage.deserialize = function(pageObject) {
   var schoolPage;
-  schoolPage = new SchoolPage(pageObject.schools);
+  schoolPage = new SchoolPage(pageObject);
   schoolPage.load(pageObject);
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
+SchoolPage.hideListUntilSearch = function() {
+  if ($("#School input[data-type='search']").val() !== "") {
+    $("#School ul").show();
+    return clearInterval(hideListUntilSearchInterval);
+  }
+};
+hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch, 500);
 DateTimePage = (function() {
   __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
@@ -3292,6 +3300,7 @@ UntimedSubtest = (function() {
     var answer, index, question, questionName;
     this.questions = options.questions;
     UntimedSubtest.__super__.constructor.call(this, options);
+    this.footerMessage = footerMessage;
     this.content = "<form>" + ((function() {
       var _len, _ref, _results;
       _ref = this.questions;
@@ -3340,6 +3349,7 @@ UntimedSubtestLinked = (function() {
     var linkedPageName;
     this.linkedToPageId = options.linkedToPageId;
     this.questionIndices = options.questionIndices;
+    this.footerMessage = footerMessage;
     UntimedSubtestLinked.__super__.constructor.call(this, options);
     linkedPageName = this.linkedToPageId.underscore().titleize();
     this.content += "<div id='" + this.pageId + "-not-enough-progress-message' style='display:hidden'>Not enough progress was made on " + linkedPageName + " to show questions from " + (this.name()) + ". Continue by pressing Next.</div>";
@@ -3391,6 +3401,7 @@ PhonemePage = (function() {
     this.words = words;
     PhonemePage.__super__.constructor.call(this);
     this.subtestId = "phonemic-awareness";
+    this.footerMessage = footerMessage;
     phonemeIndex = 1;
     this.content = ("<form id='" + this.subtestId + "'>") + ((function() {
       var _len, _ref, _results;
@@ -3465,6 +3476,7 @@ ToggleGridWithTimer = (function() {
     var checkboxName, index, letter, result, _len, _ref;
     this.letters = options.letters;
     this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
+    this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
     result = "";
@@ -3528,11 +3540,6 @@ ToggleGridWithTimer = (function() {
       }
       if (checkbox.hasClass("last-attempted")) {
         results.attempted = index + 1;
-        $("#" + this.pageId + " .controls .message").html("          Correct: " + (_.select(results.letters, function(result) {
-          return result;
-        }).length) + "<br/>          Incorrect: " + (_.select(results.letters, function(result) {
-          return !result;
-        }).length) + "<br/>          Attempted: " + results.attempted + "<br/>          Autostopped: " + (results.auto_stop || false) + "        ");
         return results;
       } else {
         $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
@@ -3569,6 +3576,7 @@ Dictation = (function() {
   __extends(Dictation, AssessmentPage);
   function Dictation(options) {
     this.message = options.message;
+    this.footerMessage = footerMessage;
     Dictation.__super__.constructor.call(this, options);
     this.content = "" + this.message + "<br/><input name='result' type='text'></input>";
   }
