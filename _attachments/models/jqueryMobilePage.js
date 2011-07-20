@@ -244,6 +244,8 @@ JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
+    this.randomIdForSubject = ("" + Math.random()).substring(2, 8);
+    this.randomIdForSubject = this.randomIdForSubject.substr(0, 3) + "-" + this.randomIdForSubject.substr(3);
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
     $("div").live("pageshow", function() {
       $.assessment.handleURLParameters();
@@ -257,6 +259,12 @@ JQueryLogin = (function() {
   };
   JQueryLogin.prototype.password = function() {
     return this.results().password;
+  };
+  JQueryLogin.prototype.results = function() {
+    var results;
+    results = JQueryLogin.__super__.results.call(this);
+    results["randomIdForSubject"] = this.randomIdForSubject;
+    return results;
   };
   return JQueryLogin;
 })();
@@ -385,14 +393,15 @@ DateTimePage = (function() {
 })();
 ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
-  function ResultsPage() {
-    ResultsPage.__super__.constructor.call(this);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + document.location.pathname + "?newAssessment=true'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
+  function ResultsPage(options) {
+    ResultsPage.__super__.constructor.call(this, options);
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + document.location.pathname + "?newAssessment=true'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var validationResult;
+      var validationResult, _ref, _ref2;
+      $("div#" + this.pageId + " div span[class='randomIdForSubject']").html((_ref = $.assessment.results()) != null ? (_ref2 = _ref.Login) != null ? _ref2.randomIdForSubject : void 0 : void 0);
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();

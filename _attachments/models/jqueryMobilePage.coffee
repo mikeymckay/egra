@@ -215,6 +215,8 @@ $('div.ui-footer button').live 'click', (event,ui) ->
 class JQueryLogin extends AssessmentPage
   constructor: ->
     super()
+    @randomIdForSubject = (""+Math.random()).substring(2,8)
+    @randomIdForSubject = @randomIdForSubject.substr(0,3) + "-" + @randomIdForSubject.substr(3)
     @content = "
 <form>
   <div data-role='fieldcontain'>
@@ -235,6 +237,12 @@ class JQueryLogin extends AssessmentPage
 
   password: ->
     @results().password
+
+  results: ->
+    results = super()
+    results["randomIdForSubject"] = @randomIdForSubject
+    return results
+    
 
 class StudentInformationPage extends AssessmentPage
   propertiesForSerialization: ->
@@ -383,8 +391,8 @@ class DateTimePage extends AssessmentPage
       
 
 class ResultsPage extends AssessmentPage
-  constructor: ->
-    super()
+  constructor: (options) ->
+    super(options)
     @content = Handlebars.compile "
       <div class='resultsMessage'>
       </div>
@@ -392,6 +400,9 @@ class ResultsPage extends AssessmentPage
         <h3>Results</h3>
         <pre>
         </pre>
+      </div>
+      <div class='message'>
+        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.
       </div>
       <div data-inline='true'>
         <!-- TODO insert username/password into GET string so we don't have to retype -->
@@ -407,6 +418,10 @@ class ResultsPage extends AssessmentPage
     super(data)
 
     $("div##{@pageId}").live "pageshow", =>
+
+
+      $("div##{@pageId} div span[class='randomIdForSubject']").html($.assessment.results()?.Login?.randomIdForSubject)
+
       # Hide the back and next buttons
       $("div##{@pageId} div[data-role='header'] a").hide()
       $("div##{@pageId} div[data-role='footer'] div").hide()
