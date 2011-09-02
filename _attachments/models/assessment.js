@@ -34,7 +34,7 @@ Assessment = (function() {
       if (index !== 0) {
         page.previousPage = this.pages[index - 1].pageId;
       }
-      if (pages.length !== index + 1) {
+      if (this.pages.length !== index + 1) {
         page.nextPage = this.pages[index + 1].pageId;
       }
       page.urlScheme = this.urlScheme;
@@ -42,6 +42,16 @@ Assessment = (function() {
       _results.push(this.urlPathsForPages.push(page.urlPath));
     }
     return _results;
+  };
+  Assessment.prototype.getPage = function(pageId) {
+    var page, _i, _len, _ref;
+    _ref = this.pages;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      page = _ref[_i];
+      if (page.pageId === pageId) {
+        return page;
+      }
+    }
   };
   Assessment.prototype.insertPage = function(page, pageNumber) {
     this.pages.splice(pageNumber, 0, page);
@@ -93,6 +103,12 @@ Assessment = (function() {
         }
       }
     });
+  };
+  Assessment.prototype.resetURL = function() {
+    return document.location.origin + document.location.pathname + document.location.search;
+  };
+  Assessment.prototype.reset = function() {
+    return document.location = this.resetURL();
   };
   Assessment.prototype.validate = function() {
     var page, pageResult, validationErrors, _i, _len, _ref;
@@ -261,6 +277,30 @@ Assessment = (function() {
       return result;
     }, this));
   };
+  Assessment.prototype.flash = function() {
+    $('.ui-content').toggleClass("red");
+    return setTimeout("$('.ui-content').toggleClass('red')", 2000);
+  };
+  Assessment.prototype.toPaper = function(callback) {
+    return this.onReady(__bind(function() {
+      var i, page, result;
+      result = (function() {
+        var _len, _ref, _results;
+        _ref = this.pages;
+        _results = [];
+        for (i = 0, _len = _ref.length; i < _len; i++) {
+          page = _ref[i];
+          _results.push(("<h1>" + (page.name()) + "</h1>") + page.toPaper());
+        }
+        return _results;
+      }).call(this);
+      result = result.join("<div class='page-break'><hr/></div>");
+      if (callback != null) {
+        callback(result);
+      }
+      return result;
+    }, this));
+  };
   Assessment.prototype.handleURLParameters = function() {
     var a, d, e, param, q, r, value, _ref;
     if (this.urlParams != null) {
@@ -282,7 +322,6 @@ Assessment = (function() {
       $("input#" + param).val(value);
     }
     if (this.urlParams.newAssessment) {
-      console.log($.assessment.currentPage.pageId);
       if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
         if (!($.assessment.currentPage.pageId === "DateTime" || $.assessment.currentPage.pageId === "Login")) {
           $.mobile.changePage("DateTime");
@@ -347,23 +386,27 @@ Assessment.loadFromHTTP = function(url, callback) {
     dataType: 'json',
     success: function(result) {
       var pages, urlPath, _i, _len, _ref;
-      assessment = new Assessment(result.name);
-      pages = [];
-      _ref = result.urlPathsForPages;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        urlPath = _ref[_i];
-        url = baseUrl + urlPath;
-        JQueryMobilePage.loadFromHTTP({
-          url: url,
-          async: false
-        }, __bind(function(result) {
-          result.assessment = assessment;
-          return pages.push(result);
-        }, this));
-      }
-      assessment.setPages(pages);
-      if (callback != null) {
-        return callback(assessment);
+      try {
+        assessment = new Assessment(result.name);
+        pages = [];
+        _ref = result.urlPathsForPages;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          urlPath = _ref[_i];
+          url = baseUrl + urlPath;
+          JQueryMobilePage.loadFromHTTP({
+            url: url,
+            async: false
+          }, __bind(function(result) {
+            result.assessment = assessment;
+            return pages.push(result);
+          }, this));
+        }
+        assessment.setPages(pages);
+        if (callback != null) {
+          return callback(assessment);
+        }
+      } catch (error) {
+        return console.log("Error in Assessment.loadFromHTTP:" + error);
       }
     },
     error: function() {

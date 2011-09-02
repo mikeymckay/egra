@@ -1,7 +1,10 @@
+footerMessage = "Good effort, let's go onto the next page"
+
 class JQueryMobilePage
-  constructor: ->
-    @pageId = ""
-    @pageType = this.constructor.toString().match(/function +(.*?)\(/)[1]
+  # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
+  constructor: (options) ->
+    @pageId = options?.pageId || ""
+    @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
     Mustache.to_html(@_template(),this)
@@ -84,23 +87,32 @@ class JQueryMobilePage
     {{{content}}}
   </div><!-- /content -->
   <div data-role='footer'>
-    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->
+    {{footerMessage}}
     <button href='\#{{nextPage}}'>Next</button>
-  </div><!-- /header -->
+  </div><!-- /footer -->
 </div><!-- /page -->
 "
+  toPaper: ->
+    @content
 
-#TODO Fix this - why can't we use load?
+#TODO Fix this
+# Should not need these separate deserialize just use the last generic one and the constructor
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
-    when "LettersPage"
-      return LettersPage.deserialize(pageObject)
+    when "ToggleGridWithTimer"
+      return ToggleGridWithTimer.deserialize(pageObject)
     when "SchoolPage"
       return SchoolPage.deserialize(pageObject)
     when "StudentInformationPage"
       return StudentInformationPage.deserialize(pageObject)
+    when "UntimedSubtest"
+      return UntimedSubtest.deserialize(pageObject)
+    when "UntimedSubtestLinked"
+      return UntimedSubtestLinked.deserialize(pageObject)
+    when "PhonemePage"
+      return PhonemePage.deserialize(pageObject)
     else
-      result = new window[pageObject.pageType]()
+      result = new window[pageObject.pageType](pageObject)
       result.load(pageObject)
       return result
 
@@ -120,11 +132,15 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      jqueryMobilePage = JQueryMobilePage.deserialize(result)
-      jqueryMobilePage.urlPath = urlPath
-      jqueryMobilePage.urlScheme = "http"
-      jqueryMobilePage.revision = result._rev
-      callback(jqueryMobilePage) if callback?
+      try
+        jqueryMobilePage = JQueryMobilePage.deserialize(result)
+        jqueryMobilePage.urlPath = urlPath
+        jqueryMobilePage.urlScheme = "http"
+        jqueryMobilePage.revision = result._rev
+        callback(jqueryMobilePage) if callback?
+      catch error
+        console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
+        console.log result
     error: ->
       throw "Failed to load: #{urlPath}"
   $.ajax options
@@ -137,11 +153,17 @@ class AssessmentPage extends JQueryMobilePage
   addTimer: ->
     @timer = new Timer()
     @timer.setPage(this)
-#    @scorer = new Scorer()
-#    @scorer.setPage(this)
 
-    @controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>#{@timer.render()}</div>"
-    #@controls = "<div style='width: 100px;position:fixed;right:5px;'>#{@timer.render() + @scorer.render()}</div>"
+    @controls = "
+      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>
+        <div class='timer'>
+          #{@timer.render()}
+        </div>
+        <br/>
+        <br/>
+        <div class='message'>
+        </div>
+      </div>"
 
 ##
 # By default we expect all input fields to be filled
@@ -178,6 +200,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = ->
 
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
 
+# Show validation errors in a dialog page
 $('div.ui-footer button').live 'click', (event,ui) ->
   validationResult = $.assessment.currentPage.validate()
   if validationResult is true
@@ -190,14 +213,17 @@ $('div.ui-footer button').live 'click', (event,ui) ->
     )
     $.mobile.changePage("#_infoPage")
 
+
 class JQueryLogin extends AssessmentPage
   constructor: ->
     super()
+    @randomIdForSubject = (""+Math.random()).substring(2,8)
+    @randomIdForSubject = @randomIdForSubject.substr(0,3) + "-" + @randomIdForSubject.substr(3)
     @content = "
 <form>
   <div data-role='fieldcontain'>
     <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='Enumia' />
+    <input type='text' name='username' id='username' value='' />
     <label for='password'>Password:</label>
     <input type='password' name='password' id='password' value='' />
   </div>
@@ -214,6 +240,12 @@ class JQueryLogin extends AssessmentPage
   password: ->
     @results().password
 
+  results: ->
+    results = super()
+    results["randomIdForSubject"] = @randomIdForSubject
+    return results
+    
+
 class StudentInformationPage extends AssessmentPage
   propertiesForSerialization: ->
     properties = super()
@@ -221,7 +253,8 @@ class StudentInformationPage extends AssessmentPage
     return properties
 
   validate: ->
-    if $("#StudentInformation input:'radio':checked").length == 5
+    
+    if $("#StudentInformation input:'radio':checked").length == 7
       return true
     else
       #console.log $("#StudentInformation input[type='radio']").not(":checked")
@@ -249,12 +282,14 @@ StudentInformationPage.deserialize = (pageObject) ->
   return studentInformationPage
 
 class SchoolPage extends AssessmentPage
-  constructor: (@schools) ->
-    super()
+  constructor: (options) ->
+    super(options)
+    @schools = options.schools
     $("div##{@pageId} li").live "mousedown", (eventData) =>
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
+
 
   propertiesForSerialization: ->
     properties = super()
@@ -270,7 +305,7 @@ class SchoolPage extends AssessmentPage
     listAttributes = ""
     for dataAttribute in properties
       listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
-    listElement = "<li #{listAttributes}>{{name}}</li>"
+    listElement = "<li #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
 
     inputElements = ""
     for dataAttribute in properties
@@ -287,7 +322,7 @@ class SchoolPage extends AssessmentPage
         {{selectSchoolText}}
       </h4>
     </div>
-    <ul data-filter='true' data-role='listview'>
+    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>
       {{#schools}}
         #{listElement}
       {{/schools}}
@@ -299,6 +334,7 @@ class SchoolPage extends AssessmentPage
     </form>
   "
 
+
   validate: ->
     for inputElement in $("div##{@pageId} form div.ui-field-contain input")
       if $(inputElement).val() == ""
@@ -306,10 +342,20 @@ class SchoolPage extends AssessmentPage
     return true
 
 SchoolPage.deserialize = (pageObject) ->
-  schoolPage = new SchoolPage(pageObject.schools)
+  schoolPage = new SchoolPage(pageObject)
   schoolPage.load(pageObject)
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(),schoolPage)
   return schoolPage
+
+
+# HACK!
+SchoolPage.hideListUntilSearch = ->
+  if $("#School input[data-type='search']").val() != ""
+    $("#School ul").show()
+    clearInterval(hideListUntilSearchInterval)
+
+hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch,500)
+
 
 #TODO Internationalize
 class DateTimePage extends AssessmentPage
@@ -331,7 +377,7 @@ class DateTimePage extends AssessmentPage
   </div>
   <div data-role='fieldcontain'>
     <label for='time'>Time:</label>
-    <input type='number' name='time' id='time' />
+    <input type='text' name='time' id='time' />
   </div>
 </form>
 "
@@ -347,8 +393,8 @@ class DateTimePage extends AssessmentPage
       
 
 class ResultsPage extends AssessmentPage
-  constructor: ->
-    super()
+  constructor: (options) ->
+    super(options)
     @content = Handlebars.compile "
       <div class='resultsMessage'>
       </div>
@@ -357,12 +403,15 @@ class ResultsPage extends AssessmentPage
         <pre>
         </pre>
       </div>
+      <div class='message'>
+        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.
+      </div>
       <div data-inline='true'>
         <!-- TODO insert username/password into GET string so we don't have to retype -->
         <!--
         <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
         -->
-        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname}?newAssessment=true'>Begin Another Assessment</a>
+        <a data-inline='true' data-role='button' rel='external' href='#{$.assessment.resetURL()}'>Begin Another Assessment</a>
         <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
       </div>
     "
@@ -371,9 +420,12 @@ class ResultsPage extends AssessmentPage
     super(data)
 
     $("div##{@pageId}").live "pageshow", =>
+
+
+      $("div##{@pageId} div span[class='randomIdForSubject']").html($.assessment.results()?.Login?.randomIdForSubject)
+
       # Hide the back and next buttons
       $("div##{@pageId} div[data-role='header'] a").hide()
-      console.log $("div##{@pageId} div[data-role='footer'] span")
       $("div##{@pageId} div[data-role='footer'] div").hide()
       validationResult = $.assessment.validate()
       if validationResult == true
@@ -384,67 +436,250 @@ class ResultsPage extends AssessmentPage
       else
         $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> #{validationResult}<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.")
 
-class InstructionsPage extends AssessmentPage
+class TextPage extends AssessmentPage
   propertiesForSerialization: ->
     properties = super()
     properties.push("content")
     return properties
 
-  updateFromGoogle: ->
-    @loading = true
-    googleSpreadsheet = new GoogleSpreadsheet()
-    googleSpreadsheet.url(@url)
-    googleSpreadsheet.load (result) =>
-      @content = result.data[0].replace(/\n/g, "<br/>")
-      @loading = false
+class ConsentPage extends TextPage
+  constructor: (options) ->
+    super(options)
+
+    $("div##{@pageId} label[for='consent-no']").live "mousedown", (eventData) =>
+      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
+      $.mobile.changePage("#_infoPage")
+      $.assessment.saveResults (results) =>
+        setTimeout ( ->
+          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.")
+          setTimeout ( ->
+            $.assessment.reset()
+          ), 1000
+        ), 2000
 
 
-class LettersPage extends AssessmentPage
-  constructor: (@letters) ->
+  validate: ->
+    if $("div##{@pageId} input[@name='childConsents']:checked").val()
+      return true
+    else
+      return "You must answer the consent question"
+
+
+class UntimedSubtest extends AssessmentPage
+  constructor: (options) ->
+    @questions = options.questions
+    super(options)
+    @footerMessage = footerMessage
+    @content = "<form>" + (for question,index in @questions
+      questionName = @pageId + "-question-" + index
+      "
+      <div data-role='fieldcontain'>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+            <legend>#{question}</legend>
+      " +
+      (for answer in ["Correct", "Incorrect", "No response"]
+        "
+        <label for='#{questionName}-#{answer}'>#{answer}</label>
+        <input type='radio' name='#{questionName}' id='#{questionName}-#{answer}' value='#{answer}' />
+        "
+      ).join("") +
+      "
+          </fieldset>
+      </div>
+      "
+    ).join("") + "</form>"
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("questions")
+    return properties
+
+  validate: ->
+    if _.size(@results()) == @questions.length
+      return true
+    else "Only #{_.size(@results())} out of the #{@questions.length} questions were answered"
+
+
+UntimedSubtest.deserialize = (pageObject) ->
+  untimedSubtest = new UntimedSubtest(pageObject)
+  untimedSubtest.load(pageObject)
+  return untimedSubtest
+
+class UntimedSubtestLinked extends UntimedSubtest
+  constructor: (options) ->
+    @linkedToPageId = options.linkedToPageId
+    @questionIndices = options.questionIndices
+    @footerMessage = footerMessage
+    super(options)
+
+    linkedPageName = @linkedToPageId.underscore().titleize()
+    @content += "<div id='#{@pageId}-not-enough-progress-message' style='display:hidden'>Not enough progress was made on #{linkedPageName} to show questions from #{@name()}. Continue by pressing Next.</div>"
+
+    $("##{@pageId}").live 'pageshow', (eventData) =>
+      attemptedOnLinkedPage = $.assessment.getPage(@linkedToPageId).results().attempted
+      @numberInputFieldsShown = 0
+      for inputElement in $("##{@pageId} input[type='radio']")
+        if attemptedOnLinkedPage < @questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-")+1)]
+          $(inputElement).parents("div[data-role='fieldcontain']").hide()
+        else
+          $(inputElement).parents("div[data-role='fieldcontain']").show()
+          @numberInputFieldsShown++
+      $("div##{@pageId}-not-enough-progress-message").toggle(@numberInputFieldsShown == 0)
+      
+  propertiesForSerialization: ->
+    properties = super()
+    properties = properties.concat(["questions","linkedToPageId","questionIndices"])
+    return properties
+
+  validate: ->
+    # Each question has three radio buttons, so divide by 3
+    numberOfQuestionsShown = @numberInputFieldsShown/3
+    numberOfQuestionsAnswered = _.size(@results())
+    if numberOfQuestionsAnswered == numberOfQuestionsShown
+      return true
+    else "Only #{numberOfQuestionsAnswered} out of the #{numberOfQuestionsShown} questions were answered"
+
+
+UntimedSubtestLinked.deserialize = (pageObject) ->
+  untimedSubtest = new UntimedSubtestLinked(pageObject)
+  untimedSubtest.load(pageObject)
+  return untimedSubtest
+
+
+
+class PhonemePage extends AssessmentPage
+  constructor: (@words) ->
     super()
-    lettersCheckboxes = new JQueryCheckboxGroup()
-    lettersCheckboxes.checkboxes = for letter,index in @letters
-      checkbox = new JQueryCheckbox()
-      checkbox.unique_name = "checkbox_" + index
-      checkbox.content = letter
-      checkbox
+    @subtestId = "phonemic-awareness"
+    @footerMessage = footerMessage
+    phonemeIndex = 1
+    @content = "<form id='#{@subtestId}'>" + (for item,index in @words
+      wordName = @subtestId + "-number-sound-" + (index+1)
+      "
+      <div data-role='fieldcontain'>
+          <legend>#{item["word"]} - #{item["number-of-sounds"]}</legend>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+      " +
+      (for answer in ["Correct", "Incorrect"]
+        "
+        <label for='#{wordName}-#{answer}'>#{answer}</label>
+        <input type='radio' name='#{wordName}' id='#{wordName}-#{answer}' value='#{answer}' />
+        "
+      ).join("") +
+      "
+          </fieldset>
+          <fieldset data-role='controlgroup' data-type='horizontal'>
+      " +
+      (for phoneme in item["phonemes"]
+        phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
+        "
+          <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
+          <label for='#{phonemeName}'>#{phoneme}</label>
+        "
+      ).join("") +
+      "
+          </fieldset>
+      </div>
+      <hr/>
+      "
+    ).join("") + "</form>"
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("words")
+    return properties
+
+  results: ->
+    results = super()
+    for input in $("form##{@subtestId} input:checkbox")
+      # checked means they got it wrong, so set to false
+      results["#{input.name}"] = (input.value != "on")
+    return results
+
+  validate: ->
+    results = @results()
+    for item,index in @words
+      unless results[@subtestId + "-number-sound-" + (index+1)]?
+        return "You must select Correct or Incorrect for item ##{index+1}: <b>#{item["word"]}</b>"
+    return true
+
+
+
+PhonemePage.deserialize = (pageObject) ->
+  page = new PhonemePage(pageObject.words)
+  page.load(pageObject)
+  return page
+
+
+class ToggleGridWithTimer extends AssessmentPage
+  constructor: (options) ->
+    @letters = options.letters
+    #@pageId = options.pageId
+    @numberOfColumns = options?.numberOfColumns || 5
+    @footerMessage = footerMessage
+    super(options)
     @addTimer()
-    @content = lettersCheckboxes.three_way_render()
+
+    result = ""
+    for letter,index in @letters
+      checkboxName = "checkbox_" + index
+
+      result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
+      result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
+      result += "</fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+
+    @content =  "
+      <div class='toggle-grid-with-timer' data-role='content'>	
+        <form>
+          #{result}
+        </form>
+      </div>
+      "
+
+    
+    $("##{@pageId} label").live 'mousedown', (eventData) =>
+      if $.assessment.currentPage.timer.hasStartedAndStopped()
+        $("##{@pageId} label").removeClass('last-attempted')
+        $(eventData.currentTarget).toggleClass('last-attempted')
 
   propertiesForSerialization: ->
     properties = super()
     properties.push("letters")
     return properties
 
-  updateFromGoogle: ->
-    @loading = true
-    googleSpreadsheet = new GoogleSpreadsheet()
-    googleSpreadsheet.url(@url)
-    googleSpreadsheet.load (result) =>
-      @letters = result.data
-      lettersCheckboxes = new JQueryCheckboxGroup()
-      lettersCheckboxes.checkboxes = for letter,index in @letters
-        checkbox = new JQueryCheckbox()
-        checkbox.unique_name = "checkbox_" + index
-        checkbox.content = letter
-        checkbox
-      @content = lettersCheckboxes.three_way_render()
-      @loading = false
-
   results: ->
     results = {}
+
+    # Check if the first 10% are all wrong, if so auto_stop
+    items = $("##{@pageId} label")
+    tenPercentOfItems = items.length/10
+    firstTenPercent = items[0..tenPercentOfItems-1]
+    if _.select(firstTenPercent, (item) -> $(item).hasClass("ui-btn-active")).length == tenPercentOfItems
+      results.auto_stop = true
+      $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
+      @timer.stop()
+      $.assessment.flash()
+
+    return false unless @timer.hasStartedAndStopped()
     results.letters = new Array()
-    # Initialize to all wrong
-    results.letters[index] = false for checkbox,index in $("#Letters label")
     results.time_remain = @timer.seconds
-    results.auto_stop = true if @timer.seconds
+    # Initialize to all wrong
+    results.letters[index] = false for checkbox,index in $("##{@pageId} label")
     results.attempted = null
-    for checkbox,index in $("#Letters label")
+    for checkbox,index in $("##{@pageId} label")
       checkbox = $(checkbox)
-      if checkbox.hasClass("second_click")
-        results.attempted = index
+      results.letters[index] = true unless checkbox.hasClass("ui-btn-active")
+      if checkbox.hasClass("last-attempted")
+        results.attempted = index + 1
+#        $("##{@pageId} .controls .message").html("
+#          Attempted: #{results.attempted}<br/>
+#          Correct: #{_.select(results.letters, (result) -> result).length}<br/>
+#          Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
+#          Autostopped: #{results.auto_stop || false}
+#        ")
         return results
-      results.letters[index] = true unless checkbox.hasClass("first_click")
+      else
+        $("##{@pageId} .controls .message").html("Select last letter attempted")
 
     return results
 
@@ -459,86 +694,109 @@ class LettersPage extends AssessmentPage
     else if results.attempted?
       return true
     else
-      return "The last letter attempted has not been selected (double tap to select)"
+      return "The last letter attempted has not been selected"
 
-LettersPage.deserialize = (pageObject) ->
-  lettersPage = new LettersPage(pageObject.letters)
+
+ToggleGridWithTimer.deserialize = (pageObject) ->
+  lettersPage = new ToggleGridWithTimer(pageObject)
   lettersPage.load(pageObject)
   return lettersPage
-  
-$("#Letters label").live 'mousedown', (eventData) ->
-  checkbox = $(eventData.currentTarget)
-  checkbox.removeClass('ui-btn-active')
-  checkbox.toggleClass ->
-    if(checkbox.is('.first_click'))
-      checkbox.removeClass('first_click')
-      return 'second_click'
-    else if(checkbox.is('.second_click'))
-      checkbox.removeClass('second_click')
-      return ''
+
+
+
+class Dictation extends AssessmentPage
+  constructor: (options) ->
+    @message = options.message
+    @footerMessage = footerMessage
+    super(options)
+
+    @content =  "#{@message}<br/><input name='result' type='text'></input>"
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("message")
+    return properties
+
+  results: ->
+    results = {}
+    enteredData = $("div##{@pageId} input[type=text]").val()
+
+    if enteredData.match(/boys/i)
+      results["Wrote boys correctly"] = 2
     else
-      return 'first_click'
+      if enteredData.match(/bo|oy|by/i)
+        results["Wrote boys correctly"] = 1
+
+    if enteredData.match(/bikes/i)
+      results["Wrote bikes correctly"] = 2
+    else
+      if enteredData.match(/bi|ik|kes/i)
+        results["Wrote bikes correctly"] = 1
+
+    numberOfSpaces = enteredData.split(" ").length - 1
+    if numberOfSpaces >= 8
+      results["Used appropriate spacing between words"] = 2
+    else
+      if numberOfSpaces > 3 and numberOfSpaces < 8
+        results["Used appropriate spacing between words"] = 1
+      else
+        results["Used appropriate spacing between words"] = 0
+
+    # TODO
+    results["Used appropriate direction of text (left to right)"] = 2
+
+    if enteredData.match(/The/)
+      results["Used capital letter for the word 'The'"] = 2
+    else
+      results["Used capital letter for the word 'The'"] = 0
+
+    if enteredData.match(/\. *$/)
+      results["Used full stop (.) at end of sentence."] = 2
+    else
+      results["Used full stop (.) at end of sentence."] = 0
+    return results
+
+  validate: ->
+    return true
+
+Dictation.deserialize = (pageObject) ->
+  dictationPage = new Dictation(pageObject)
+  dictationPage.load(pageObject)
+  return dictationPage
 
 
-class JQueryCheckbox
-  render: ->
-    Mustache.to_html(@_template(),this)
 
-  _template: -> "
-<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' />
-<label for='{{unique_name}}'>{{{content}}}</label>
+class Interview extends AssessmentPage
+  constructor: (options) ->
+    @radioButtons = options.radioButtons
+    super(options)
+    @content = Interview.template(this)
+    
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("radioButtons")
+    return properties
+
+  validate: ->
+    return true
+
+Interview.template = Handlebars.compile "
+  <form>
+    {{#radioButtons}}
+      <fieldset data-type='{{type}}' data-role='controlgroup'>
+        <legend>{{label}}</legend>
+        {{#options}}
+          <label for='{{.}}'>{{.}}</label>
+          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+        {{/options}}
+      </fieldset>
+    {{/radioButtons}}
+  </form>
 "
 
-class JQueryCheckboxGroup
-  render: ->
-    @fieldset_size ?= 5
-    fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>"
-    fieldset_close = "</fieldset>"
-    fieldsets = ""
-
-    for checkbox,index in @checkboxes
-      fieldsets += fieldset_open if index % @fieldset_size == 0
-      fieldsets += checkbox.render()
-      fieldsets += fieldset_close if ((index + 1) % @fieldset_size == 0 or index == @checkboxes.length-1)
-    
-    "
-<div data-role='content'>	
-  <form>
-    #{fieldsets}
-  </form>
-</div>
-    "
-
-  three_way_render: ->
-    @first_click_color ?= "#F7C942"
-    @second_click_color ?= "#5E87B0"
-
-    this.render()
-#    this.render() +
-## TODO rewrite as coffeescript and use jquery .live for binding click event
-#    "
-#    <style>
-#      #Letters .ui-checkbox span.show{
-#        color: black;
-#      }
-#
-#      #Letters .ui-checkbox span{
-#        color: transparent;
-#      }
-#
-#      #Letters label.first_click{
-#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@first_click_color}); 
-#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@first_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@first_click_color}')\"; 
-#      }
-#      #Letters label.second_click{
-#        background-image: -moz-linear-gradient(top, #FFFFFF, #{@second_click_color}); 
-#        background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0, #FFFFFF),color-stop(1, #{@second_click_color}));   -ms-filter: \"progid:DXImageTransform.Microsoft.gradient(startColorStr='#FFFFFF', EndColorStr='#{@second_click_color}')\";
-#      }
-#      #Letters .ui-btn-active{
-#        background-image: none;
-#      }
-#    </style>
-#    "
-#
-#
-#
+Interview.deserialize = (pageObject) ->
+  interview = new Interview(pageObject)
+  interview.load(pageObject)
+  interview.content = Interview.template(interview)
+  return interview

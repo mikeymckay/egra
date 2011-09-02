@@ -5,14 +5,17 @@ $(document).ready ->
   switch document.location.search
     when "?deleteFromCouch=true"
       EarlyGradeReadingAssessment.deleteFromCouch ->
-        EarlyGradeReadingAssessment.showMenu()
+        document.location = "index.html?showMenu=true"
     when "?loadFromTestDataSaveToCouch=true"
       EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch ->
-        EarlyGradeReadingAssessment.showMenu()
+        document.location = "index.html?showMenu=true"
     when "?showMenu=true"
       EarlyGradeReadingAssessment.showMenu()
+    when "?printout=true"
+      EarlyGradeReadingAssessment.print()
     else
-      EarlyGradeReadingAssessment.loadFromCouch()
+# Have to remove the question mark
+      EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1))
 
 class EarlyGradeReadingAssessment
 EarlyGradeReadingAssessment.showMenu = ->
@@ -23,17 +26,21 @@ EarlyGradeReadingAssessment.showMenu = ->
     type: 'GET',
     dataType: 'json',
     success: (result) =>
-      console.log "SUCCESS"
-      documents = ("<a href='/egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
+      documents = ("<a rel='external' href='/_utils/document.html?egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
       $("body").html("
         <div data-role='page' id='menu'>
           <div data-role='header'>
             <h1>Admin Menu</h1>
           </div><!-- /header -->
           <div data-role='content'>	
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Load 'Assessment.Test' from Couch</a>
+            <!--
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}'>Load 'Assessment.EGRA Prototype' from Couch</a>
+            -->
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
             #{documents.join("<br/>")}
           </div><!-- /content -->
           <div data-role='footer'>
@@ -44,8 +51,35 @@ EarlyGradeReadingAssessment.showMenu = ->
     error: ->
       throw "Could not GET #{url}"
 
-EarlyGradeReadingAssessment.loadFromCouch = ->
+EarlyGradeReadingAssessment.print = ->
   Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+    assessment.toPaper (result) ->
+      style = "
+        body{
+          font-family: Arial;
+        }
+        .page-break{
+          display: block;
+          page-break-before: always;
+        }
+        input{
+          height: 50px;  
+          border: 1px
+        }
+      "
+      $("body").html(result)
+      # Remove the jquery mobile stylesheet
+      $("link").remove()
+
+EarlyGradeReadingAssessment.loadFromCouch = (path) ->
+  Assessment.loadFromHTTP "/egra/#{path}", (assessment) ->
+  #Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+    assessment.render (result) ->
+      $("body").html(result)
+      $.mobile.initializePage()
+
+EarlyGradeReadingAssessment.loadTest = ->
+  Assessment.loadFromHTTP "/egra/Assessment.Test", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
       $.mobile.initializePage()

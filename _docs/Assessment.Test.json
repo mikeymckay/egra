@@ -1,0 +1,9 @@
+{
+  "name": "Test",
+  "_id": "Assessment.Test",
+  "urlPathsForPages": [
+    "Assessment.Test.Letters"
+  ],
+  "couchapp": {
+  }
+}

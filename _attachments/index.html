@@ -2,6 +2,7 @@
 <html> 
 	<head> 
     <title>Page Title</title> 
+    <link rel="apple-touch-icon-precomposed" href="/egra/_design/app/images/TangerineIcon.png"/> 
     <link rel="stylesheet" href="jquery-mobile/jquery.mobile-1.0a3.min.css" type="text/css"/>
 
     <script type="text/javascript" src="jquery-1.5.min.js"></script>
@@ -10,12 +11,12 @@
     <script type="text/javascript" src="mustache.js"></script>
     <script type="text/javascript" src="handlebars.js"></script>
     <script type="text/javascript" src="inflection.js"></script>
+    <script type="text/javascript" src="underscore.js"></script>
     <script type="text/javascript" src="models/template.js"></script>
     <script type="text/javascript" src="models/assessment.js"></script>
     <script type="text/javascript" src="models/jqueryMobilePage.js"></script>
     <script type="text/javascript" src="models/scorer.js"></script>
     <script type="text/javascript" src="models/timer.js"></script>
-    <script type="text/javascript" src="google-spreadsheet-javascript/google-spreadsheet.js"></script>
     <script type="text/javascript" src="egra.js"></script>
     <script type="text/javascript" src="jquery-mobile/jquery.mobile-1.0a3.min.js"></script>
     <!-- Can replace above js refs with: -->
@@ -23,6 +24,20 @@
     <script type="text/javascript" src="combined-javascript/egra.min.js"></script>
     -->
     <!-- ** -->
+    <!-- TODO Remove this for deployments! -->
+
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23003847-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+
+    </script>
   </head> 
   <body>
   </body>

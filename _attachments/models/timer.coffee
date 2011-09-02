@@ -27,15 +27,17 @@ class Timer
     decrement = =>
       @seconds -= @tick_value
       if @seconds == 0
-        @running = false
-        clearInterval(@intervalId)
+        @stop()
+        $.assessment.flash()
       @renderSeconds()
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
-    @hideLetters()
     @running = false
     clearInterval(@intervalId)
+
+  hasStartedAndStopped: ->
+    return (@seconds != 60) and (@running == false)
 
   reset: ->
     @seconds = 60

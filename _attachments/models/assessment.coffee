@@ -22,10 +22,14 @@ class Assessment
       page.assessment = this
       page.pageNumber = index
       page.previousPage = @pages[index - 1].pageId unless index == 0
-      page.nextPage = @pages[index + 1].pageId unless pages.length == index + 1
+      page.nextPage = @pages[index + 1].pageId unless @pages.length == index + 1
       page.urlScheme = @urlScheme
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
+
+  getPage: (pageId) ->
+    for page in @pages
+      return page if page.pageId is pageId
 
   insertPage: (page, pageNumber) ->
     @pages.splice(pageNumber,0,page)
@@ -66,6 +70,13 @@ class Assessment
         throw "Could not PUT to #{url}"
       complete: ->
         callback(results) if callback?
+
+  resetURL: ->
+    document.location.origin + document.location.pathname + document.location.search
+
+  reset: ->
+    document.location = @resetURL()
+    
 
   validate: ->
     validationErrors = ""
@@ -180,6 +191,18 @@ class Assessment
       callback(result) if callback?
       return result
 
+  flash: ->
+    $('.ui-content').toggleClass("red")
+    setTimeout("$('.ui-content').toggleClass('red')",2000)
+
+  toPaper: (callback) ->
+    @onReady =>
+      result = for page,i in @pages
+        "<h1>#{page.name()}</h1>" + page.toPaper()
+      result = result.join("<div class='page-break'><hr/></div>")
+      callback(result) if callback?
+      return result
+
   handleURLParameters: ->
     # Fill in forms from GET parameters
     # Taken from:
@@ -198,13 +221,10 @@ class Assessment
       $("input##{param}").val(value)
 
     if @urlParams.newAssessment
-      console.log $.assessment.currentPage.pageId
 # TODO Refactor
       unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         document.location = document.location.href
-
-
 
 
 Assessment.load = (url, callback) ->
@@ -246,15 +266,19 @@ Assessment.loadFromHTTP = (url, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      assessment = new Assessment(result.name)
-      pages = []
-      for urlPath in result.urlPathsForPages
-        url = baseUrl + urlPath
-        JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
-          result.assessment = assessment
-          pages.push result
-      assessment.setPages(pages)
-      callback(assessment) if callback?
+      try
+        assessment = new Assessment(result.name)
+        pages = []
+        for urlPath in result.urlPathsForPages
+          url = baseUrl + urlPath
+          JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
+            result.assessment = assessment
+            pages.push result
+        assessment.setPages(pages)
+        callback(assessment) if callback?
+      catch error
+        console.log "Error in Assessment.loadFromHTTP:" + error
+
     error: ->
       throw "Failed to load: #{url}"
   return assessment

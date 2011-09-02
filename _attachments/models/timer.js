@@ -33,17 +33,19 @@ Timer = (function() {
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
       if (this.seconds === 0) {
-        this.running = false;
-        clearInterval(this.intervalId);
+        this.stop();
+        $.assessment.flash();
       }
       return this.renderSeconds();
     }, this);
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
-    this.hideLetters();
     this.running = false;
     return clearInterval(this.intervalId);
+  };
+  Timer.prototype.hasStartedAndStopped = function() {
+    return (this.seconds !== 60) && (this.running === false);
   };
   Timer.prototype.reset = function() {
     this.seconds = 60;
