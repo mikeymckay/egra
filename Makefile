@@ -9,19 +9,18 @@ MIN = ${DIR}/${NAME}.min.js
 #CSS = ${NAME}.css
 #CSSMIN = ${NAME}.min.css
 
-FILES = _attachments/jquery-1.5.min.js \
-  _attachments/mustache.js \
-  _attachments/handlebars.js \
-  _attachments/inflection.js \
-  _attachments/mustache.js \
+FILES = _attachments/js-libraries/jquery-1.6.2.min.js \
+  _attachments/js-libraries/mustache.js \
+  _attachments/js-libraries/handlebars.js \
+  _attachments/js-libraries/inflection.js \
+  _attachments/js-libraries/mustache.js \
   _attachments/models/template.js \
   _attachments/models/assessment.js \
   _attachments/models/jqueryMobilePage.js \
   _attachments/models/scorer.js \
   _attachments/models/timer.js \
-  _attachments/google-spreadsheet-javascript/google-spreadsheet.js \
   _attachments/egra.js \
-  _attachments/jquery-mobile/jquery.mobile-1.0a3.min.js
+  _attachments/js-libraries/jquery-mobile/jquery.mobile-1.0b2.min.js
 
 #CSSFILES =  themes/default/jquery.mobile.theme.css \
   themes/default/jquery.mobile.core.css \

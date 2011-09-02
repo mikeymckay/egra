@@ -1,4 +1,4 @@
-var AssessmentPage, DateTimePage, InstructionsPage, JQueryCheckbox, JQueryCheckboxGroup, JQueryLogin, JQueryMobilePage, LettersPage, ResultsPage, SchoolPage, StudentInformationPage;
+var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage, hideListUntilSearchInterval;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -7,10 +7,11 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
+footerMessage = "Good effort, let's go onto the next page";
 JQueryMobilePage = (function() {
-  function JQueryMobilePage() {
-    this.pageId = "";
-    this.pageType = this.constructor.toString().match(/function +(.*?)\(/)[1];
+  function JQueryMobilePage(options) {
+    this.pageId = (options != null ? options.pageId : void 0) || "";
+    this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
     return Mustache.to_html(this._template(), this);
@@ -91,7 +92,7 @@ JQueryMobilePage = (function() {
       url: url,
       type: 'DELETE',
       complete: function() {
-        if (typeof callback != "undefined" && callback !== null) {
+        if (typeof callback !== "undefined" && callback !== null) {
           return callback();
         }
       },
@@ -101,21 +102,30 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <!--<a href='\#{{nextPage}}'>{{nextPage}}</a>-->    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /header --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->";
+  };
+  JQueryMobilePage.prototype.toPaper = function() {
+    return this.content;
   };
   return JQueryMobilePage;
 })();
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "LettersPage":
-      return LettersPage.deserialize(pageObject);
+    case "ToggleGridWithTimer":
+      return ToggleGridWithTimer.deserialize(pageObject);
     case "SchoolPage":
       return SchoolPage.deserialize(pageObject);
     case "StudentInformationPage":
       return StudentInformationPage.deserialize(pageObject);
+    case "UntimedSubtest":
+      return UntimedSubtest.deserialize(pageObject);
+    case "UntimedSubtestLinked":
+      return UntimedSubtestLinked.deserialize(pageObject);
+    case "PhonemePage":
+      return PhonemePage.deserialize(pageObject);
     default:
-      result = new window[pageObject.pageType]();
+      result = new window[pageObject.pageType](pageObject);
       result.load(pageObject);
       return result;
   }
@@ -141,12 +151,17 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
     dataType: 'json',
     success: function(result) {
       var jqueryMobilePage;
-      jqueryMobilePage = JQueryMobilePage.deserialize(result);
-      jqueryMobilePage.urlPath = urlPath;
-      jqueryMobilePage.urlScheme = "http";
-      jqueryMobilePage.revision = result._rev;
-      if (callback != null) {
-        return callback(jqueryMobilePage);
+      try {
+        jqueryMobilePage = JQueryMobilePage.deserialize(result);
+        jqueryMobilePage.urlPath = urlPath;
+        jqueryMobilePage.urlScheme = "http";
+        jqueryMobilePage.revision = result._rev;
+        if (callback != null) {
+          return callback(jqueryMobilePage);
+        }
+      } catch (error) {
+        console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
+        return console.log(result);
       }
     },
     error: function() {
@@ -161,14 +176,14 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
   }, callback);
 };
 AssessmentPage = (function() {
+  __extends(AssessmentPage, JQueryMobilePage);
   function AssessmentPage() {
     AssessmentPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(AssessmentPage, JQueryMobilePage);
   AssessmentPage.prototype.addTimer = function() {
     this.timer = new Timer();
     this.timer.setPage(this);
-    return this.controls = "<div style='width: 100px;position:fixed;right:5px;z-index:10'>" + (this.timer.render()) + "</div>";
+    return this.controls = "      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>        <div class='timer'>          " + (this.timer.render()) + "        </div>        <br/>        <br/>        <div class='message'>        </div>      </div>";
   };
   AssessmentPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -229,7 +244,9 @@ JQueryLogin = (function() {
   __extends(JQueryLogin, AssessmentPage);
   function JQueryLogin() {
     JQueryLogin.__super__.constructor.call(this);
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='Enumia' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
+    this.randomIdForSubject = ("" + Math.random()).substring(2, 8);
+    this.randomIdForSubject = this.randomIdForSubject.substr(0, 3) + "-" + this.randomIdForSubject.substr(3);
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
     $("div").live("pageshow", function() {
       $.assessment.handleURLParameters();
       if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
@@ -243,13 +260,19 @@ JQueryLogin = (function() {
   JQueryLogin.prototype.password = function() {
     return this.results().password;
   };
+  JQueryLogin.prototype.results = function() {
+    var results;
+    results = JQueryLogin.__super__.results.call(this);
+    results["randomIdForSubject"] = this.randomIdForSubject;
+    return results;
+  };
   return JQueryLogin;
 })();
 StudentInformationPage = (function() {
+  __extends(StudentInformationPage, AssessmentPage);
   function StudentInformationPage() {
     StudentInformationPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(StudentInformationPage, AssessmentPage);
   StudentInformationPage.prototype.propertiesForSerialization = function() {
     var properties;
     properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
@@ -257,7 +280,7 @@ StudentInformationPage = (function() {
     return properties;
   };
   StudentInformationPage.prototype.validate = function() {
-    if ($("#StudentInformation input:'radio':checked").length === 5) {
+    if ($("#StudentInformation input:'radio':checked").length === 7) {
       return true;
     } else {
       return "All elements are required";
@@ -275,9 +298,9 @@ StudentInformationPage.deserialize = function(pageObject) {
 };
 SchoolPage = (function() {
   __extends(SchoolPage, AssessmentPage);
-  function SchoolPage(schools) {
-    this.schools = schools;
-    SchoolPage.__super__.constructor.call(this);
+  function SchoolPage(options) {
+    SchoolPage.__super__.constructor.call(this, options);
+    this.schools = options.schools;
     $("div#" + this.pageId + " li").live("mousedown", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
@@ -310,13 +333,13 @@ SchoolPage = (function() {
       dataAttribute = properties[_i];
       listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
     }
-    listElement = "<li " + listAttributes + ">{{name}}</li>";
+    listElement = "<li " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
     inputElements = "";
     for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
       dataAttribute = properties[_j];
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul data-filter='true' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
   };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -333,18 +356,25 @@ SchoolPage = (function() {
 })();
 SchoolPage.deserialize = function(pageObject) {
   var schoolPage;
-  schoolPage = new SchoolPage(pageObject.schools);
+  schoolPage = new SchoolPage(pageObject);
   schoolPage.load(pageObject);
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
+SchoolPage.hideListUntilSearch = function() {
+  if ($("#School input[data-type='search']").val() !== "") {
+    $("#School ul").show();
+    return clearInterval(hideListUntilSearchInterval);
+  }
+};
+hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch, 500);
 DateTimePage = (function() {
+  __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
-  __extends(DateTimePage, AssessmentPage);
   DateTimePage.prototype.load = function(data) {
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='number' name='time' id='time' />  </div></form>";
+    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
     DateTimePage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
       var dateTime, minutes;
@@ -363,16 +393,16 @@ DateTimePage = (function() {
 })();
 ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
-  function ResultsPage() {
-    ResultsPage.__super__.constructor.call(this);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + document.location.pathname + "?newAssessment=true'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
+  function ResultsPage(options) {
+    ResultsPage.__super__.constructor.call(this, options);
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + ($.assessment.resetURL()) + "'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var validationResult;
+      var validationResult, _ref, _ref2;
+      $("div#" + this.pageId + " div span[class='randomIdForSubject']").html((_ref = $.assessment.results()) != null ? (_ref2 = _ref.Login) != null ? _ref2.randomIdForSubject : void 0 : void 0);
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
-      console.log($("div#" + this.pageId + " div[data-role='footer'] span"));
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
       if (validationResult === true) {
@@ -388,113 +418,299 @@ ResultsPage = (function() {
   };
   return ResultsPage;
 })();
-InstructionsPage = (function() {
-  function InstructionsPage() {
-    InstructionsPage.__super__.constructor.apply(this, arguments);
+TextPage = (function() {
+  __extends(TextPage, AssessmentPage);
+  function TextPage() {
+    TextPage.__super__.constructor.apply(this, arguments);
   }
-  __extends(InstructionsPage, AssessmentPage);
-  InstructionsPage.prototype.propertiesForSerialization = function() {
+  TextPage.prototype.propertiesForSerialization = function() {
     var properties;
-    properties = InstructionsPage.__super__.propertiesForSerialization.call(this);
+    properties = TextPage.__super__.propertiesForSerialization.call(this);
     properties.push("content");
     return properties;
   };
-  InstructionsPage.prototype.updateFromGoogle = function() {
-    var googleSpreadsheet;
-    this.loading = true;
-    googleSpreadsheet = new GoogleSpreadsheet();
-    googleSpreadsheet.url(this.url);
-    return googleSpreadsheet.load(__bind(function(result) {
-      this.content = result.data[0].replace(/\n/g, "<br/>");
-      return this.loading = false;
-    }, this));
-  };
-  return InstructionsPage;
+  return TextPage;
 })();
-LettersPage = (function() {
-  __extends(LettersPage, AssessmentPage);
-  function LettersPage(letters) {
-    var checkbox, index, letter, lettersCheckboxes;
-    this.letters = letters;
-    LettersPage.__super__.constructor.call(this);
-    lettersCheckboxes = new JQueryCheckboxGroup();
-    lettersCheckboxes.checkboxes = (function() {
+ConsentPage = (function() {
+  __extends(ConsentPage, TextPage);
+  function ConsentPage(options) {
+    ConsentPage.__super__.constructor.call(this, options);
+    $("div#" + this.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
+      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
+      $.mobile.changePage("#_infoPage");
+      return $.assessment.saveResults(__bind(function(results) {
+        return setTimeout((function() {
+          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
+          return setTimeout((function() {
+            return $.assessment.reset();
+          }), 1000);
+        }), 2000);
+      }, this));
+    }, this));
+  }
+  ConsentPage.prototype.validate = function() {
+    if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
+      return true;
+    } else {
+      return "You must answer the consent question";
+    }
+  };
+  return ConsentPage;
+})();
+UntimedSubtest = (function() {
+  __extends(UntimedSubtest, AssessmentPage);
+  function UntimedSubtest(options) {
+    var answer, index, question, questionName;
+    this.questions = options.questions;
+    UntimedSubtest.__super__.constructor.call(this, options);
+    this.footerMessage = footerMessage;
+    this.content = "<form>" + ((function() {
       var _len, _ref, _results;
-      _ref = this.letters;
+      _ref = this.questions;
       _results = [];
       for (index = 0, _len = _ref.length; index < _len; index++) {
-        letter = _ref[index];
-        checkbox = new JQueryCheckbox();
-        checkbox.unique_name = "checkbox_" + index;
-        checkbox.content = letter;
-        _results.push(checkbox);
+        question = _ref[index];
+        questionName = this.pageId + "-question-" + index;
+        _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + question + "</legend>      ") + ((function() {
+          var _i, _len2, _ref2, _results2;
+          _ref2 = ["Correct", "Incorrect", "No response"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            answer = _ref2[_i];
+            _results2.push("        <label for='" + questionName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + questionName + "' id='" + questionName + "-" + answer + "' value='" + answer + "' />        ");
+          }
+          return _results2;
+        })()).join("") + "          </fieldset>      </div>      ");
       }
       return _results;
-    }).call(this);
-    this.addTimer();
-    this.content = lettersCheckboxes.three_way_render();
+    }).call(this)).join("") + "</form>";
   }
-  LettersPage.prototype.propertiesForSerialization = function() {
+  UntimedSubtest.prototype.propertiesForSerialization = function() {
     var properties;
-    properties = LettersPage.__super__.propertiesForSerialization.call(this);
+    properties = UntimedSubtest.__super__.propertiesForSerialization.call(this);
+    properties.push("questions");
+    return properties;
+  };
+  UntimedSubtest.prototype.validate = function() {
+    if (_.size(this.results()) === this.questions.length) {
+      return true;
+    } else {
+      return "Only " + (_.size(this.results())) + " out of the " + this.questions.length + " questions were answered";
+    }
+  };
+  return UntimedSubtest;
+})();
+UntimedSubtest.deserialize = function(pageObject) {
+  var untimedSubtest;
+  untimedSubtest = new UntimedSubtest(pageObject);
+  untimedSubtest.load(pageObject);
+  return untimedSubtest;
+};
+UntimedSubtestLinked = (function() {
+  __extends(UntimedSubtestLinked, UntimedSubtest);
+  function UntimedSubtestLinked(options) {
+    var linkedPageName;
+    this.linkedToPageId = options.linkedToPageId;
+    this.questionIndices = options.questionIndices;
+    this.footerMessage = footerMessage;
+    UntimedSubtestLinked.__super__.constructor.call(this, options);
+    linkedPageName = this.linkedToPageId.underscore().titleize();
+    this.content += "<div id='" + this.pageId + "-not-enough-progress-message' style='display:hidden'>Not enough progress was made on " + linkedPageName + " to show questions from " + (this.name()) + ". Continue by pressing Next.</div>";
+    $("#" + this.pageId).live('pageshow', __bind(function(eventData) {
+      var attemptedOnLinkedPage, inputElement, _i, _len, _ref;
+      attemptedOnLinkedPage = $.assessment.getPage(this.linkedToPageId).results().attempted;
+      this.numberInputFieldsShown = 0;
+      _ref = $("#" + this.pageId + " input[type='radio']");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        inputElement = _ref[_i];
+        if (attemptedOnLinkedPage < this.questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-") + 1)]) {
+          $(inputElement).parents("div[data-role='fieldcontain']").hide();
+        } else {
+          $(inputElement).parents("div[data-role='fieldcontain']").show();
+          this.numberInputFieldsShown++;
+        }
+      }
+      return $("div#" + this.pageId + "-not-enough-progress-message").toggle(this.numberInputFieldsShown === 0);
+    }, this));
+  }
+  UntimedSubtestLinked.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = UntimedSubtestLinked.__super__.propertiesForSerialization.call(this);
+    properties = properties.concat(["questions", "linkedToPageId", "questionIndices"]);
+    return properties;
+  };
+  UntimedSubtestLinked.prototype.validate = function() {
+    var numberOfQuestionsAnswered, numberOfQuestionsShown;
+    numberOfQuestionsShown = this.numberInputFieldsShown / 3;
+    numberOfQuestionsAnswered = _.size(this.results());
+    if (numberOfQuestionsAnswered === numberOfQuestionsShown) {
+      return true;
+    } else {
+      return "Only " + numberOfQuestionsAnswered + " out of the " + numberOfQuestionsShown + " questions were answered";
+    }
+  };
+  return UntimedSubtestLinked;
+})();
+UntimedSubtestLinked.deserialize = function(pageObject) {
+  var untimedSubtest;
+  untimedSubtest = new UntimedSubtestLinked(pageObject);
+  untimedSubtest.load(pageObject);
+  return untimedSubtest;
+};
+PhonemePage = (function() {
+  __extends(PhonemePage, AssessmentPage);
+  function PhonemePage(words) {
+    var answer, index, item, phoneme, phonemeIndex, phonemeName, wordName;
+    this.words = words;
+    PhonemePage.__super__.constructor.call(this);
+    this.subtestId = "phonemic-awareness";
+    this.footerMessage = footerMessage;
+    phonemeIndex = 1;
+    this.content = ("<form id='" + this.subtestId + "'>") + ((function() {
+      var _len, _ref, _results;
+      _ref = this.words;
+      _results = [];
+      for (index = 0, _len = _ref.length; index < _len; index++) {
+        item = _ref[index];
+        wordName = this.subtestId + "-number-sound-" + (index + 1);
+        _results.push(("      <div data-role='fieldcontain'>          <legend>" + item["word"] + " - " + item["number-of-sounds"] + "</legend>          <fieldset data-role='controlgroup' data-type='horizontal'>      ") + ((function() {
+          var _i, _len2, _ref2, _results2;
+          _ref2 = ["Correct", "Incorrect"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            answer = _ref2[_i];
+            _results2.push("        <label for='" + wordName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + wordName + "' id='" + wordName + "-" + answer + "' value='" + answer + "' />        ");
+          }
+          return _results2;
+        })()).join("") + "          </fieldset>          <fieldset data-role='controlgroup' data-type='horizontal'>      " + ((function() {
+          var _i, _len2, _ref2, _results2;
+          _ref2 = item["phonemes"];
+          _results2 = [];
+          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+            phoneme = _ref2[_i];
+            phonemeName = this.subtestId + "-phoneme-sound-" + phonemeIndex++;
+            _results2.push("          <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />          <label for='" + phonemeName + "'>" + phoneme + "</label>        ");
+          }
+          return _results2;
+        }).call(this)).join("") + "          </fieldset>      </div>      <hr/>      ");
+      }
+      return _results;
+    }).call(this)).join("") + "</form>";
+  }
+  PhonemePage.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = PhonemePage.__super__.propertiesForSerialization.call(this);
+    properties.push("words");
+    return properties;
+  };
+  PhonemePage.prototype.results = function() {
+    var input, results, _i, _len, _ref;
+    results = PhonemePage.__super__.results.call(this);
+    _ref = $("form#" + this.subtestId + " input:checkbox");
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      input = _ref[_i];
+      results["" + input.name] = input.value !== "on";
+    }
+    return results;
+  };
+  PhonemePage.prototype.validate = function() {
+    var index, item, results, _len, _ref;
+    results = this.results();
+    _ref = this.words;
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      item = _ref[index];
+      if (results[this.subtestId + "-number-sound-" + (index + 1)] == null) {
+        return "You must select Correct or Incorrect for item #" + (index + 1) + ": <b>" + item["word"] + "</b>";
+      }
+    }
+    return true;
+  };
+  return PhonemePage;
+})();
+PhonemePage.deserialize = function(pageObject) {
+  var page;
+  page = new PhonemePage(pageObject.words);
+  page.load(pageObject);
+  return page;
+};
+ToggleGridWithTimer = (function() {
+  __extends(ToggleGridWithTimer, AssessmentPage);
+  function ToggleGridWithTimer(options) {
+    var checkboxName, index, letter, result, _len, _ref;
+    this.letters = options.letters;
+    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
+    this.footerMessage = footerMessage;
+    ToggleGridWithTimer.__super__.constructor.call(this, options);
+    this.addTimer();
+    result = "";
+    _ref = this.letters;
+    for (index = 0, _len = _ref.length; index < _len; index++) {
+      letter = _ref[index];
+      checkboxName = "checkbox_" + index;
+      if (index % this.numberOfColumns === 0) {
+        result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
+      }
+      result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
+      if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
+        result += "</fieldset>";
+      }
+    }
+    this.content = "      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      ";
+    $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
+      if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
+        $("#" + this.pageId + " label").removeClass('last-attempted');
+        return $(eventData.currentTarget).toggleClass('last-attempted');
+      }
+    }, this));
+  }
+  ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = ToggleGridWithTimer.__super__.propertiesForSerialization.call(this);
     properties.push("letters");
     return properties;
   };
-  LettersPage.prototype.updateFromGoogle = function() {
-    var googleSpreadsheet;
-    this.loading = true;
-    googleSpreadsheet = new GoogleSpreadsheet();
-    googleSpreadsheet.url(this.url);
-    return googleSpreadsheet.load(__bind(function(result) {
-      var checkbox, index, letter, lettersCheckboxes;
-      this.letters = result.data;
-      lettersCheckboxes = new JQueryCheckboxGroup();
-      lettersCheckboxes.checkboxes = (function() {
-        var _len, _ref, _results;
-        _ref = this.letters;
-        _results = [];
-        for (index = 0, _len = _ref.length; index < _len; index++) {
-          letter = _ref[index];
-          checkbox = new JQueryCheckbox();
-          checkbox.unique_name = "checkbox_" + index;
-          checkbox.content = letter;
-          _results.push(checkbox);
-        }
-        return _results;
-      }).call(this);
-      this.content = lettersCheckboxes.three_way_render();
-      return this.loading = false;
-    }, this));
-  };
-  LettersPage.prototype.results = function() {
-    var checkbox, index, results, _len, _len2, _ref, _ref2;
+  ToggleGridWithTimer.prototype.results = function() {
+    var checkbox, firstTenPercent, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
+    items = $("#" + this.pageId + " label");
+    tenPercentOfItems = items.length / 10;
+    firstTenPercent = items.slice(0, (tenPercentOfItems - 1 + 1) || 9e9);
+    if (_.select(firstTenPercent, function(item) {
+      return $(item).hasClass("ui-btn-active");
+    }).length === tenPercentOfItems) {
+      results.auto_stop = true;
+      $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
+      this.timer.stop();
+      $.assessment.flash();
+    }
+    if (!this.timer.hasStartedAndStopped()) {
+      return false;
+    }
     results.letters = new Array();
-    _ref = $("#Letters label");
+    results.time_remain = this.timer.seconds;
+    _ref = $("#" + this.pageId + " label");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       checkbox = _ref[index];
       results.letters[index] = false;
     }
-    results.time_remain = this.timer.seconds;
-    if (this.timer.seconds) {
-      results.auto_stop = true;
-    }
     results.attempted = null;
-    _ref2 = $("#Letters label");
+    _ref2 = $("#" + this.pageId + " label");
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       checkbox = _ref2[index];
       checkbox = $(checkbox);
-      if (checkbox.hasClass("second_click")) {
-        results.attempted = index;
-        return results;
-      }
-      if (!checkbox.hasClass("first_click")) {
+      if (!checkbox.hasClass("ui-btn-active")) {
         results.letters[index] = true;
+      }
+      if (checkbox.hasClass("last-attempted")) {
+        results.attempted = index + 1;
+        return results;
+      } else {
+        $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
       }
     }
     return results;
   };
-  LettersPage.prototype.validate = function() {
+  ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
     if (results.time_remain === 60) {
@@ -508,69 +724,106 @@ LettersPage = (function() {
     } else if (results.attempted != null) {
       return true;
     } else {
-      return "The last letter attempted has not been selected (double tap to select)";
+      return "The last letter attempted has not been selected";
     }
   };
-  return LettersPage;
+  return ToggleGridWithTimer;
 })();
-LettersPage.deserialize = function(pageObject) {
+ToggleGridWithTimer.deserialize = function(pageObject) {
   var lettersPage;
-  lettersPage = new LettersPage(pageObject.letters);
+  lettersPage = new ToggleGridWithTimer(pageObject);
   lettersPage.load(pageObject);
   return lettersPage;
 };
-$("#Letters label").live('mousedown', function(eventData) {
-  var checkbox;
-  checkbox = $(eventData.currentTarget);
-  checkbox.removeClass('ui-btn-active');
-  return checkbox.toggleClass(function() {
-    if (checkbox.is('.first_click')) {
-      checkbox.removeClass('first_click');
-      return 'second_click';
-    } else if (checkbox.is('.second_click')) {
-      checkbox.removeClass('second_click');
-      return '';
+Dictation = (function() {
+  __extends(Dictation, AssessmentPage);
+  function Dictation(options) {
+    this.message = options.message;
+    this.footerMessage = footerMessage;
+    Dictation.__super__.constructor.call(this, options);
+    this.content = "" + this.message + "<br/><input name='result' type='text'></input>";
+  }
+  Dictation.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = Dictation.__super__.propertiesForSerialization.call(this);
+    properties.push("message");
+    return properties;
+  };
+  Dictation.prototype.results = function() {
+    var enteredData, numberOfSpaces, results;
+    results = {};
+    enteredData = $("div#" + this.pageId + " input[type=text]").val();
+    if (enteredData.match(/boys/i)) {
+      results["Wrote boys correctly"] = 2;
     } else {
-      return 'first_click';
-    }
-  });
-});
-JQueryCheckbox = (function() {
-  function JQueryCheckbox() {}
-  JQueryCheckbox.prototype.render = function() {
-    return Mustache.to_html(this._template(), this);
-  };
-  JQueryCheckbox.prototype._template = function() {
-    return "<input type='checkbox' name='{{unique_name}}' id='{{unique_name}}' class='custom' /><label for='{{unique_name}}'>{{{content}}}</label>";
-  };
-  return JQueryCheckbox;
-})();
-JQueryCheckboxGroup = (function() {
-  function JQueryCheckboxGroup() {}
-  JQueryCheckboxGroup.prototype.render = function() {
-    var checkbox, fieldset_close, fieldset_open, fieldsets, index, _len, _ref, _ref2;
-    (_ref = this.fieldset_size) != null ? _ref : this.fieldset_size = 5;
-    fieldset_open = "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
-    fieldset_close = "</fieldset>";
-    fieldsets = "";
-    _ref2 = this.checkboxes;
-    for (index = 0, _len = _ref2.length; index < _len; index++) {
-      checkbox = _ref2[index];
-      if (index % this.fieldset_size === 0) {
-        fieldsets += fieldset_open;
-      }
-      fieldsets += checkbox.render();
-      if ((index + 1) % this.fieldset_size === 0 || index === this.checkboxes.length - 1) {
-        fieldsets += fieldset_close;
+      if (enteredData.match(/bo|oy|by/i)) {
+        results["Wrote boys correctly"] = 1;
       }
     }
-    return "<div data-role='content'>	  <form>    " + fieldsets + "  </form></div>    ";
+    if (enteredData.match(/bikes/i)) {
+      results["Wrote bikes correctly"] = 2;
+    } else {
+      if (enteredData.match(/bi|ik|kes/i)) {
+        results["Wrote bikes correctly"] = 1;
+      }
+    }
+    numberOfSpaces = enteredData.split(" ").length - 1;
+    if (numberOfSpaces >= 8) {
+      results["Used appropriate spacing between words"] = 2;
+    } else {
+      if (numberOfSpaces > 3 && numberOfSpaces < 8) {
+        results["Used appropriate spacing between words"] = 1;
+      } else {
+        results["Used appropriate spacing between words"] = 0;
+      }
+    }
+    results["Used appropriate direction of text (left to right)"] = 2;
+    if (enteredData.match(/The/)) {
+      results["Used capital letter for the word 'The'"] = 2;
+    } else {
+      results["Used capital letter for the word 'The'"] = 0;
+    }
+    if (enteredData.match(/\. *$/)) {
+      results["Used full stop (.) at end of sentence."] = 2;
+    } else {
+      results["Used full stop (.) at end of sentence."] = 0;
+    }
+    return results;
   };
-  JQueryCheckboxGroup.prototype.three_way_render = function() {
-    var _ref, _ref2;
-    (_ref = this.first_click_color) != null ? _ref : this.first_click_color = "#F7C942";
-    (_ref2 = this.second_click_color) != null ? _ref2 : this.second_click_color = "#5E87B0";
-    return this.render();
+  Dictation.prototype.validate = function() {
+    return true;
   };
-  return JQueryCheckboxGroup;
+  return Dictation;
 })();
+Dictation.deserialize = function(pageObject) {
+  var dictationPage;
+  dictationPage = new Dictation(pageObject);
+  dictationPage.load(pageObject);
+  return dictationPage;
+};
+Interview = (function() {
+  __extends(Interview, AssessmentPage);
+  function Interview(options) {
+    this.radioButtons = options.radioButtons;
+    Interview.__super__.constructor.call(this, options);
+    this.content = Interview.template(this);
+  }
+  Interview.prototype.propertiesForSerialization = function() {
+    var properties;
+    properties = Interview.__super__.propertiesForSerialization.call(this);
+    properties.push("radioButtons");
+    return properties;
+  };
+  Interview.prototype.validate = function() {
+    return true;
+  };
+  return Interview;
+})();
+Interview.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+Interview.deserialize = function(pageObject) {
+  var interview;
+  interview = new Interview(pageObject);
+  interview.load(pageObject);
+  interview.content = Interview.template(interview);
+  return interview;
+};
