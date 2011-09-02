@@ -1,3 +1,5 @@
+`couchapp push`
+
 watch( '.html$') {|match_data|
   `couchapp push` unless match_data[0] =~ /\.sw.$/
 }
