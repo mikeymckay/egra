@@ -104,6 +104,12 @@ Assessment = (function() {
       }
     });
   };
+  Assessment.prototype.resetURL = function() {
+    return document.location.origin + document.location.pathname + document.location.search;
+  };
+  Assessment.prototype.reset = function() {
+    return document.location = this.resetURL();
+  };
   Assessment.prototype.validate = function() {
     var page, pageResult, validationErrors, _i, _len, _ref;
     validationErrors = "";

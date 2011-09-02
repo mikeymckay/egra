@@ -71,6 +71,13 @@ class Assessment
       complete: ->
         callback(results) if callback?
 
+  resetURL: ->
+    document.location.origin + document.location.pathname + document.location.search
+
+  reset: ->
+    document.location = @resetURL()
+    
+
   validate: ->
     validationErrors = ""
     for page in @pages

@@ -200,6 +200,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = ->
 
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
 
+# Show validation errors in a dialog page
 $('div.ui-footer button').live 'click', (event,ui) ->
   validationResult = $.assessment.currentPage.validate()
   if validationResult is true
@@ -211,6 +212,7 @@ $('div.ui-footer button').live 'click', (event,ui) ->
       validationResult
     )
     $.mobile.changePage("#_infoPage")
+
 
 class JQueryLogin extends AssessmentPage
   constructor: ->
@@ -409,7 +411,7 @@ class ResultsPage extends AssessmentPage
         <!--
         <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
         -->
-        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname}?newAssessment=true'>Begin Another Assessment</a>
+        <a data-inline='true' data-role='button' rel='external' href='#{$.assessment.resetURL()}'>Begin Another Assessment</a>
         <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
       </div>
     "
@@ -441,11 +443,27 @@ class TextPage extends AssessmentPage
     return properties
 
 class ConsentPage extends TextPage
+  constructor: (options) ->
+    super(options)
+
+    $("div##{@pageId} label[for='consent-no']").live "mousedown", (eventData) =>
+      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
+      $.mobile.changePage("#_infoPage")
+      $.assessment.saveResults (results) =>
+        setTimeout ( ->
+          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.")
+          setTimeout ( ->
+            $.assessment.reset()
+          ), 1000
+        ), 2000
+
+
   validate: ->
     if $("div##{@pageId} input[@name='childConsents']:checked").val()
       return true
     else
       return "You must answer the consent question"
+
 
 class UntimedSubtest extends AssessmentPage
   constructor: (options) ->

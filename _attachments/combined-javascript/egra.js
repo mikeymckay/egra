@@ -2552,6 +2552,12 @@ Assessment = (function() {
       }
     });
   };
+  Assessment.prototype.resetURL = function() {
+    return document.location.origin + document.location.pathname + document.location.search;
+  };
+  Assessment.prototype.reset = function() {
+    return document.location = this.resetURL();
+  };
   Assessment.prototype.validate = function() {
     var page, pageResult, validationErrors, _i, _len, _ref;
     validationErrors = "";
@@ -3253,7 +3259,7 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage(options) {
     ResultsPage.__super__.constructor.call(this, options);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + document.location.pathname + "?newAssessment=true'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + ($.assessment.resetURL()) + "'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
@@ -3291,8 +3297,20 @@ TextPage = (function() {
 })();
 ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
-  function ConsentPage() {
-    ConsentPage.__super__.constructor.apply(this, arguments);
+  function ConsentPage(options) {
+    ConsentPage.__super__.constructor.call(this, options);
+    $("div#" + this.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
+      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
+      $.mobile.changePage("#_infoPage");
+      return $.assessment.saveResults(__bind(function(results) {
+        return setTimeout((function() {
+          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
+          return setTimeout((function() {
+            return $.assessment.reset();
+          }), 1000);
+        }), 2000);
+      }, this));
+    }, this));
   }
   ConsentPage.prototype.validate = function() {
     if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
