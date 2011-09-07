@@ -15,11 +15,16 @@ $("head").append "
       color: black;
     }
 
+    .toggle-grid-with-timer .ui-checkbox-on span {
+      text-decoration: line-through;
+    }
+
     .toggle-grid-with-timer .ui-checkbox span{
-      color: lightgray;
+      color: #F6F6F6;
     }
     .toggle-grid-with-timer .ui-btn-active{
       background-image: none;
+      color:blue;
     }
 
     .toggle-grid-with-timer .ui-checkbox .last-attempted{
@@ -32,9 +37,20 @@ $("head").append "
       vertical-align: middle;
     }
 
-    .red {
-      color: #{red};
+    span.timer-seconds{
+      float:right;
+      margin-right:10px;
+      margin-top:5px;
+      font-size: large;
+    }
+
+    .controls.flash{
+      color: black;
       background-color: #{red};
+    }
+
+    .flash {
+      color: #{red};
     }
 
     #InitialSound .ui-controlgroup-label{

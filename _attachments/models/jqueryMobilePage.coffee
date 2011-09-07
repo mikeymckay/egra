@@ -99,8 +99,6 @@ class JQueryMobilePage
 # Should not need these separate deserialize just use the last generic one and the constructor
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
-    when "ToggleGridWithTimer"
-      return ToggleGridWithTimer.deserialize(pageObject)
     when "SchoolPage"
       return SchoolPage.deserialize(pageObject)
     when "StudentInformationPage"
@@ -151,8 +149,7 @@ JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->
-    @timer = new Timer()
-    @timer.setPage(this)
+    @timer = new Timer({page: this})
 
     @controls = "
       <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>
@@ -198,7 +195,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = ->
   $('div.ui-footer button').toggleClass("passedValidation", passedValidation)
   $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b",passedValidation).toggleClass("ui-btn-up-c", !passedValidation)
 
-setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500)
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800)
 
 # Show validation errors in a dialog page
 $('div.ui-footer button').live 'click', (event,ui) ->
@@ -626,26 +623,35 @@ class ToggleGridWithTimer extends AssessmentPage
 
       result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
       result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
-      result += "</fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+      result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
 
     @content =  "
+      <div class='timer'>
+        <button>start</button>
+      </div>
       <div class='toggle-grid-with-timer' data-role='content'>	
         <form>
           #{result}
         </form>
       </div>
+      <div class='timer'>
+        <button>stop</button>
+      </div>
       "
-
     
     $("##{@pageId} label").live 'mousedown', (eventData) =>
       if $.assessment.currentPage.timer.hasStartedAndStopped()
         $("##{@pageId} label").removeClass('last-attempted')
         $(eventData.currentTarget).toggleClass('last-attempted')
 
+    $("##{@pageId} button.row-delete").live 'mousedown', (eventData) =>
+      $(eventData.target).parent().siblings().children("input").attr("checked",true).checkboxradio("refresh")
+
   propertiesForSerialization: ->
     properties = super()
     properties.push("letters")
     return properties
+
 
   results: ->
     results = {}
@@ -656,9 +662,14 @@ class ToggleGridWithTimer extends AssessmentPage
     firstTenPercent = items[0..tenPercentOfItems-1]
     if _.select(firstTenPercent, (item) -> $(item).hasClass("ui-btn-active")).length == tenPercentOfItems
       results.auto_stop = true
-      $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
-      @timer.stop()
-      $.assessment.flash()
+      # Only set do this stuff the first time
+      unless @autostop
+        $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
+        @timer.stop()
+        $.assessment.flash()
+        @autostop = true
+    else
+      @autostop = false
 
     return false unless @timer.hasStartedAndStopped()
     results.letters = new Array()
@@ -671,21 +682,20 @@ class ToggleGridWithTimer extends AssessmentPage
       results.letters[index] = true unless checkbox.hasClass("ui-btn-active")
       if checkbox.hasClass("last-attempted")
         results.attempted = index + 1
-#        $("##{@pageId} .controls .message").html("
-#          Attempted: #{results.attempted}<br/>
-#          Correct: #{_.select(results.letters, (result) -> result).length}<br/>
-#          Incorrect: #{_.select(results.letters, (result) -> !result).length}<br/>
-#          Autostopped: #{results.auto_stop || false}
-#        ")
+        if @autostop
+          $("##{@pageId} .controls .message").html("First #{tenPercentOfItems} incorrect - autostop.")
+        else
+          $("##{@pageId} .controls .message").html("")
         return results
       else
-        $("##{@pageId} .controls .message").html("Select last letter attempted")
+        $("##{@pageId} .controls .message").html("Select last item attempted")
 
     return results
 
   validate: ->
     results = @results()
-    if results.time_remain == 60
+    console.log results.time_remain 
+    if results.time_remain == 60 or results.time_remain == undefined
       return "The timer must be started"
     if @timer.running
       return "The timer is still running"
@@ -695,13 +705,6 @@ class ToggleGridWithTimer extends AssessmentPage
       return true
     else
       return "The last letter attempted has not been selected"
-
-
-ToggleGridWithTimer.deserialize = (pageObject) ->
-  lettersPage = new ToggleGridWithTimer(pageObject)
-  lettersPage.load(pageObject)
-  return lettersPage
-
 
 
 class Dictation extends AssessmentPage

@@ -7,17 +7,9 @@ $("div.timer button").live 'mousedown', (eventData) ->
   $.assessment.currentPage.timer[buttonPressed]()
 
 class Timer
-  constructor: ->
+  constructor: (options)->
+    @page = options.page
     @elementLocation = null
-
-  toJSON: ->
-    JSON.stringify {
-      seconds: @seconds,
-      elementLocation: @elementLocation
-    }
-
-  setPage: (@page) ->
-    @elementLocation = "div##{page.pageId} div.timer"
 
   start: ->
     @showLetters()
@@ -44,7 +36,7 @@ class Timer
     @renderSeconds()
 
   renderSeconds: ->
-    $("#{@elementLocation} span.timer_seconds").html(@seconds)
+    $("div##{@page.pageId} .timer-seconds").html(@seconds)
 
   render: ->
     @id = "timer"
@@ -58,10 +50,5 @@ class Timer
     $("##{@page.pageId} .ui-checkbox span").addClass("show")
 
   _template: -> "
-<div class='timer'>
-  <span class='timer_seconds'>{{seconds}}</span>
-  <button>start</button>
-  <button>stop</button>
-  <button>reset</button>
-</div>
+  <span class='timer-seconds'></span>
 "

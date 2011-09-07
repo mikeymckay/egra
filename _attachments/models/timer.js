@@ -9,19 +9,10 @@ $("div.timer button").live('mousedown', function(eventData) {
   return $.assessment.currentPage.timer[buttonPressed]();
 });
 Timer = (function() {
-  function Timer() {
+  function Timer(options) {
+    this.page = options.page;
     this.elementLocation = null;
   }
-  Timer.prototype.toJSON = function() {
-    return JSON.stringify({
-      seconds: this.seconds,
-      elementLocation: this.elementLocation
-    });
-  };
-  Timer.prototype.setPage = function(page) {
-    this.page = page;
-    return this.elementLocation = "div#" + page.pageId + " div.timer";
-  };
   Timer.prototype.start = function() {
     var decrement;
     this.showLetters();
@@ -52,7 +43,7 @@ Timer = (function() {
     return this.renderSeconds();
   };
   Timer.prototype.renderSeconds = function() {
-    return $("" + this.elementLocation + " span.timer_seconds").html(this.seconds);
+    return $("div#" + this.page.pageId + " .timer-seconds").html(this.seconds);
   };
   Timer.prototype.render = function() {
     this.id = "timer";
@@ -66,7 +57,7 @@ Timer = (function() {
     return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
-    return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
+    return "  <span class='timer-seconds'></span>";
   };
   return Timer;
 })();

@@ -1,5 +1,5 @@
 $(document).bind "mobileinit", ->
-  $.mobile.autoInitialize = false
+  $.mobile.autoInitializePage = false
 
 $(document).ready ->
   switch document.location.search

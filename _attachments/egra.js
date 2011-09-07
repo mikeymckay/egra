@@ -1,7 +1,7 @@
 var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $(document).bind("mobileinit", function() {
-  return $.mobile.autoInitialize = false;
+  return $.mobile.autoInitializePage = false;
 });
 $(document).ready(function() {
   switch (document.location.search) {

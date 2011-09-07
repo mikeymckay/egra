@@ -82,6 +82,7 @@ Assessment = (function() {
       page = _ref[_i];
       results[page.pageId] = page.results();
     }
+    results.timestamp = new Date().valueOf();
     return results;
   };
   Assessment.prototype.saveResults = function(callback) {
@@ -278,8 +279,14 @@ Assessment = (function() {
     }, this));
   };
   Assessment.prototype.flash = function() {
-    $('.ui-content').toggleClass("red");
-    return setTimeout("$('.ui-content').toggleClass('red')", 2000);
+    $('.controls').addClass("flash");
+    $("div[data-role=header]").toggleClass("flash");
+    $("div[data-role=footer]").toggleClass("flash");
+    return setTimeout(function() {
+      $('.controls').removeClass("flash");
+      $("div[data-role=header]").removeClass("flash");
+      return $("div[data-role=footer]").removeClass("flash");
+    }, 3000);
   };
   Assessment.prototype.toPaper = function(callback) {
     return this.onReady(__bind(function() {

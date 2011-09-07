@@ -112,8 +112,6 @@ JQueryMobilePage = (function() {
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "ToggleGridWithTimer":
-      return ToggleGridWithTimer.deserialize(pageObject);
     case "SchoolPage":
       return SchoolPage.deserialize(pageObject);
     case "StudentInformationPage":
@@ -181,8 +179,9 @@ AssessmentPage = (function() {
     AssessmentPage.__super__.constructor.apply(this, arguments);
   }
   AssessmentPage.prototype.addTimer = function() {
-    this.timer = new Timer();
-    this.timer.setPage(this);
+    this.timer = new Timer({
+      page: this
+    });
     return this.controls = "      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>        <div class='timer'>          " + (this.timer.render()) + "        </div>        <br/>        <br/>        <div class='message'>        </div>      </div>";
   };
   AssessmentPage.prototype.validate = function() {
@@ -228,7 +227,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
   $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
   return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
 };
-setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800);
 $('div.ui-footer button').live('click', function(event, ui) {
   var button, validationResult;
   validationResult = $.assessment.currentPage.validate();
@@ -652,15 +651,18 @@ ToggleGridWithTimer = (function() {
       }
       result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
       if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
-        result += "</fieldset>";
+        result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>";
       }
     }
-    this.content = "      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      ";
+    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
     $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
         $("#" + this.pageId + " label").removeClass('last-attempted');
         return $(eventData.currentTarget).toggleClass('last-attempted');
       }
+    }, this));
+    $("#" + this.pageId + " button.row-delete").live('mousedown', __bind(function(eventData) {
+      return $(eventData.target).parent().siblings().children("input").attr("checked", true).checkboxradio("refresh");
     }, this));
   }
   ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
@@ -679,9 +681,14 @@ ToggleGridWithTimer = (function() {
       return $(item).hasClass("ui-btn-active");
     }).length === tenPercentOfItems) {
       results.auto_stop = true;
-      $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
-      this.timer.stop();
-      $.assessment.flash();
+      if (!this.autostop) {
+        $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
+        this.timer.stop();
+        $.assessment.flash();
+        this.autostop = true;
+      }
+    } else {
+      this.autostop = false;
     }
     if (!this.timer.hasStartedAndStopped()) {
       return false;
@@ -703,9 +710,14 @@ ToggleGridWithTimer = (function() {
       }
       if (checkbox.hasClass("last-attempted")) {
         results.attempted = index + 1;
+        if (this.autostop) {
+          $("#" + this.pageId + " .controls .message").html("First " + tenPercentOfItems + " incorrect - autostop.");
+        } else {
+          $("#" + this.pageId + " .controls .message").html("");
+        }
         return results;
       } else {
-        $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
+        $("#" + this.pageId + " .controls .message").html("Select last item attempted");
       }
     }
     return results;
@@ -713,7 +725,8 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
-    if (results.time_remain === 60) {
+    console.log(results.time_remain);
+    if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }
     if (this.timer.running) {
@@ -729,12 +742,6 @@ ToggleGridWithTimer = (function() {
   };
   return ToggleGridWithTimer;
 })();
-ToggleGridWithTimer.deserialize = function(pageObject) {
-  var lettersPage;
-  lettersPage = new ToggleGridWithTimer(pageObject);
-  lettersPage.load(pageObject);
-  return lettersPage;
-};
 Dictation = (function() {
   __extends(Dictation, AssessmentPage);
   function Dictation(options) {

@@ -20,7 +20,7 @@ FILES = _attachments/js-libraries/jquery-1.6.2.min.js \
   _attachments/models/scorer.js \
   _attachments/models/timer.js \
   _attachments/egra.js \
-  _attachments/js-libraries/jquery-mobile/jquery.mobile-1.0b2.min.js
+  _attachments/js-libraries/jquery-mobile/jquery.mobile-1.0b2.min.js \
   _attachments/css.js \
 
 #CSSFILES =  themes/default/jquery.mobile.theme.css \

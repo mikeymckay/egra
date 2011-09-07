@@ -55,6 +55,7 @@ class Assessment
     results = {}
     for page in @pages
       results[page.pageId] = page.results()
+    results.timestamp = new Date().valueOf()
     return results
 
   saveResults: (callback) ->
@@ -192,8 +193,14 @@ class Assessment
       return result
 
   flash: ->
-    $('.ui-content').toggleClass("red")
-    setTimeout("$('.ui-content').toggleClass('red')",2000)
+    $('.controls').addClass("flash")
+    $("div[data-role=header]").toggleClass("flash")
+    $("div[data-role=footer]").toggleClass("flash")
+    setTimeout(->
+      $('.controls').removeClass("flash")
+      $("div[data-role=header]").removeClass("flash")
+      $("div[data-role=footer]").removeClass("flash")
+    ,3000)
 
   toPaper: (callback) ->
     @onReady =>

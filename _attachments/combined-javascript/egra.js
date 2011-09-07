@@ -2413,331 +2413,32 @@ if (!String.prototype.ordinalize)
         return str;
     };
 }
-/*
-  mustache.js — Logic-less templates in JavaScript
-
-  See http://mustache.github.com/ for more info.
-*/
-
-var Mustache = function() {
-  var Renderer = function() {};
-
-  Renderer.prototype = {
-    otag: "{{",
-    ctag: "}}",
-    pragmas: {},
-    buffer: [],
-    pragmas_implemented: {
-      "IMPLICIT-ITERATOR": true
-    },
-    context: {},
-
-    render: function(template, context, partials, in_recursion) {
-      // reset buffer & set context
-      if(!in_recursion) {
-        this.context = context;
-        this.buffer = []; // TODO: make this non-lazy
-      }
-
-      // fail fast
-      if(!this.includes("", template)) {
-        if(in_recursion) {
-          return template;
-        } else {
-          this.send(template);
-          return;
-        }
-      }
-
-      template = this.render_pragmas(template);
-      var html = this.render_section(template, context, partials);
-      if(in_recursion) {
-        return this.render_tags(html, context, partials, in_recursion);
-      }
-
-      this.render_tags(html, context, partials, in_recursion);
-    },
-
-    /*
-      Sends parsed lines
-    */
-    send: function(line) {
-      if(line != "") {
-        this.buffer.push(line);
-      }
-    },
-
-    /*
-      Looks for %PRAGMAS
-    */
-    render_pragmas: function(template) {
-      // no pragmas
-      if(!this.includes("%", template)) {
-        return template;
-      }
-
-      var that = this;
-      var regex = new RegExp(this.otag + "%([\\w-]+) ?([\\w]+=[\\w]+)?" +
-            this.ctag);
-      return template.replace(regex, function(match, pragma, options) {
-        if(!that.pragmas_implemented[pragma]) {
-          throw({message: 
-            "This implementation of mustache doesn't understand the '" +
-            pragma + "' pragma"});
-        }
-        that.pragmas[pragma] = {};
-        if(options) {
-          var opts = options.split("=");
-          that.pragmas[pragma][opts[0]] = opts[1];
-        }
-        return "";
-        // ignore unknown pragmas silently
-      });
-    },
-
-    /*
-      Tries to find a partial in the curent scope and render it
-    */
-    render_partial: function(name, context, partials) {
-      name = this.trim(name);
-      if(!partials || partials[name] === undefined) {
-        throw({message: "unknown_partial '" + name + "'"});
-      }
-      if(typeof(context[name]) != "object") {
-        return this.render(partials[name], context, partials, true);
-      }
-      return this.render(partials[name], context[name], partials, true);
-    },
-
-    /*
-      Renders inverted (^) and normal (#) sections
-    */
-    render_section: function(template, context, partials) {
-      if(!this.includes("#", template) && !this.includes("^", template)) {
-        return template;
-      }
-
-      var that = this;
-      // CSW - Added "+?" so it finds the tighest bound, not the widest
-      var regex = new RegExp(this.otag + "(\\^|\\#)\\s*(.+)\\s*" + this.ctag +
-              "\n*([\\s\\S]+?)" + this.otag + "\\/\\s*\\2\\s*" + this.ctag +
-              "\\s*", "mg");
-
-      // for each {{#foo}}{{/foo}} section do...
-      return template.replace(regex, function(match, type, name, content) {
-        var value = that.find(name, context);
-        if(type == "^") { // inverted section
-          if(!value || that.is_array(value) && value.length === 0) {
-            // false or empty list, render it
-            return that.render(content, context, partials, true);
-          } else {
-            return "";
-          }
-        } else if(type == "#") { // normal section
-          if(that.is_array(value)) { // Enumerable, Let's loop!
-            return that.map(value, function(row) {
-              return that.render(content, that.create_context(row),
-                partials, true);
-            }).join("");
-          } else if(that.is_object(value)) { // Object, Use it as subcontext!
-            return that.render(content, that.create_context(value),
-              partials, true);
-          } else if(typeof value === "function") {
-            // higher order section
-            return value.call(context, content, function(text) {
-              return that.render(text, context, partials, true);
-            });
-          } else if(value) { // boolean section
-            return that.render(content, context, partials, true);
-          } else {
-            return "";
-          }
-        }
-      });
-    },
-
-    /*
-      Replace {{foo}} and friends with values from our view
-    */
-    render_tags: function(template, context, partials, in_recursion) {
-      // tit for tat
-      var that = this;
-
-      var new_regex = function() {
-        return new RegExp(that.otag + "(=|!|>|\\{|%)?([^\\/#\\^]+?)\\1?" +
-          that.ctag + "+", "g");
-      };
-
-      var regex = new_regex();
-      var tag_replace_callback = function(match, operator, name) {
-        switch(operator) {
-        case "!": // ignore comments
-          return "";
-        case "=": // set new delimiters, rebuild the replace regexp
-          that.set_delimiters(name);
-          regex = new_regex();
-          return "";
-        case ">": // render partial
-          return that.render_partial(name, context, partials);
-        case "{": // the triple mustache is unescaped
-          return that.find(name, context);
-        default: // escape the value
-          return that.escape(that.find(name, context));
-        }
-      };
-      var lines = template.split("\n");
-      for(var i = 0; i < lines.length; i++) {
-        lines[i] = lines[i].replace(regex, tag_replace_callback, this);
-        if(!in_recursion) {
-          this.send(lines[i]);
-        }
-      }
-
-      if(in_recursion) {
-        return lines.join("\n");
-      }
-    },
-
-    set_delimiters: function(delimiters) {
-      var dels = delimiters.split(" ");
-      this.otag = this.escape_regex(dels[0]);
-      this.ctag = this.escape_regex(dels[1]);
-    },
-
-    escape_regex: function(text) {
-      // thank you Simon Willison
-      if(!arguments.callee.sRE) {
-        var specials = [
-          '/', '.', '*', '+', '?', '|',
-          '(', ')', '[', ']', '{', '}', '\\'
-        ];
-        arguments.callee.sRE = new RegExp(
-          '(\\' + specials.join('|\\') + ')', 'g'
-        );
-      }
-      return text.replace(arguments.callee.sRE, '\\$1');
-    },
-
-    /*
-      find `name` in current `context`. That is find me a value
-      from the view object
-    */
-    find: function(name, context) {
-      name = this.trim(name);
-
-      // Checks whether a value is thruthy or false or 0
-      function is_kinda_truthy(bool) {
-        return bool === false || bool === 0 || bool;
-      }
-
-      var value;
-      if(is_kinda_truthy(context[name])) {
-        value = context[name];
-      } else if(is_kinda_truthy(this.context[name])) {
-        value = this.context[name];
-      }
-
-      if(typeof value === "function") {
-        return value.apply(context);
-      }
-      if(value !== undefined) {
-        return value;
-      }
-      // silently ignore unkown variables
-      return "";
-    },
-
-    // Utility methods
-
-    /* includes tag */
-    includes: function(needle, haystack) {
-      return haystack.indexOf(this.otag + needle) != -1;
-    },
-
-    /*
-      Does away with nasty characters
-    */
-    escape: function(s) {
-      s = String(s === null ? "" : s);
-      return s.replace(/&(?!\w+;)|["'<>\\]/g, function(s) {
-        switch(s) {
-        case "&": return "&amp;";
-        case "\\": return "\\\\";
-        case '"': return '&quot;';
-        case "'": return '&#39;';
-        case "<": return "&lt;";
-        case ">": return "&gt;";
-        default: return s;
-        }
-      });
-    },
-
-    // by @langalex, support for arrays of strings
-    create_context: function(_context) {
-      if(this.is_object(_context)) {
-        return _context;
-      } else {
-        var iterator = ".";
-        if(this.pragmas["IMPLICIT-ITERATOR"]) {
-          iterator = this.pragmas["IMPLICIT-ITERATOR"].iterator;
-        }
-        var ctx = {};
-        ctx[iterator] = _context;
-        return ctx;
-      }
-    },
-
-    is_object: function(a) {
-      return a && typeof a == "object";
-    },
-
-    is_array: function(a) {
-      return Object.prototype.toString.call(a) === '[object Array]';
-    },
-
-    /*
-      Gets rid of leading and trailing whitespace
-    */
-    trim: function(s) {
-      return s.replace(/^\s*|\s*$/g, "");
-    },
-
-    /*
-      Why, why, why? Because IE. Cry, cry cry.
-    */
-    map: function(array, fn) {
-      if (typeof array.map == "function") {
-        return array.map(fn);
-      } else {
-        var r = [];
-        var l = array.length;
-        for(var i = 0; i < l; i++) {
-          r.push(fn(array[i]));
-        }
-        return r;
-      }
-    }
-  };
-
-  return({
-    name: "mustache.js",
-    version: "0.3.1-dev",
-
-    /*
-      Turns a template and view into HTML
-    */
-    to_html: function(template, view, partials, send_fun) {
-      var renderer = new Renderer();
-      if(send_fun) {
-        renderer.send = send_fun;
-      }
-      renderer.render(template, view, partials);
-      if(!send_fun) {
-        return renderer.buffer.join("\n");
-      }
-    }
-  });
-}();
+// Underscore.js 1.1.6
+// (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
+// Underscore is freely distributable under the MIT license.
+// Portions of Underscore are inspired or borrowed from Prototype,
+// Oliver Steele's Functional, and John Resig's Micro-Templating.
+// For all details and documentation:
+// http://documentcloud.github.com/underscore
+(function(){var p=this,C=p._,m={},i=Array.prototype,n=Object.prototype,f=i.slice,D=i.unshift,E=n.toString,l=n.hasOwnProperty,s=i.forEach,t=i.map,u=i.reduce,v=i.reduceRight,w=i.filter,x=i.every,y=i.some,o=i.indexOf,z=i.lastIndexOf;n=Array.isArray;var F=Object.keys,q=Function.prototype.bind,b=function(a){return new j(a)};typeof module!=="undefined"&&module.exports?(module.exports=b,b._=b):p._=b;b.VERSION="1.1.6";var h=b.each=b.forEach=function(a,c,d){if(a!=null)if(s&&a.forEach===s)a.forEach(c,d);else if(b.isNumber(a.length))for(var e=
+0,k=a.length;e<k;e++){if(c.call(d,a[e],e,a)===m)break}else for(e in a)if(l.call(a,e)&&c.call(d,a[e],e,a)===m)break};b.map=function(a,c,b){var e=[];if(a==null)return e;if(t&&a.map===t)return a.map(c,b);h(a,function(a,g,G){e[e.length]=c.call(b,a,g,G)});return e};b.reduce=b.foldl=b.inject=function(a,c,d,e){var k=d!==void 0;a==null&&(a=[]);if(u&&a.reduce===u)return e&&(c=b.bind(c,e)),k?a.reduce(c,d):a.reduce(c);h(a,function(a,b,f){!k&&b===0?(d=a,k=!0):d=c.call(e,d,a,b,f)});if(!k)throw new TypeError("Reduce of empty array with no initial value");
+return d};b.reduceRight=b.foldr=function(a,c,d,e){a==null&&(a=[]);if(v&&a.reduceRight===v)return e&&(c=b.bind(c,e)),d!==void 0?a.reduceRight(c,d):a.reduceRight(c);a=(b.isArray(a)?a.slice():b.toArray(a)).reverse();return b.reduce(a,c,d,e)};b.find=b.detect=function(a,c,b){var e;A(a,function(a,g,f){if(c.call(b,a,g,f))return e=a,!0});return e};b.filter=b.select=function(a,c,b){var e=[];if(a==null)return e;if(w&&a.filter===w)return a.filter(c,b);h(a,function(a,g,f){c.call(b,a,g,f)&&(e[e.length]=a)});return e};
+b.reject=function(a,c,b){var e=[];if(a==null)return e;h(a,function(a,g,f){c.call(b,a,g,f)||(e[e.length]=a)});return e};b.every=b.all=function(a,c,b){var e=!0;if(a==null)return e;if(x&&a.every===x)return a.every(c,b);h(a,function(a,g,f){if(!(e=e&&c.call(b,a,g,f)))return m});return e};var A=b.some=b.any=function(a,c,d){c||(c=b.identity);var e=!1;if(a==null)return e;if(y&&a.some===y)return a.some(c,d);h(a,function(a,b,f){if(e=c.call(d,a,b,f))return m});return e};b.include=b.contains=function(a,c){var b=
+!1;if(a==null)return b;if(o&&a.indexOf===o)return a.indexOf(c)!=-1;A(a,function(a){if(b=a===c)return!0});return b};b.invoke=function(a,c){var d=f.call(arguments,2);return b.map(a,function(a){return(c.call?c||a:a[c]).apply(a,d)})};b.pluck=function(a,c){return b.map(a,function(a){return a[c]})};b.max=function(a,c,d){if(!c&&b.isArray(a))return Math.max.apply(Math,a);var e={computed:-Infinity};h(a,function(a,b,f){b=c?c.call(d,a,b,f):a;b>=e.computed&&(e={value:a,computed:b})});return e.value};b.min=function(a,
+c,d){if(!c&&b.isArray(a))return Math.min.apply(Math,a);var e={computed:Infinity};h(a,function(a,b,f){b=c?c.call(d,a,b,f):a;b<e.computed&&(e={value:a,computed:b})});return e.value};b.sortBy=function(a,c,d){return b.pluck(b.map(a,function(a,b,f){return{value:a,criteria:c.call(d,a,b,f)}}).sort(function(a,b){var c=a.criteria,d=b.criteria;return c<d?-1:c>d?1:0}),"value")};b.sortedIndex=function(a,c,d){d||(d=b.identity);for(var e=0,f=a.length;e<f;){var g=e+f>>1;d(a[g])<d(c)?e=g+1:f=g}return e};b.toArray=
+function(a){if(!a)return[];if(a.toArray)return a.toArray();if(b.isArray(a))return a;if(b.isArguments(a))return f.call(a);return b.values(a)};b.size=function(a){return b.toArray(a).length};b.first=b.head=function(a,b,d){return b!=null&&!d?f.call(a,0,b):a[0]};b.rest=b.tail=function(a,b,d){return f.call(a,b==null||d?1:b)};b.last=function(a){return a[a.length-1]};b.compact=function(a){return b.filter(a,function(a){return!!a})};b.flatten=function(a){return b.reduce(a,function(a,d){if(b.isArray(d))return a.concat(b.flatten(d));
+a[a.length]=d;return a},[])};b.without=function(a){var c=f.call(arguments,1);return b.filter(a,function(a){return!b.include(c,a)})};b.uniq=b.unique=function(a,c){return b.reduce(a,function(a,e,f){if(0==f||(c===!0?b.last(a)!=e:!b.include(a,e)))a[a.length]=e;return a},[])};b.intersect=function(a){var c=f.call(arguments,1);return b.filter(b.uniq(a),function(a){return b.every(c,function(c){return b.indexOf(c,a)>=0})})};b.zip=function(){for(var a=f.call(arguments),c=b.max(b.pluck(a,"length")),d=Array(c),
+e=0;e<c;e++)d[e]=b.pluck(a,""+e);return d};b.indexOf=function(a,c,d){if(a==null)return-1;var e;if(d)return d=b.sortedIndex(a,c),a[d]===c?d:-1;if(o&&a.indexOf===o)return a.indexOf(c);d=0;for(e=a.length;d<e;d++)if(a[d]===c)return d;return-1};b.lastIndexOf=function(a,b){if(a==null)return-1;if(z&&a.lastIndexOf===z)return a.lastIndexOf(b);for(var d=a.length;d--;)if(a[d]===b)return d;return-1};b.range=function(a,b,d){arguments.length<=1&&(b=a||0,a=0);d=arguments[2]||1;for(var e=Math.max(Math.ceil((b-a)/
+d),0),f=0,g=Array(e);f<e;)g[f++]=a,a+=d;return g};b.bind=function(a,b){if(a.bind===q&&q)return q.apply(a,f.call(arguments,1));var d=f.call(arguments,2);return function(){return a.apply(b,d.concat(f.call(arguments)))}};b.bindAll=function(a){var c=f.call(arguments,1);c.length==0&&(c=b.functions(a));h(c,function(c){a[c]=b.bind(a[c],a)});return a};b.memoize=function(a,c){var d={};c||(c=b.identity);return function(){var b=c.apply(this,arguments);return l.call(d,b)?d[b]:d[b]=a.apply(this,arguments)}};b.delay=
+function(a,b){var d=f.call(arguments,2);return setTimeout(function(){return a.apply(a,d)},b)};b.defer=function(a){return b.delay.apply(b,[a,1].concat(f.call(arguments,1)))};var B=function(a,b,d){var e;return function(){var f=this,g=arguments,h=function(){e=null;a.apply(f,g)};d&&clearTimeout(e);if(d||!e)e=setTimeout(h,b)}};b.throttle=function(a,b){return B(a,b,!1)};b.debounce=function(a,b){return B(a,b,!0)};b.once=function(a){var b=!1,d;return function(){if(b)return d;b=!0;return d=a.apply(this,arguments)}};
+b.wrap=function(a,b){return function(){var d=[a].concat(f.call(arguments));return b.apply(this,d)}};b.compose=function(){var a=f.call(arguments);return function(){for(var b=f.call(arguments),d=a.length-1;d>=0;d--)b=[a[d].apply(this,b)];return b[0]}};b.after=function(a,b){return function(){if(--a<1)return b.apply(this,arguments)}};b.keys=F||function(a){if(a!==Object(a))throw new TypeError("Invalid object");var b=[],d;for(d in a)l.call(a,d)&&(b[b.length]=d);return b};b.values=function(a){return b.map(a,
+b.identity)};b.functions=b.methods=function(a){return b.filter(b.keys(a),function(c){return b.isFunction(a[c])}).sort()};b.extend=function(a){h(f.call(arguments,1),function(b){for(var d in b)b[d]!==void 0&&(a[d]=b[d])});return a};b.defaults=function(a){h(f.call(arguments,1),function(b){for(var d in b)a[d]==null&&(a[d]=b[d])});return a};b.clone=function(a){return b.isArray(a)?a.slice():b.extend({},a)};b.tap=function(a,b){b(a);return a};b.isEqual=function(a,c){if(a===c)return!0;var d=typeof a;if(d!=
+typeof c)return!1;if(a==c)return!0;if(!a&&c||a&&!c)return!1;if(a._chain)a=a._wrapped;if(c._chain)c=c._wrapped;if(a.isEqual)return a.isEqual(c);if(b.isDate(a)&&b.isDate(c))return a.getTime()===c.getTime();if(b.isNaN(a)&&b.isNaN(c))return!1;if(b.isRegExp(a)&&b.isRegExp(c))return a.source===c.source&&a.global===c.global&&a.ignoreCase===c.ignoreCase&&a.multiline===c.multiline;if(d!=="object")return!1;if(a.length&&a.length!==c.length)return!1;d=b.keys(a);var e=b.keys(c);if(d.length!=e.length)return!1;
+for(var f in a)if(!(f in c)||!b.isEqual(a[f],c[f]))return!1;return!0};b.isEmpty=function(a){if(b.isArray(a)||b.isString(a))return a.length===0;for(var c in a)if(l.call(a,c))return!1;return!0};b.isElement=function(a){return!!(a&&a.nodeType==1)};b.isArray=n||function(a){return E.call(a)==="[object Array]"};b.isArguments=function(a){return!(!a||!l.call(a,"callee"))};b.isFunction=function(a){return!(!a||!a.constructor||!a.call||!a.apply)};b.isString=function(a){return!!(a===""||a&&a.charCodeAt&&a.substr)};
+b.isNumber=function(a){return!!(a===0||a&&a.toExponential&&a.toFixed)};b.isNaN=function(a){return a!==a};b.isBoolean=function(a){return a===!0||a===!1};b.isDate=function(a){return!(!a||!a.getTimezoneOffset||!a.setUTCFullYear)};b.isRegExp=function(a){return!(!a||!a.test||!a.exec||!(a.ignoreCase||a.ignoreCase===!1))};b.isNull=function(a){return a===null};b.isUndefined=function(a){return a===void 0};b.noConflict=function(){p._=C;return this};b.identity=function(a){return a};b.times=function(a,b,d){for(var e=
+0;e<a;e++)b.call(d,e)};b.mixin=function(a){h(b.functions(a),function(c){H(c,b[c]=a[c])})};var I=0;b.uniqueId=function(a){var b=I++;return a?a+b:b};b.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g};b.template=function(a,c){var d=b.templateSettings;d="var __p=[],print=function(){__p.push.apply(__p,arguments);};with(obj||{}){__p.push('"+a.replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(d.interpolate,function(a,b){return"',"+b.replace(/\\'/g,"'")+",'"}).replace(d.evaluate||
+null,function(a,b){return"');"+b.replace(/\\'/g,"'").replace(/[\r\n\t]/g," ")+"__p.push('"}).replace(/\r/g,"\\r").replace(/\n/g,"\\n").replace(/\t/g,"\\t")+"');}return __p.join('');";d=new Function("obj",d);return c?d(c):d};var j=function(a){this._wrapped=a};b.prototype=j.prototype;var r=function(a,c){return c?b(a).chain():a},H=function(a,c){j.prototype[a]=function(){var a=f.call(arguments);D.call(a,this._wrapped);return r(c.apply(b,a),this._chain)}};b.mixin(b);h(["pop","push","reverse","shift","sort",
+"splice","unshift"],function(a){var b=i[a];j.prototype[a]=function(){b.apply(this._wrapped,arguments);return r(this._wrapped,this._chain)}});h(["concat","join","slice"],function(a){var b=i[a];j.prototype[a]=function(){return r(b.apply(this._wrapped,arguments),this._chain)}});j.prototype.chain=function(){this._chain=!0;return this};j.prototype.value=function(){return this._wrapped}})();
  var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
@@ -2822,6 +2523,7 @@ Assessment = (function() {
       page = _ref[_i];
       results[page.pageId] = page.results();
     }
+    results.timestamp = new Date().valueOf();
     return results;
   };
   Assessment.prototype.saveResults = function(callback) {
@@ -3018,8 +2720,14 @@ Assessment = (function() {
     }, this));
   };
   Assessment.prototype.flash = function() {
-    $('.ui-content').toggleClass("red");
-    return setTimeout("$('.ui-content').toggleClass('red')", 2000);
+    $('.controls').addClass("flash");
+    $("div[data-role=header]").toggleClass("flash");
+    $("div[data-role=footer]").toggleClass("flash");
+    return setTimeout(function() {
+      $('.controls').removeClass("flash");
+      $("div[data-role=header]").removeClass("flash");
+      return $("div[data-role=footer]").removeClass("flash");
+    }, 3000);
   };
   Assessment.prototype.toPaper = function(callback) {
     return this.onReady(__bind(function() {
@@ -3268,8 +2976,6 @@ JQueryMobilePage = (function() {
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "ToggleGridWithTimer":
-      return ToggleGridWithTimer.deserialize(pageObject);
     case "SchoolPage":
       return SchoolPage.deserialize(pageObject);
     case "StudentInformationPage":
@@ -3337,8 +3043,9 @@ AssessmentPage = (function() {
     AssessmentPage.__super__.constructor.apply(this, arguments);
   }
   AssessmentPage.prototype.addTimer = function() {
-    this.timer = new Timer();
-    this.timer.setPage(this);
+    this.timer = new Timer({
+      page: this
+    });
     return this.controls = "      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>        <div class='timer'>          " + (this.timer.render()) + "        </div>        <br/>        <br/>        <div class='message'>        </div>      </div>";
   };
   AssessmentPage.prototype.validate = function() {
@@ -3384,7 +3091,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
   $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
   return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
 };
-setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 500);
+setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800);
 $('div.ui-footer button').live('click', function(event, ui) {
   var button, validationResult;
   validationResult = $.assessment.currentPage.validate();
@@ -3808,15 +3515,18 @@ ToggleGridWithTimer = (function() {
       }
       result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
       if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
-        result += "</fieldset>";
+        result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>";
       }
     }
-    this.content = "      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      ";
+    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
     $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
         $("#" + this.pageId + " label").removeClass('last-attempted');
         return $(eventData.currentTarget).toggleClass('last-attempted');
       }
+    }, this));
+    $("#" + this.pageId + " button.row-delete").live('mousedown', __bind(function(eventData) {
+      return $(eventData.target).parent().siblings().children("input").attr("checked", true).checkboxradio("refresh");
     }, this));
   }
   ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
@@ -3835,9 +3545,14 @@ ToggleGridWithTimer = (function() {
       return $(item).hasClass("ui-btn-active");
     }).length === tenPercentOfItems) {
       results.auto_stop = true;
-      $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
-      this.timer.stop();
-      $.assessment.flash();
+      if (!this.autostop) {
+        $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
+        this.timer.stop();
+        $.assessment.flash();
+        this.autostop = true;
+      }
+    } else {
+      this.autostop = false;
     }
     if (!this.timer.hasStartedAndStopped()) {
       return false;
@@ -3859,9 +3574,14 @@ ToggleGridWithTimer = (function() {
       }
       if (checkbox.hasClass("last-attempted")) {
         results.attempted = index + 1;
+        if (this.autostop) {
+          $("#" + this.pageId + " .controls .message").html("First " + tenPercentOfItems + " incorrect - autostop.");
+        } else {
+          $("#" + this.pageId + " .controls .message").html("");
+        }
         return results;
       } else {
-        $("#" + this.pageId + " .controls .message").html("Select last letter attempted");
+        $("#" + this.pageId + " .controls .message").html("Select last item attempted");
       }
     }
     return results;
@@ -3869,7 +3589,8 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
-    if (results.time_remain === 60) {
+    console.log(results.time_remain);
+    if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }
     if (this.timer.running) {
@@ -3885,12 +3606,6 @@ ToggleGridWithTimer = (function() {
   };
   return ToggleGridWithTimer;
 })();
-ToggleGridWithTimer.deserialize = function(pageObject) {
-  var lettersPage;
-  lettersPage = new ToggleGridWithTimer(pageObject);
-  lettersPage.load(pageObject);
-  return lettersPage;
-};
 Dictation = (function() {
   __extends(Dictation, AssessmentPage);
   function Dictation(options) {
@@ -4023,19 +3738,10 @@ $("div.timer button").live('mousedown', function(eventData) {
   return $.assessment.currentPage.timer[buttonPressed]();
 });
 Timer = (function() {
-  function Timer() {
+  function Timer(options) {
+    this.page = options.page;
     this.elementLocation = null;
   }
-  Timer.prototype.toJSON = function() {
-    return JSON.stringify({
-      seconds: this.seconds,
-      elementLocation: this.elementLocation
-    });
-  };
-  Timer.prototype.setPage = function(page) {
-    this.page = page;
-    return this.elementLocation = "div#" + page.pageId + " div.timer";
-  };
   Timer.prototype.start = function() {
     var decrement;
     this.showLetters();
@@ -4066,7 +3772,7 @@ Timer = (function() {
     return this.renderSeconds();
   };
   Timer.prototype.renderSeconds = function() {
-    return $("" + this.elementLocation + " span.timer_seconds").html(this.seconds);
+    return $("div#" + this.page.pageId + " .timer-seconds").html(this.seconds);
   };
   Timer.prototype.render = function() {
     this.id = "timer";
@@ -4080,13 +3786,13 @@ Timer = (function() {
     return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
   };
   Timer.prototype._template = function() {
-    return "<div class='timer'>  <span class='timer_seconds'>{{seconds}}</span>  <button>start</button>  <button>stop</button>  <button>reset</button></div>";
+    return "  <span class='timer-seconds'></span>";
   };
   return Timer;
 })();var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $(document).bind("mobileinit", function() {
-  return $.mobile.autoInitialize = false;
+  return $.mobile.autoInitializePage = false;
 });
 $(document).ready(function() {
   switch (document.location.search) {
@@ -4379,3 +4085,13 @@ function(){c.bind("orientationchange.htmlclass throttledResize.htmlclass",functi
 a(d).scrollTop()+a(d).height()/2||b.length&&b.offset().top||100})}c.addClass("ui-loading")},hidePageLoadingMsg:function(){c.removeClass("ui-loading")},pageLoading:function(b){b?a.mobile.hidePageLoadingMsg():a.mobile.showPageLoadingMsg()},initializePage:function(){var c=a(":jqmData(role='page')");c.length||(c=a("body").wrapInner("<div data-"+a.mobile.ns+"role='page'></div>").children(0));c.add(":jqmData(role='dialog')").each(function(){var b=a(this);b.jqmData("url")||b.attr("data-"+a.mobile.ns+"url",
 b.attr("id"))});a.mobile.firstPage=c.first();a.mobile.pageContainer=c.first().parent().addClass("ui-mobile-viewport");a.mobile.showPageLoadingMsg();!a.mobile.hashListeningEnabled||!a.mobile.path.stripHash(location.hash)?a.mobile.changePage(a.mobile.firstPage,{transition:"none",reverse:!0,changeHash:!1,fromHashChange:!0}):b.trigger("hashchange",[!0])}});a.mobile._registerInternalEvents();a(function(){d.scrollTo(0,1);a.mobile.defaultHomeScroll=!a.support.scrollTop||a(d).scrollTop()===1?0:1;a.mobile.autoInitializePage&&
 a(a.mobile.initializePage);b.load(a.mobile.silentScroll)})}})(jQuery,this);
+/*
+This appraoch allows colors to be stored as constants
+*/
+var blue, first_click_color, red, second_click_color, yellow;
+blue = "#5E87B0";
+yellow = "#F7C942";
+first_click_color = yellow;
+second_click_color = blue;
+red = "red";
+$("head").append("  <style>    .toggle-grid-with-timer .ui-checkbox span.show{      color: black;    }    .toggle-grid-with-timer .ui-checkbox-on span {      text-decoration: line-through;    }    .toggle-grid-with-timer .ui-checkbox span{      color: #F6F6F6;    }    .toggle-grid-with-timer .ui-btn-active{      background-image: none;      color:blue;    }    .toggle-grid-with-timer .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    .toggle-grid-with-timer .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    span.timer-seconds{      float:right;      margin-right:10px;      margin-top:5px;      font-size: large;    }    .controls.flash{      color: black;      background-color: " + red + ";    }    .flash {      color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }      </style>  ");
