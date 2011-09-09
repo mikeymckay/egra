@@ -2547,7 +2547,7 @@ Assessment = (function() {
     });
   };
   Assessment.prototype.resetURL = function() {
-    return document.location.origin + document.location.pathname + document.location.search;
+    return document.location.pathname + document.location.search;
   };
   Assessment.prototype.reset = function() {
     return document.location = this.resetURL();
@@ -3804,20 +3804,41 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
         return document.location = "index.html?showMenu=true";
       });
-    case "?showMenu=true":
-      return EarlyGradeReadingAssessment.showMenu();
     case "?printout=true":
       return EarlyGradeReadingAssessment.print();
+    case "?SyncToCentral=true":
+      $('body').html("Sending data to central please wait.");
+      return $.couch.replicate("egra", "http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", {
+        success: function() {
+          return document.location = "index.html?message=Synchronization started";
+        }
+      });
+    case "?SyncFromCentral=true":
+      $('body').html("Updating system from central please wait.");
+      return $.couch.replicate("http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", "egra", {
+        success: function() {
+          return document.location = "index.html?message=Synchronization started";
+        }
+      });
     default:
-      return EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1));
+      if (document.location.search.match(/\?message=(.+)/)) {
+        return EarlyGradeReadingAssessment.showMenu("Process complete!");
+      } else if (document.location.search.match(/\?.+/)) {
+        return EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1));
+      } else {
+        return EarlyGradeReadingAssessment.showMenu();
+      }
   }
 });
 EarlyGradeReadingAssessment = (function() {
   function EarlyGradeReadingAssessment() {}
   return EarlyGradeReadingAssessment;
 })();
-EarlyGradeReadingAssessment.showMenu = function() {
+EarlyGradeReadingAssessment.showMenu = function(message) {
   var url;
+  if (message == null) {
+    message = "";
+  }
   url = "/egra/_all_docs";
   return $.ajax({
     url: url,
@@ -3836,7 +3857,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Load 'Assessment.Test' from Couch</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            " + (documents.join("<br/>")) + "          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load Sample Assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Letters Page Demo</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>For Testing</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Results and assessments</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {
@@ -3845,7 +3866,7 @@ EarlyGradeReadingAssessment.showMenu = function() {
   });
 };
 EarlyGradeReadingAssessment.print = function() {
-  return Assessment.loadFromHTTP("/egra/Assessment.EGRA Prototype", function(assessment) {
+  return Assessment.loadFromHTTP("/egra/Assessment.The Gambia EGRA May 2011", function(assessment) {
     return assessment.toPaper(function(result) {
       var style;
       style = "        body{          font-family: Arial;        }        .page-break{          display: block;          page-break-before: always;        }        input{          height: 50px;            border: 1px        }      ";

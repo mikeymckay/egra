@@ -9,16 +9,32 @@ $(document).ready ->
     when "?loadFromTestDataSaveToCouch=true"
       EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch ->
         document.location = "index.html?showMenu=true"
-    when "?showMenu=true"
-      EarlyGradeReadingAssessment.showMenu()
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
+    when "?SyncToCentral=true"
+      $('body').html("Sending data to central please wait.")
+      $.couch.replicate("egra","http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", {
+        success: ->
+          document.location = "index.html?message=Synchronization started"
+      })
+    when "?SyncFromCentral=true"
+      $('body').html("Updating system from central please wait.")
+      $.couch.replicate("http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", "egra", {
+        success: ->
+          document.location = "index.html?message=Synchronization started"
+      })
     else
+      if document.location.search.match(/\?message=(.+)/)
+# TODO
+        EarlyGradeReadingAssessment.showMenu("Process complete!")
+      else if document.location.search.match(/\?.+/)
 # Have to remove the question mark
-      EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1))
+        EarlyGradeReadingAssessment.loadFromCouch(document.location.search.substring(1))
+      else
+        EarlyGradeReadingAssessment.showMenu()
 
 class EarlyGradeReadingAssessment
-EarlyGradeReadingAssessment.showMenu = ->
+EarlyGradeReadingAssessment.showMenu = (message = "") ->
   url = "/egra/_all_docs"
   $.ajax
     url: url,
@@ -33,15 +49,24 @@ EarlyGradeReadingAssessment.showMenu = ->
             <h1>Admin Menu</h1>
           </div><!-- /header -->
           <div data-role='content'>	
+            #{message}
+            <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load 'Assessment.The Gambia EGRA May 2011' from Couch</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Load 'Assessment.Test' from Couch</a>
+            -->
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load Sample Assessment</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Letters Page Demo</a>
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
             -->
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncToCentral=true'>Send results to TangerineCentral.com</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncFromCentral=true'>Update system</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
-            #{documents.join("<br/>")}
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>For Testing</a>
+            <div data-role='collapsible' data-collapsed='true'>
+              <h3>Results and assessments</h3>
+              #{documents.join("<br/>")}
+            </div>
           </div><!-- /content -->
           <div data-role='footer'>
           </div><!-- /footer -->
@@ -52,7 +77,7 @@ EarlyGradeReadingAssessment.showMenu = ->
       throw "Could not GET #{url}"
 
 EarlyGradeReadingAssessment.print = ->
-  Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
+  Assessment.loadFromHTTP "/egra/Assessment.The Gambia EGRA May 2011", (assessment) ->
     assessment.toPaper (result) ->
       style = "
         body{

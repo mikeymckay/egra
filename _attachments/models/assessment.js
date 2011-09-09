@@ -106,7 +106,7 @@ Assessment = (function() {
     });
   };
   Assessment.prototype.resetURL = function() {
-    return document.location.origin + document.location.pathname + document.location.search;
+    return document.location.pathname + document.location.search;
   };
   Assessment.prototype.reset = function() {
     return document.location = this.resetURL();

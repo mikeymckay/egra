@@ -73,7 +73,8 @@ class Assessment
         callback(results) if callback?
 
   resetURL: ->
-    document.location.origin + document.location.pathname + document.location.search
+    #document.location.origin + document.location.pathname + document.location.search
+    document.location.pathname + document.location.search
 
   reset: ->
     document.location = @resetURL()
