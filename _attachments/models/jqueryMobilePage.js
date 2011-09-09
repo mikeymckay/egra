@@ -637,7 +637,7 @@ ToggleGridWithTimer = (function() {
   function ToggleGridWithTimer(options) {
     var checkboxName, index, letter, result, _len, _ref;
     this.letters = options.letters;
-    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 15;
+    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 10;
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
@@ -652,7 +652,7 @@ ToggleGridWithTimer = (function() {
       }
     }
     this.content = "      <style>        .grid{          padding: 5px;          margin: 2px;          font-size: 200%;          border: 3px outset green;        }        .touched{          text-decoration: line-through;          background-color: yellow;        }      </style>      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <div id='debug'></div>        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
-    $("#" + this.pageId + " span.grid").live('touchstart', function(eventData) {
+    $("#" + this.pageId + " span.grid").live(('ontouchstart' in document.documentElement ? "touchstart" : "click"), function(eventData) {
       return $(eventData.target).toggleClass("touched");
     });
     $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {

@@ -612,7 +612,7 @@ class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
     #@pageId = options.pageId
-    @numberOfColumns = options?.numberOfColumns || 15
+    @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
     @addTimer()
@@ -656,8 +656,10 @@ class ToggleGridWithTimer extends AssessmentPage
         <button>stop</button>
       </div>
       "
-    
-    $("##{@pageId} span.grid").live 'touchstart', (eventData) ->
+
+
+
+    $("##{@pageId} span.grid").live (if ('ontouchstart' of document.documentElement) then "touchstart" else "click"), (eventData) ->
       $(eventData.target).toggleClass("touched")
 
 
