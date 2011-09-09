@@ -612,7 +612,7 @@ class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
     #@pageId = options.pageId
-    @numberOfColumns = options?.numberOfColumns || 5
+    @numberOfColumns = options?.numberOfColumns || 15
     @footerMessage = footerMessage
     super(options)
     @addTimer()
@@ -621,15 +621,33 @@ class ToggleGridWithTimer extends AssessmentPage
     for letter,index in @letters
       checkboxName = "checkbox_" + index
 
-      result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
-      result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
-      result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+#      result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
+#      result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
+#      result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+      #result += "<span class='grid' onclick='$(\".controls .message\").html(\"#{letter}\")'>#{letter}</span>"
+      result += "<span class='grid' >#{letter}</span>"
+      result += "<br/><br/><br/>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
+
 
     @content =  "
+      <style>
+        .grid{
+          padding: 5px;
+          margin: 2px;
+          font-size: 200%;
+          border: 3px outset green;
+        }
+        .touched{
+          text-decoration: line-through;
+          background-color: yellow;
+
+        }
+      </style>
       <div class='timer'>
         <button>start</button>
       </div>
       <div class='toggle-grid-with-timer' data-role='content'>	
+        <div id='debug'></div>
         <form>
           #{result}
         </form>
@@ -639,6 +657,10 @@ class ToggleGridWithTimer extends AssessmentPage
       </div>
       "
     
+    $("##{@pageId} span.grid").live 'touchstart', (eventData) ->
+      $(eventData.target).toggleClass("touched")
+
+
     $("##{@pageId} label").live 'mousedown', (eventData) =>
       if $.assessment.currentPage.timer.hasStartedAndStopped()
         $("##{@pageId} label").removeClass('last-attempted')
@@ -694,7 +716,6 @@ class ToggleGridWithTimer extends AssessmentPage
 
   validate: ->
     results = @results()
-    console.log results.time_remain 
     if results.time_remain == 60 or results.time_remain == undefined
       return "The timer must be started"
     if @timer.running

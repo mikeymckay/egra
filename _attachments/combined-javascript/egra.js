@@ -3501,7 +3501,7 @@ ToggleGridWithTimer = (function() {
   function ToggleGridWithTimer(options) {
     var checkboxName, index, letter, result, _len, _ref;
     this.letters = options.letters;
-    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
+    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 15;
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
@@ -3510,15 +3510,15 @@ ToggleGridWithTimer = (function() {
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
       checkboxName = "checkbox_" + index;
-      if (index % this.numberOfColumns === 0) {
-        result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
-      }
-      result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
+      result += "<span class='grid' >" + letter + "</span>";
       if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
-        result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>";
+        result += "<br/><br/><br/>";
       }
     }
-    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
+    this.content = "      <style>        .grid{          padding: 5px;          margin: 2px;          font-size: 200%;          border: 3px outset green;        }        .touched{          text-decoration: line-through;          background-color: yellow;        }      </style>      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <div id='debug'></div>        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
+    $("#" + this.pageId + " span.grid").live('touchstart', function(eventData) {
+      return $(eventData.target).toggleClass("touched");
+    });
     $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
         $("#" + this.pageId + " label").removeClass('last-attempted');
@@ -3589,7 +3589,6 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
-    console.log(results.time_remain);
     if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }
