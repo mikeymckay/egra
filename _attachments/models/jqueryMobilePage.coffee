@@ -440,9 +440,6 @@ class TextPage extends AssessmentPage
     return properties
 
 class ConsentPage extends TextPage
-  constructor: (options) ->
-    super(options)
-
     $("div##{@pageId} label[for='consent-no']").live "mousedown", (eventData) =>
       $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
       $.mobile.changePage("#_infoPage")
@@ -456,6 +453,7 @@ class ConsentPage extends TextPage
 
 
   validate: ->
+    return true
     if $("div##{@pageId} input[@name='childConsents']:checked").val()
       return true
     else

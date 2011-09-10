@@ -432,30 +432,33 @@ TextPage = (function() {
 })();
 ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
-  function ConsentPage(options) {
-    ConsentPage.__super__.constructor.call(this, options);
-    $("div#" + this.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
-      $.mobile.changePage("#_infoPage");
-      return $.assessment.saveResults(__bind(function(results) {
-        return setTimeout((function() {
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
-          return setTimeout((function() {
-            return $.assessment.reset();
-          }), 1000);
-        }), 2000);
-      }, this));
-    }, this));
+  function ConsentPage() {
+    ConsentPage.__super__.constructor.apply(this, arguments);
   }
-  ConsentPage.prototype.validate = function() {
+  $("div#" + ConsentPage.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
+    $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
+    $.mobile.changePage("#_infoPage");
+    return $.assessment.saveResults(__bind(function(results) {
+      return setTimeout((function() {
+        $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
+        return setTimeout((function() {
+          return $.assessment.reset();
+        }), 1000);
+      }), 2000);
+    }, this));
+  }, ConsentPage));
+  return ConsentPage;
+}).call(this);
+({
+  validate: function() {
+    return true;
     if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
       return true;
     } else {
       return "You must answer the consent question";
     }
-  };
-  return ConsentPage;
-})();
+  }
+});
 UntimedSubtest = (function() {
   __extends(UntimedSubtest, AssessmentPage);
   function UntimedSubtest(options) {
