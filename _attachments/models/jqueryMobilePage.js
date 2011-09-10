@@ -635,9 +635,9 @@ PhonemePage.deserialize = function(pageObject) {
 ToggleGridWithTimer = (function() {
   __extends(ToggleGridWithTimer, AssessmentPage);
   function ToggleGridWithTimer(options) {
-    var checkboxName, index, letter, result, _len, _ref;
+    var index, letter, result, selectEvent, _len, _ref;
     this.letters = options.letters;
-    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 5;
+    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 10;
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
@@ -645,24 +645,38 @@ ToggleGridWithTimer = (function() {
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
-      checkboxName = "checkbox_" + index;
-      if (index % this.numberOfColumns === 0) {
-        result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>";
-      }
-      result += "<input type='checkbox' name='" + checkboxName + "' id='" + checkboxName + "' class='custom' /><label for='" + checkboxName + "'>" + letter + "</label>";
-      if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
-        result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>";
+      result += "<span class='grid' >" + letter + "</span>";
+      if ((index + 1) % 5 === 0) {
+        result += "<span class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'>*</span>";
       }
     }
-    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
-    $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
+    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
+    selectEvent = 'ontouchstart' in document.documentElement ? "touchstart" : "click";
+    $("#" + this.pageId + " span.grid").live(selectEvent, __bind(function(eventData) {
+      if (!this.timer.started) {
+        return;
+      }
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
-        $("#" + this.pageId + " label").removeClass('last-attempted');
-        return $(eventData.currentTarget).toggleClass('last-attempted');
+        $("#" + this.pageId + " span.grid").removeClass('last-attempted');
+        return $(eventData.target).toggleClass('last-attempted');
+      } else {
+        return $(eventData.target).toggleClass("selected");
       }
     }, this));
-    $("#" + this.pageId + " button.row-delete").live('mousedown', __bind(function(eventData) {
-      return $(eventData.target).parent().siblings().children("input").attr("checked", true).checkboxradio("refresh");
+    $("#" + this.pageId + " span.grid.toggle-row").live(selectEvent, __bind(function(eventData) {
+      var gridItem, toggleRow, _i, _len2, _ref2, _results;
+      toggleRow = $(eventData.currentTarget);
+      _ref2 = toggleRow.prevAll();
+      _results = [];
+      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+        gridItem = _ref2[_i];
+        gridItem = $(gridItem);
+        if (gridItem.hasClass("toggle-row") && gridItem.css("display") !== "none") {
+          break;
+        }
+        _results.push(toggleRow.hasClass("selected") ? !gridItem.hasClass("selected") ? gridItem.addClass("selected rowtoggled") : void 0 : gridItem.hasClass("rowtoggled") ? gridItem.removeClass("selected rowtoggled") : void 0);
+      }
+      return _results;
     }, this));
   }
   ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
@@ -672,13 +686,13 @@ ToggleGridWithTimer = (function() {
     return properties;
   };
   ToggleGridWithTimer.prototype.results = function() {
-    var checkbox, firstTenPercent, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
+    var firstTenPercent, gridItem, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
-    items = $("#" + this.pageId + " label");
+    items = $("#" + this.pageId + " .grid:not(.toggle-row)");
     tenPercentOfItems = items.length / 10;
     firstTenPercent = items.slice(0, (tenPercentOfItems - 1 + 1) || 9e9);
     if (_.select(firstTenPercent, function(item) {
-      return $(item).hasClass("ui-btn-active");
+      return $(item).hasClass("selected");
     }).length === tenPercentOfItems) {
       results.auto_stop = true;
       if (!this.autostop) {
@@ -695,20 +709,20 @@ ToggleGridWithTimer = (function() {
     }
     results.letters = new Array();
     results.time_remain = this.timer.seconds;
-    _ref = $("#" + this.pageId + " label");
+    _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
-      checkbox = _ref[index];
+      gridItem = _ref[index];
       results.letters[index] = false;
     }
     results.attempted = null;
-    _ref2 = $("#" + this.pageId + " label");
+    _ref2 = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-      checkbox = _ref2[index];
-      checkbox = $(checkbox);
-      if (!checkbox.hasClass("ui-btn-active")) {
+      gridItem = _ref2[index];
+      gridItem = $(gridItem);
+      if (!gridItem.hasClass("selected")) {
         results.letters[index] = true;
       }
-      if (checkbox.hasClass("last-attempted")) {
+      if (gridItem.hasClass("last-attempted")) {
         results.attempted = index + 1;
         if (this.autostop) {
           $("#" + this.pageId + " .controls .message").html("First " + tenPercentOfItems + " incorrect - autostop.");
@@ -725,7 +739,6 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
-    console.log(results.time_remain);
     if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }

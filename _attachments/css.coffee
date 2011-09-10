@@ -60,6 +60,60 @@ $("head").append "
     #Phonemes legend{
       font-size: x-large;
     }
+
+
+    .grid{
+      text-align: center;
+      float: left;
+      width: 50px;
+      margin: 10px;
+      font-size: 300%;
+      border: 3px outset gray;
+      background-color: lightgray;
+      color: lightgray;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -o-user-select: none;
+      user-select: none;
+    }
+
+    .grid.show{
+      color: black;
+    }
+
+    .grid.selected{
+      text-decoration: line-through;
+      color: white;
+      background-color: #{blue};
+    }
+    .grid.last-attempted{
+      border-right-color: red;
+      border-top-color: red;
+      border-bottom-color: red;
+      border-width: 5px;
+      border-style: solid;
+    }
+
+    @media screen and (orientation:portrait){ 
+      .grid-width{
+        width: 440px;
+      }
+    }
+    @media screen and (orientation:landscape) {
+      .grid-width{
+        width: 810px;
+      }
+      .toggle-row-portrait{
+        display: none;
+      }
+    }
+
+    .toggle-row{
+      background-color: #{blue};
+      width: 30px;
+      height: 30px;
+    }
     
 
   </style>

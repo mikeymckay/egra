@@ -15,10 +15,11 @@ Timer = (function() {
   }
   Timer.prototype.start = function() {
     var decrement;
-    this.showLetters();
+    this.showGridItems();
     if (this.running) {
       return;
     }
+    this.started = true;
     this.running = true;
     this.tick_value = 1;
     decrement = __bind(function() {
@@ -50,11 +51,11 @@ Timer = (function() {
     this.seconds = 60;
     return Mustache.to_html(this._template(), this);
   };
-  Timer.prototype.hideLetters = function() {
-    return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
+  Timer.prototype.hideGridItems = function() {
+    return $("#" + this.page.pageId + " .grid").removeClass("show");
   };
-  Timer.prototype.showLetters = function() {
-    return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
+  Timer.prototype.showGridItems = function() {
+    return $("#" + this.page.pageId + " .grid").addClass("show");
   };
   Timer.prototype._template = function() {
     return "  <span class='timer-seconds'></span>";

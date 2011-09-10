@@ -612,18 +612,17 @@ class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
     #@pageId = options.pageId
-    @numberOfColumns = options?.numberOfColumns || 5
+    @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
     @addTimer()
 
     result = ""
     for letter,index in @letters
-      checkboxName = "checkbox_" + index
+      result += "<span class='grid' >#{letter}</span>"
+      if ((index+1) % 5 == 0)
+        result += "<span class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'>*</span>"
 
-      result += "<fieldset data-role='controlgroup' data-type='horizontal' data-role='fieldcontain'>" if index % @numberOfColumns == 0
-      result += "<input type='checkbox' name='#{checkboxName}' id='#{checkboxName}' class='custom' /><label for='#{checkboxName}'>#{letter}</label>"
-      result += "<button class='row-delete' type='button' data-icon='delete' data-iconpos='notext'></button></fieldset>" if ((index + 1) % @numberOfColumns == 0 or index == @letters.length-1)
 
     @content =  "
       <div class='timer'>
@@ -631,21 +630,38 @@ class ToggleGridWithTimer extends AssessmentPage
       </div>
       <div class='toggle-grid-with-timer' data-role='content'>	
         <form>
-          #{result}
+          <div class='grid-width'>
+            #{result}
+          </div>
         </form>
       </div>
       <div class='timer'>
         <button>stop</button>
       </div>
       "
-    
-    $("##{@pageId} label").live 'mousedown', (eventData) =>
-      if $.assessment.currentPage.timer.hasStartedAndStopped()
-        $("##{@pageId} label").removeClass('last-attempted')
-        $(eventData.currentTarget).toggleClass('last-attempted')
 
-    $("##{@pageId} button.row-delete").live 'mousedown', (eventData) =>
-      $(eventData.target).parent().siblings().children("input").attr("checked",true).checkboxradio("refresh")
+    selectEvent = if ('ontouchstart' of document.documentElement) then "touchstart" else "click"
+
+    $("##{@pageId} span.grid").live selectEvent, (eventData) =>
+      return unless @timer.started
+      if $.assessment.currentPage.timer.hasStartedAndStopped()
+        $("##{@pageId} span.grid").removeClass('last-attempted')
+        $(eventData.target).toggleClass('last-attempted')
+      else
+        $(eventData.target).toggleClass("selected")
+
+    $("##{@pageId} span.grid.toggle-row").live selectEvent, (eventData) =>
+      toggleRow = $(eventData.currentTarget)
+      for gridItem in toggleRow.prevAll()
+        gridItem = $(gridItem)
+        break if gridItem.hasClass("toggle-row") and gridItem.css("display") != "none"
+        # We want to be able to handle mistaken rowtoggles - so keep track of what was already selected so we can revert
+        if toggleRow.hasClass("selected")
+          # Need to turn everthing on
+          gridItem.addClass("selected rowtoggled") unless gridItem.hasClass("selected")
+        else
+          # Need to turn off only non toggled
+          gridItem.removeClass("selected rowtoggled") if gridItem.hasClass("rowtoggled")
 
   propertiesForSerialization: ->
     properties = super()
@@ -657,10 +673,10 @@ class ToggleGridWithTimer extends AssessmentPage
     results = {}
 
     # Check if the first 10% are all wrong, if so auto_stop
-    items = $("##{@pageId} label")
+    items = $("##{@pageId} .grid:not(.toggle-row)")
     tenPercentOfItems = items.length/10
     firstTenPercent = items[0..tenPercentOfItems-1]
-    if _.select(firstTenPercent, (item) -> $(item).hasClass("ui-btn-active")).length == tenPercentOfItems
+    if _.select(firstTenPercent, (item) -> $(item).hasClass("selected")).length == tenPercentOfItems
       results.auto_stop = true
       # Only set do this stuff the first time
       unless @autostop
@@ -675,12 +691,12 @@ class ToggleGridWithTimer extends AssessmentPage
     results.letters = new Array()
     results.time_remain = @timer.seconds
     # Initialize to all wrong
-    results.letters[index] = false for checkbox,index in $("##{@pageId} label")
+    results.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
     results.attempted = null
-    for checkbox,index in $("##{@pageId} label")
-      checkbox = $(checkbox)
-      results.letters[index] = true unless checkbox.hasClass("ui-btn-active")
-      if checkbox.hasClass("last-attempted")
+    for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+      gridItem = $(gridItem)
+      results.letters[index] = true unless gridItem.hasClass("selected")
+      if gridItem.hasClass("last-attempted")
         results.attempted = index + 1
         if @autostop
           $("##{@pageId} .controls .message").html("First #{tenPercentOfItems} incorrect - autostop.")
@@ -694,7 +710,6 @@ class ToggleGridWithTimer extends AssessmentPage
 
   validate: ->
     results = @results()
-    console.log results.time_remain 
     if results.time_remain == 60 or results.time_remain == undefined
       return "The timer must be started"
     if @timer.running
