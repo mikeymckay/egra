@@ -12,8 +12,9 @@ class Timer
     @elementLocation = null
 
   start: ->
-    @showLetters()
+    @showGridItems()
     return if @running
+    @started = true
     @running = true
     @tick_value = 1
     decrement = =>
@@ -43,11 +44,11 @@ class Timer
     @seconds = 60
     Mustache.to_html(@_template(),this)
 
-  hideLetters: ->
-    $("##{@page.pageId} .ui-checkbox span").removeClass("show")
+  hideGridItems: ->
+    $("##{@page.pageId} .grid").removeClass("show")
 
-  showLetters: ->
-    $("##{@page.pageId} .ui-checkbox span").addClass("show")
+  showGridItems: ->
+    $("##{@page.pageId} .grid").addClass("show")
 
   _template: -> "
   <span class='timer-seconds'></span>

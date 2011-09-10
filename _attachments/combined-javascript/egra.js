@@ -3499,7 +3499,7 @@ PhonemePage.deserialize = function(pageObject) {
 ToggleGridWithTimer = (function() {
   __extends(ToggleGridWithTimer, AssessmentPage);
   function ToggleGridWithTimer(options) {
-    var checkboxName, index, letter, result, _len, _ref;
+    var index, letter, result, selectEvent, _len, _ref;
     this.letters = options.letters;
     this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 10;
     this.footerMessage = footerMessage;
@@ -3509,24 +3509,38 @@ ToggleGridWithTimer = (function() {
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
-      checkboxName = "checkbox_" + index;
       result += "<span class='grid' >" + letter + "</span>";
-      if ((index + 1) % this.numberOfColumns === 0 || index === this.letters.length - 1) {
-        result += "<br/><br/><br/>";
+      if ((index + 1) % 5 === 0) {
+        result += "<span class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'>*</span>";
       }
     }
-    this.content = "      <style>        .grid{          padding: 5px;          margin: 2px;          font-size: 200%;          border: 3px outset green;        }        .touched{          text-decoration: line-through;          background-color: yellow;        }      </style>      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <div id='debug'></div>        <form>          " + result + "        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
-    $("#" + this.pageId + " span.grid").live(('ontouchstart' in document.documentElement ? "touchstart" : "click"), function(eventData) {
-      return $(eventData.target).toggleClass("touched");
-    });
-    $("#" + this.pageId + " label").live('mousedown', __bind(function(eventData) {
+    this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
+    selectEvent = 'ontouchstart' in document.documentElement ? "touchstart" : "click";
+    $("#" + this.pageId + " span.grid").live(selectEvent, __bind(function(eventData) {
+      if (!this.timer.started) {
+        return;
+      }
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
-        $("#" + this.pageId + " label").removeClass('last-attempted');
-        return $(eventData.currentTarget).toggleClass('last-attempted');
+        $("#" + this.pageId + " span.grid").removeClass('last-attempted');
+        return $(eventData.target).toggleClass('last-attempted');
+      } else {
+        return $(eventData.target).toggleClass("selected");
       }
     }, this));
-    $("#" + this.pageId + " button.row-delete").live('mousedown', __bind(function(eventData) {
-      return $(eventData.target).parent().siblings().children("input").attr("checked", true).checkboxradio("refresh");
+    $("#" + this.pageId + " span.grid.toggle-row").live(selectEvent, __bind(function(eventData) {
+      var gridItem, toggleRow, _i, _len2, _ref2, _results;
+      toggleRow = $(eventData.currentTarget);
+      _ref2 = toggleRow.prevAll();
+      _results = [];
+      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+        gridItem = _ref2[_i];
+        gridItem = $(gridItem);
+        if (gridItem.hasClass("toggle-row") && gridItem.css("display") !== "none") {
+          break;
+        }
+        _results.push(toggleRow.hasClass("selected") ? !gridItem.hasClass("selected") ? gridItem.addClass("selected rowtoggled") : void 0 : gridItem.hasClass("rowtoggled") ? gridItem.removeClass("selected rowtoggled") : void 0);
+      }
+      return _results;
     }, this));
   }
   ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
@@ -3536,13 +3550,13 @@ ToggleGridWithTimer = (function() {
     return properties;
   };
   ToggleGridWithTimer.prototype.results = function() {
-    var checkbox, firstTenPercent, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
+    var firstTenPercent, gridItem, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
-    items = $("#" + this.pageId + " label");
+    items = $("#" + this.pageId + " .grid:not(.toggle-row)");
     tenPercentOfItems = items.length / 10;
     firstTenPercent = items.slice(0, (tenPercentOfItems - 1 + 1) || 9e9);
     if (_.select(firstTenPercent, function(item) {
-      return $(item).hasClass("ui-btn-active");
+      return $(item).hasClass("selected");
     }).length === tenPercentOfItems) {
       results.auto_stop = true;
       if (!this.autostop) {
@@ -3559,20 +3573,20 @@ ToggleGridWithTimer = (function() {
     }
     results.letters = new Array();
     results.time_remain = this.timer.seconds;
-    _ref = $("#" + this.pageId + " label");
+    _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
-      checkbox = _ref[index];
+      gridItem = _ref[index];
       results.letters[index] = false;
     }
     results.attempted = null;
-    _ref2 = $("#" + this.pageId + " label");
+    _ref2 = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-      checkbox = _ref2[index];
-      checkbox = $(checkbox);
-      if (!checkbox.hasClass("ui-btn-active")) {
+      gridItem = _ref2[index];
+      gridItem = $(gridItem);
+      if (!gridItem.hasClass("selected")) {
         results.letters[index] = true;
       }
-      if (checkbox.hasClass("last-attempted")) {
+      if (gridItem.hasClass("last-attempted")) {
         results.attempted = index + 1;
         if (this.autostop) {
           $("#" + this.pageId + " .controls .message").html("First " + tenPercentOfItems + " incorrect - autostop.");
@@ -3743,10 +3757,11 @@ Timer = (function() {
   }
   Timer.prototype.start = function() {
     var decrement;
-    this.showLetters();
+    this.showGridItems();
     if (this.running) {
       return;
     }
+    this.started = true;
     this.running = true;
     this.tick_value = 1;
     decrement = __bind(function() {
@@ -3778,11 +3793,11 @@ Timer = (function() {
     this.seconds = 60;
     return Mustache.to_html(this._template(), this);
   };
-  Timer.prototype.hideLetters = function() {
-    return $("#" + this.page.pageId + " .ui-checkbox span").removeClass("show");
+  Timer.prototype.hideGridItems = function() {
+    return $("#" + this.page.pageId + " .grid").removeClass("show");
   };
-  Timer.prototype.showLetters = function() {
-    return $("#" + this.page.pageId + " .ui-checkbox span").addClass("show");
+  Timer.prototype.showGridItems = function() {
+    return $("#" + this.page.pageId + " .grid").addClass("show");
   };
   Timer.prototype._template = function() {
     return "  <span class='timer-seconds'></span>";
@@ -4114,4 +4129,4 @@ yellow = "#F7C942";
 first_click_color = yellow;
 second_click_color = blue;
 red = "red";
-$("head").append("  <style>    .toggle-grid-with-timer .ui-checkbox span.show{      color: black;    }    .toggle-grid-with-timer .ui-checkbox-on span {      text-decoration: line-through;    }    .toggle-grid-with-timer .ui-checkbox span{      color: #F6F6F6;    }    .toggle-grid-with-timer .ui-btn-active{      background-image: none;      color:blue;    }    .toggle-grid-with-timer .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    .toggle-grid-with-timer .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    span.timer-seconds{      float:right;      margin-right:10px;      margin-top:5px;      font-size: large;    }    .controls.flash{      color: black;      background-color: " + red + ";    }    .flash {      color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }      </style>  ");
+$("head").append("  <style>    .toggle-grid-with-timer .ui-checkbox span.show{      color: black;    }    .toggle-grid-with-timer .ui-checkbox-on span {      text-decoration: line-through;    }    .toggle-grid-with-timer .ui-checkbox span{      color: #F6F6F6;    }    .toggle-grid-with-timer .ui-btn-active{      background-image: none;      color:blue;    }    .toggle-grid-with-timer .ui-checkbox .last-attempted{      outline: 5px solid " + yellow + ";      outline-offset: -10px;    }    .toggle-grid-with-timer .ui-btn-icon-notext{      margin-left: 20px;      vertical-align: middle;    }    span.timer-seconds{      float:right;      margin-right:10px;      margin-top:5px;      font-size: large;    }    .controls.flash{      color: black;      background-color: " + red + ";    }    .flash {      color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }    .grid{      text-align: center;      float: left;      width: 50px;      margin: 10px;      font-size: 300%;      border: 3px outset gray;      background-color: lightgray;      color: lightgray;      -webkit-user-select: none;      -khtml-user-select: none;      -moz-user-select: none;      -o-user-select: none;      user-select: none;    }    .grid.show{      color: black;    }    .grid.selected{      text-decoration: line-through;      color: white;      background-color: " + blue + ";    }    .grid.last-attempted{      border-right-color: red;      border-top-color: red;      border-bottom-color: red;      border-width: 5px;      border-style: solid;    }    @media screen and (orientation:portrait){       .grid-width{        width: 440px;      }    }    @media screen and (orientation:landscape) {      .grid-width{        width: 810px;      }      .toggle-row-portrait{        display: none;      }    }    .toggle-row{      background-color: " + blue + ";      width: 30px;      height: 30px;    }      </style>  ");
