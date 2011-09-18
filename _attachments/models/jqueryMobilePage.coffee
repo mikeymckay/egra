@@ -617,9 +617,9 @@ class ToggleGridWithTimer extends AssessmentPage
 
     result = ""
     for letter,index in @letters
-      result += "<span class='grid' >#{letter}</span>"
+      result += "<div class='grid'><span class='grid-text' >#{letter}</span></div>"
       if ((index+1) % 5 == 0)
-        result += "<span class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'>*</span>"
+        result += "<div class='toggle-row grid'><span class='grid-text #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'>*</span></div>"
 
 
     @content =  "
@@ -637,18 +637,31 @@ class ToggleGridWithTimer extends AssessmentPage
         <button>stop</button>
       </div>
       "
+    
+    $("##{@pageId}").live "pageshow", (eventData) =>
+      # Start with first grid, downsize each grid until it fits. Then set all to new size
+      gridWidth = $("##{@pageId} .grid:first").width()
+      fontSize = $("##{@pageId} .grid:first span").css('font-size')
+      fontSize = fontSize.substr(0,fontSize.indexOf("px")) # Strip the px
+      for letterSpan in $("##{@pageId} .grid span")
+        letterSpan = $(letterSpan)
+        letterSpan.css('font-size', "#{fontSize}px")
+        while letterSpan.width() > gridWidth
+          letterSpan.css('font-size', "#{fontSize--}px")
+      $("##{@pageId} .grid span").css('font-size', "#{fontSize}px")
 
+    # Use the right event type for touchscreens vs mouse
     selectEvent = if ('ontouchstart' of document.documentElement) then "touchstart" else "click"
 
-    $("##{@pageId} span.grid").live selectEvent, (eventData) =>
+    $("##{@pageId} .grid").live selectEvent, (eventData) =>
       return unless @timer.started
       if $.assessment.currentPage.timer.hasStartedAndStopped()
-        $("##{@pageId} span.grid").removeClass('last-attempted')
-        $(eventData.target).toggleClass('last-attempted')
+        $("##{@pageId} .grid").removeClass('last-attempted')
+        $(eventData.currentTarget).toggleClass('last-attempted')
       else
-        $(eventData.target).toggleClass("selected")
+        $(eventData.currentTarget).toggleClass("selected")
 
-    $("##{@pageId} span.grid.toggle-row").live selectEvent, (eventData) =>
+    $("##{@pageId} .grid.toggle-row").live selectEvent, (eventData) =>
       toggleRow = $(eventData.currentTarget)
       for gridItem in toggleRow.prevAll()
         gridItem = $(gridItem)
