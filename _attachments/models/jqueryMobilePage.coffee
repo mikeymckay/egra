@@ -138,6 +138,7 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         callback(jqueryMobilePage) if callback?
       catch error
         console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
+        console.trace()
         console.log result
     error: ->
       throw "Failed to load: #{urlPath}"

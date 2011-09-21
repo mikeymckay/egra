@@ -159,6 +159,7 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
         }
       } catch (error) {
         console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
+        console.trace();
         return console.log(result);
       }
     },
