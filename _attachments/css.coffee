@@ -94,6 +94,11 @@ $("head").append "
       height: 30px;
       margin-top: 22px;
     }
+
+    /* Next button size */
+    div.ui-footer .ui-btn{
+      font-size: 20px;
+    }
     
 
   </style>

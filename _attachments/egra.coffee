@@ -1,6 +1,6 @@
 $(document).bind "mobileinit", ->
   $.mobile.autoInitializePage = false
-  $.mobile.defaultPageTransition = 'none';
+  $.mobile.defaultPageTransition = 'none'
 
 $(document).ready ->
   switch document.location.search
