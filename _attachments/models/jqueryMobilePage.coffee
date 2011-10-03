@@ -410,7 +410,9 @@ class ResultsPage extends AssessmentPage
         <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
         -->
         <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname + document.location.search}'>Begin Another Assessment</a>
+        <!--
         <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
+        -->
       </div>
     "
 

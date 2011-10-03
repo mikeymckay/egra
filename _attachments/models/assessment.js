@@ -1,16 +1,17 @@
 var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
-$.couchDBDatabasePath = '/egra/';
 Assessment = (function() {
   function Assessment(name) {
     this.name = name;
     this.urlPath = "Assessment." + this.name;
+    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
   }
   Assessment.prototype.changeName = function(newName) {
     var page, _i, _len, _ref, _results;
     this.name = newName;
     this.urlPath = "Assessment." + this.name;
+    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
     this.urlPathsForPages = [];
     _ref = this.pages;
     _results = [];
@@ -85,24 +86,42 @@ Assessment = (function() {
     results.timestamp = new Date().valueOf();
     return results;
   };
-  Assessment.prototype.saveResults = function(callback) {
+  Assessment.prototype.saveResults = function(callback, stopOnError) {
     var results, url;
+    if (stopOnError == null) {
+      stopOnError = false;
+    }
     results = this.results();
-    url = $.couchDBDatabasePath;
+    url = this.targetDatabase;
     return $.ajax({
       url: url,
       async: true,
       type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(results),
-      error: function() {
-        throw "Could not PUT to " + url;
-      },
       complete: function() {
         if (callback != null) {
           return callback(results);
         }
-      }
+      },
+      error: __bind(function() {
+        var databaseName;
+        if (stopOnError) {
+          throw "Could not PUT to " + url;
+          return alert("Results NOT saved - do you have permission to save?");
+        } else {
+          databaseName = this.targetDatabase.replace(/\//g, "");
+          console.log("creating " + databaseName);
+          return $.couch.db(databaseName).create({
+            success: __bind(function() {
+              return this.saveResults(callback, true);
+            }, this),
+            error: __bind(function() {
+              throw "Could not create database " + databaseName;
+            }, this)
+          });
+        }
+      }, this)
     });
   };
   Assessment.prototype.resetURL = function() {
@@ -157,7 +176,7 @@ Assessment = (function() {
   Assessment.prototype.saveToCouchDB = function(callback) {
     this.urlScheme = "http";
     if (this.urlPath[0] !== "/") {
-      this.urlPath = $.couchDBDatabasePath + this.urlPath;
+      this.urlPath = this.targetDatabase + this.urlPath;
     }
     $.ajax({
       url: this.urlPath,
@@ -199,7 +218,7 @@ Assessment = (function() {
   };
   Assessment.prototype.deleteFromCouchDB = function() {
     var page, url, _i, _len, _ref;
-    url = $.couchDBDatabasePath + this.urlPath + ("?rev=" + this.revision);
+    url = this.targetDatabase + this.urlPath + ("?rev=" + this.revision);
     if (this.pages) {
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {

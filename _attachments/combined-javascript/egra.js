@@ -3255,16 +3255,17 @@ if (!String.prototype.ordinalize)
  var Assessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
-$.couchDBDatabasePath = '/egra/';
 Assessment = (function() {
   function Assessment(name) {
     this.name = name;
     this.urlPath = "Assessment." + this.name;
+    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
   }
   Assessment.prototype.changeName = function(newName) {
     var page, _i, _len, _ref, _results;
     this.name = newName;
     this.urlPath = "Assessment." + this.name;
+    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
     this.urlPathsForPages = [];
     _ref = this.pages;
     _results = [];
@@ -3339,24 +3340,42 @@ Assessment = (function() {
     results.timestamp = new Date().valueOf();
     return results;
   };
-  Assessment.prototype.saveResults = function(callback) {
+  Assessment.prototype.saveResults = function(callback, stopOnError) {
     var results, url;
+    if (stopOnError == null) {
+      stopOnError = false;
+    }
     results = this.results();
-    url = $.couchDBDatabasePath;
+    url = this.targetDatabase;
     return $.ajax({
       url: url,
       async: true,
       type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(results),
-      error: function() {
-        throw "Could not PUT to " + url;
-      },
       complete: function() {
         if (callback != null) {
           return callback(results);
         }
-      }
+      },
+      error: __bind(function() {
+        var databaseName;
+        if (stopOnError) {
+          throw "Could not PUT to " + url;
+          return alert("Results NOT saved - do you have permission to save?");
+        } else {
+          databaseName = this.targetDatabase.replace(/\//g, "");
+          console.log("creating " + databaseName);
+          return $.couch.db(databaseName).create({
+            success: __bind(function() {
+              return this.saveResults(callback, true);
+            }, this),
+            error: __bind(function() {
+              throw "Could not create database " + databaseName;
+            }, this)
+          });
+        }
+      }, this)
     });
   };
   Assessment.prototype.resetURL = function() {
@@ -3411,7 +3430,7 @@ Assessment = (function() {
   Assessment.prototype.saveToCouchDB = function(callback) {
     this.urlScheme = "http";
     if (this.urlPath[0] !== "/") {
-      this.urlPath = $.couchDBDatabasePath + this.urlPath;
+      this.urlPath = this.targetDatabase + this.urlPath;
     }
     $.ajax({
       url: this.urlPath,
@@ -3453,7 +3472,7 @@ Assessment = (function() {
   };
   Assessment.prototype.deleteFromCouchDB = function() {
     var page, url, _i, _len, _ref;
-    url = $.couchDBDatabasePath + this.urlPath + ("?rev=" + this.revision);
+    url = this.targetDatabase + this.urlPath + ("?rev=" + this.revision);
     if (this.pages) {
       _ref = this.pages;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -4072,7 +4091,7 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage(options) {
     ResultsPage.__super__.constructor.call(this, options);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + (document.location.pathname + document.location.search) + "'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + (document.location.pathname + document.location.search) + "'>Begin Another Assessment</a>        <!--        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>        -->      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
@@ -4653,14 +4672,14 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.print();
     case "?SyncToCentral=true":
       $('body').html("Sending data to central please wait.");
-      return $.couch.replicate("egra", "http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", {
+      return $.couch.replicate("the-gambia-egra-may-2011", "http://tangerine:tangytangerine@mikeymckay.iriscouch.com/the-gambia-egra-may-2011", {
         success: function() {
           return document.location = "index.html?message=Synchronization started";
         }
       });
     case "?SyncFromCentral=true":
       $('body').html("Updating system from central please wait.");
-      return $.couch.replicate("http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", "egra", {
+      return $.couch.replicate("http://tangerine:tangytangerine@mikeymckay.iriscouch.com/egra", "egra", {
         success: function() {
           return document.location = "index.html?message=Synchronization started";
         }
@@ -4698,11 +4717,11 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           couchDocument = _ref[_i];
-          _results.push("<a rel='external' href='/_utils/document.html?egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+          _results.push("          <a rel='external' href='/_utils/document.html?egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>          <a rel='external' href='/egra/_design/app/_show/csv/" + couchDocument.id + "'>csv</a>        ");
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load Sample Assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Letters Page Demo</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>For Testing</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Results and assessments</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Documents</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

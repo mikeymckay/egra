@@ -1,5 +1,11 @@
 `couchapp push`
 
+watch( 'shows/.*js$') {|match_data|
+  `couchapp push` unless match_data[0] =~ /\.sw.$/
+}
+watch( 'views/.*js$') {|match_data|
+  `couchapp push` unless match_data[0] =~ /\.sw.$/
+}
 watch( '.html$') {|match_data|
   `couchapp push` unless match_data[0] =~ /\.sw.$/
 }

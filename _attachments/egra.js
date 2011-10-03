@@ -18,14 +18,14 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.print();
     case "?SyncToCentral=true":
       $('body').html("Sending data to central please wait.");
-      return $.couch.replicate("egra", "http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", {
+      return $.couch.replicate("the-gambia-egra-may-2011", "http://tangerine:tangytangerine@mikeymckay.iriscouch.com/the-gambia-egra-may-2011", {
         success: function() {
           return document.location = "index.html?message=Synchronization started";
         }
       });
     case "?SyncFromCentral=true":
       $('body').html("Updating system from central please wait.");
-      return $.couch.replicate("http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", "egra", {
+      return $.couch.replicate("http://tangerine:tangytangerine@mikeymckay.iriscouch.com/egra", "egra", {
         success: function() {
           return document.location = "index.html?message=Synchronization started";
         }
@@ -63,11 +63,11 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           couchDocument = _ref[_i];
-          _results.push("<a rel='external' href='/_utils/document.html?egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>");
+          _results.push("          <a rel='external' href='/_utils/document.html?egra/" + couchDocument.id + "'>" + couchDocument.id + "</a>          <a rel='external' href='/egra/_design/app/_show/csv/" + couchDocument.id + "'>csv</a>        ");
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load Sample Assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Letters Page Demo</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>For Testing</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Results and assessments</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Documents</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

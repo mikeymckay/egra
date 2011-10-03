@@ -1,0 +1,79 @@
+<!DOCTYPE html> 
+<html> 
+	<head> 
+    <title>Tangerine</title> 
+    <script type="text/javascript" src="js-libraries/jquery-1.6.2.min.js"></script>
+    <script type="text/javascript" src="js-libraries/jquery.couch.js"></script>
+    <script type="text/javascript" src="js-libraries/underscore.js"></script>
+    <style>
+      div#data{
+        font-size: small;
+      }
+    </style>
+  </head> 
+  <body>
+    <!--
+    Database: <input name='Database' type='text' value='test'/>
+    View: <input name='View' type='text' value='egra-aggregator/fields'/>
+    -->
+    <div id='data'>
+    </div>
+    <textarea width='300px' height='300px' id='csv'>
+    </textarea>
+  </body>
+  <script type='text/javascript'>
+
+    $.urlParam = function(name){
+      var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
+      if (!results){ 
+        return 0; 
+      }
+      return results[1] || 0;
+    }
+
+    fields = {"id":1};
+    csv_rows = {};
+    csv = ""
+
+/*
+    database = $("input[name='Database']").val();
+    view = $("input[name='View']").val();
+*/
+
+    database = $.urlParam("database")
+    view = "egra-aggregator/fields"
+
+    $.couch.db(database).view(view, {
+      success: function(result){
+        // Use a hash to collect all of the fieldnames
+        // Initialize each csv_rows row
+        _.each(result.rows, function(row){
+          fields[row.key] = 1
+          csv_rows[row.value.id] = {"id":row.value.id} 
+        });
+        // Fill the csv rows object with the appropriate data
+        // Note that we can't print the row here because we need to coordinate with all other rows
+        _.each(result.rows, function(row){
+          csv_rows[row.value.id][row.value.fieldname] = row.value.result
+        });
+        uniqueFields = _.map(fields, function(placeholder,fieldname){return fieldname})
+        csv += uniqueFields.join(",") + "\r\n"
+        _.each(csv_rows, function(row){
+          _.each(uniqueFields, function(field){
+            csv += row[field] + ","
+          });
+          csv += "\r\n"
+        });
+          
+
+        $('#data').html("Data sent as CSV file (open with your spreadsheet program to view). Raw data pasted below for your convenience.");
+        $('#csv').html(csv);
+        window.open('data:text/csv;charset=utf-8,' + escape(csv));
+      }
+    });
+
+
+  </script>
+</html>
+
+
