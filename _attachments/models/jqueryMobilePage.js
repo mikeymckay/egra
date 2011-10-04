@@ -841,14 +841,14 @@ Dictation.deserialize = function(pageObject) {
 Interview = (function() {
   __extends(Interview, AssessmentPage);
   function Interview(options) {
-    this.radioButtons = options.radioButtons;
+    this.questions = options.questions;
     Interview.__super__.constructor.call(this, options);
     this.content = Interview.template(this);
   }
   Interview.prototype.propertiesForSerialization = function() {
     var properties;
     properties = Interview.__super__.propertiesForSerialization.call(this);
-    properties.push("radioButtons");
+    properties.push("questions");
     return properties;
   };
   Interview.prototype.validate = function() {
@@ -856,7 +856,7 @@ Interview = (function() {
   };
   return Interview;
 })();
-Interview.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset data-type='{{type}}' data-role='controlgroup'>      <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");
 Interview.deserialize = function(pageObject) {
   var interview;
   interview = new Interview(pageObject);

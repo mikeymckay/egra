@@ -802,14 +802,14 @@ Dictation.deserialize = (pageObject) ->
 
 class Interview extends AssessmentPage
   constructor: (options) ->
-    @radioButtons = options.radioButtons
+    @questions = options.questions
     super(options)
     @content = Interview.template(this)
     
 
   propertiesForSerialization: ->
     properties = super()
-    properties.push("radioButtons")
+    properties.push("questions")
     return properties
 
   validate: ->
@@ -817,15 +817,15 @@ class Interview extends AssessmentPage
 
 Interview.template = Handlebars.compile "
   <form>
-    {{#radioButtons}}
+    {{#questions}}
       <fieldset data-type='{{type}}' data-role='controlgroup'>
-        <legend>{{label}}</legend>
+      <legend>{{label}}</legend>
         {{#options}}
           <label for='{{.}}'>{{.}}</label>
-          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
         {{/options}}
       </fieldset>
-    {{/radioButtons}}
+    {{/questions}}
   </form>
 "
 

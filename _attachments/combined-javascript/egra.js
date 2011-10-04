@@ -4537,14 +4537,14 @@ Dictation.deserialize = function(pageObject) {
 Interview = (function() {
   __extends(Interview, AssessmentPage);
   function Interview(options) {
-    this.radioButtons = options.radioButtons;
+    this.questions = options.questions;
     Interview.__super__.constructor.call(this, options);
     this.content = Interview.template(this);
   }
   Interview.prototype.propertiesForSerialization = function() {
     var properties;
     properties = Interview.__super__.propertiesForSerialization.call(this);
-    properties.push("radioButtons");
+    properties.push("questions");
     return properties;
   };
   Interview.prototype.validate = function() {
@@ -4552,7 +4552,7 @@ Interview = (function() {
   };
   return Interview;
 })();
-Interview.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset data-type='{{type}}' data-role='controlgroup'>      <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");
 Interview.deserialize = function(pageObject) {
   var interview;
   interview = new Interview(pageObject);
@@ -4670,6 +4670,10 @@ $(document).ready(function() {
       });
     case "?printout=true":
       return EarlyGradeReadingAssessment.print();
+    case "?compact=true":
+      return $.couch.db("egra").compact({
+        success: document.location = "index.html?message=Compacting process started"
+      });
     case "?SyncToCentral=true":
       $('body').html("Sending data to central please wait.");
       return $.couch.replicate("the-gambia-egra-may-2011", "http://tangerine:tangytangerine@mikeymckay.iriscouch.com/the-gambia-egra-may-2011", {
@@ -4721,7 +4725,7 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Documents</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
+      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Documents</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {

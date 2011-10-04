@@ -12,6 +12,10 @@ $(document).ready ->
         document.location = "index.html?showMenu=true"
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
+    when "?compact=true"
+      $.couch.db("egra").compact
+        success:
+          document.location = "index.html?message=Compacting process started"
     when "?SyncToCentral=true"
       $('body').html("Sending data to central please wait.")
       $.couch.replicate("the-gambia-egra-may-2011","http://tangerine:tangytangerine@mikeymckay.iriscouch.com/the-gambia-egra-may-2011", {
@@ -68,6 +72,7 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncFromCentral=true'>Update system</a>
             <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>
             <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?compact=true'>Compact database</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
             <div data-role='collapsible' data-collapsed='true'>
               <h3>Documents</h3>
