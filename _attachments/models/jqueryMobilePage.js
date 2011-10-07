@@ -648,7 +648,7 @@ ToggleGridWithTimer = (function() {
       letter = _ref[index];
       result += "<div class='grid'><span class='grid-text' >" + letter + "</span></div>";
       if ((index + 1) % 5 === 0) {
-        result += "<div class='toggle-row grid'><span class='grid-text " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'>*</span></div>";
+        result += "<div class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></div>";
       }
     }
     this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";

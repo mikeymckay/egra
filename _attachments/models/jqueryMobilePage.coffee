@@ -624,7 +624,7 @@ class ToggleGridWithTimer extends AssessmentPage
     for letter,index in @letters
       result += "<div class='grid'><span class='grid-text' >#{letter}</span></div>"
       if ((index+1) % 5 == 0)
-        result += "<div class='toggle-row grid'><span class='grid-text #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'>*</span></div>"
+        result += "<div class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></div>"
 
 
     @content =  "
