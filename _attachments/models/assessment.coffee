@@ -1,15 +1,15 @@
 # Global assessment object
 $.assessment = null
 
-$.couchDBDatabasePath = '/egra/'
-
 class Assessment
   constructor: (@name) ->
     @urlPath = "Assessment.#{@name}"
+    @targetDatabase = "/" + @name.toLowerCase().dasherize() + "/"
 
   changeName: (newName) ->
     @name = newName
     @urlPath = "Assessment.#{@name}"
+    @targetDatabase = "/" + @name.toLowerCase().dasherize() + "/"
     @urlPathsForPages = []
     for page in @pages
       page.urlPath = @urlPath + "." + page.pageId
@@ -58,19 +58,29 @@ class Assessment
     results.timestamp = new Date().valueOf()
     return results
 
-  saveResults: (callback) ->
+  saveResults: (callback, stopOnError = false ) ->
     results = @results()
-    url = $.couchDBDatabasePath
+    url = @targetDatabase
     $.ajax
       url: url,
       async: true,
       type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(results),
-      error: ->
-        throw "Could not PUT to #{url}"
       complete: ->
         callback(results) if callback?
+      error: =>
+        if stopOnError
+          throw "Could not PUT to #{url}"
+          alert "Results NOT saved - do you have permission to save?"
+        else
+          databaseName = @targetDatabase.replace(/\//g,"")
+          console.log "creating #{databaseName}"
+          $.couch.db(databaseName).create
+            success: =>
+              @saveResults(callback, true)
+            error: =>
+              throw "Could not create database #{databaseName}"
 
   resetURL: ->
     #document.location.origin + document.location.pathname + document.location.search
@@ -110,7 +120,7 @@ class Assessment
 
   saveToCouchDB: (callback) ->
     @urlScheme = "http"
-    @urlPath = $.couchDBDatabasePath + @urlPath unless @urlPath[0] == "/"
+    @urlPath = @targetDatabase + @urlPath unless @urlPath[0] == "/"
     $.ajax
       url: @urlPath
       async: true,
@@ -137,7 +147,7 @@ class Assessment
     localStorage.removeItem(@urlPath)
 
   deleteFromCouchDB: ->
-    url = $.couchDBDatabasePath + @urlPath + "?rev=#{@revision}"
+    url = @targetDatabase + @urlPath + "?rev=#{@revision}"
     if @pages
       for page in @pages
         page.deleteFromCouchDB()

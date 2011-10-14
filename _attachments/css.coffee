@@ -11,32 +11,6 @@ red = "red"
 $("head").append "
   <style>
 
-    .toggle-grid-with-timer .ui-checkbox span.show{
-      color: black;
-    }
-
-    .toggle-grid-with-timer .ui-checkbox-on span {
-      text-decoration: line-through;
-    }
-
-    .toggle-grid-with-timer .ui-checkbox span{
-      color: #F6F6F6;
-    }
-    .toggle-grid-with-timer .ui-btn-active{
-      background-image: none;
-      color:blue;
-    }
-
-    .toggle-grid-with-timer .ui-checkbox .last-attempted{
-      outline: 5px solid #{yellow};
-      outline-offset: -10px;
-    }
-
-    .toggle-grid-with-timer .ui-btn-icon-notext{
-      margin-left: 20px;
-      vertical-align: middle;
-    }
-
     span.timer-seconds{
       float:right;
       margin-right:10px;
@@ -61,13 +35,12 @@ $("head").append "
       font-size: x-large;
     }
 
-
     .grid{
       text-align: center;
       float: left;
       width: 50px;
+      height: 50px;
       margin: 10px;
-      font-size: 300%;
       border: 3px outset gray;
       background-color: lightgray;
       color: lightgray;
@@ -78,8 +51,14 @@ $("head").append "
       user-select: none;
     }
 
+
     .grid.show{
       color: black;
+    }
+
+    .grid span{
+      font-size: 50px;
+      vertical-align: middle;
     }
 
     .grid.selected{
@@ -88,10 +67,10 @@ $("head").append "
       background-color: #{blue};
     }
     .grid.last-attempted{
+      color: red;
       border-right-color: red;
       border-top-color: red;
       border-bottom-color: red;
-      border-width: 5px;
       border-style: solid;
     }
 
@@ -102,7 +81,7 @@ $("head").append "
     }
     @media screen and (orientation:landscape) {
       .grid-width{
-        width: 810px;
+        width: 820px;
       }
       .toggle-row-portrait{
         display: none;
@@ -113,6 +92,12 @@ $("head").append "
       background-color: #{blue};
       width: 30px;
       height: 30px;
+      margin-top: 22px;
+    }
+
+    /* Next button size */
+    div.ui-footer .ui-btn{
+      font-size: 20px;
     }
     
 

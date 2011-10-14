@@ -1,13 +1,14 @@
 {
   "pageType": "Interview",
   "pageId": "PupilContextInterview",
-  "_rev": "2-ec019772ba6c7e1ed086b383b2e14336",
+  "_rev": "1746-f2165ed33993902769cc8fe0f9220b4b",
   "_id": "Assessment.The Gambia EGRA May 2011.PupilContextInterview",
-  "radioButtons": [
+  "questions": [
     {
       "label": "Language(s) in which interview was conducted with the child [Multiple Responses Permitted]",
       "name": "interview-language",
       "type": "horizontal",
+      "multiple": true,
       "options": [
         "English",
         "Wolof",
@@ -21,6 +22,7 @@
       "label": "What language does your family speak most frequently at home? [Multiple Responses Permitted]",
       "name": "home-language",
       "type": "horizontal",
+      "multiple": true,
       "options": [
         "English",
         "Wolof",
@@ -99,6 +101,7 @@
       "label": "Do you practice reading aloud to someone at home? If Yes, in what language(s) do you read? [Multiple Responses Permitted]",
       "name": "practice-reading-aloud-at-home",
       "type": "horizontal",
+      "multiple": true,
       "options": [
         "No",
         "English",
@@ -364,6 +367,7 @@
       "label": "In what language(s) does your teacher speak to your class? [Multiple Responses Permitted]",
       "name": "language-teacher-speaks-to-class",
       "type": "horizontal",
+      "multiple": true,
       "options": [
         "English",
         "Wolof",
@@ -383,8 +387,8 @@
       ]
     }
   ],
-  "urlPath": "Assessment.The Gambia EGRA May 2011.PupilContextInterview",
   "urlScheme": "http",
+  "urlPath": "Assessment.The Gambia EGRA May 2011.PupilContextInterview",
   "couchapp": {
   }
 }

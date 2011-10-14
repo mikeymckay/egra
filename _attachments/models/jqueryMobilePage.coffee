@@ -137,7 +137,8 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         jqueryMobilePage.revision = result._rev
         callback(jqueryMobilePage) if callback?
       catch error
-        console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
+        console.log "Error in JQueryMobilePage.loadFromHTTP: while loading the following object:"
+#        console.trace()
         console.log result
     error: ->
       throw "Failed to load: #{urlPath}"
@@ -408,8 +409,10 @@ class ResultsPage extends AssessmentPage
         <!--
         <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
         -->
-        <a data-inline='true' data-role='button' rel='external' href='#{$.assessment.resetURL()}'>Begin Another Assessment</a>
+        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname + document.location.search}'>Begin Another Assessment</a>
+        <!--
         <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
+        -->
       </div>
     "
 
@@ -440,6 +443,9 @@ class TextPage extends AssessmentPage
     return properties
 
 class ConsentPage extends TextPage
+  constructor: (options) ->
+    super(options)
+
     $("div##{@pageId} label[for='consent-no']").live "mousedown", (eventData) =>
       $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
       $.mobile.changePage("#_infoPage")
@@ -453,7 +459,6 @@ class ConsentPage extends TextPage
 
 
   validate: ->
-    return true
     if $("div##{@pageId} input[@name='childConsents']:checked").val()
       return true
     else
@@ -617,9 +622,9 @@ class ToggleGridWithTimer extends AssessmentPage
 
     result = ""
     for letter,index in @letters
-      result += "<span class='grid' >#{letter}</span>"
+      result += "<div class='grid'><span class='grid-text' >#{letter}</span></div>"
       if ((index+1) % 5 == 0)
-        result += "<span class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'>*</span>"
+        result += "<div class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></div>"
 
 
     @content =  "
@@ -637,18 +642,31 @@ class ToggleGridWithTimer extends AssessmentPage
         <button>stop</button>
       </div>
       "
+    
+    $("##{@pageId}").live "pageshow", (eventData) =>
+      # Start with first grid, downsize each grid until it fits. Then set all to new size
+      gridWidth = $("##{@pageId} .grid:first").width()
+      fontSize = $("##{@pageId} .grid:first span").css('font-size')
+      fontSize = fontSize.substr(0,fontSize.indexOf("px")) # Strip the px
+      for letterSpan in $("##{@pageId} .grid span")
+        letterSpan = $(letterSpan)
+        letterSpan.css('font-size', "#{fontSize}px")
+        while letterSpan.width() > gridWidth
+          letterSpan.css('font-size', "#{fontSize--}px")
+      $("##{@pageId} .grid span").css('font-size', "#{fontSize}px")
 
+    # Use the right event type for touchscreens vs mouse
     selectEvent = if ('ontouchstart' of document.documentElement) then "touchstart" else "click"
 
-    $("##{@pageId} span.grid").live selectEvent, (eventData) =>
+    $("##{@pageId} .grid").live selectEvent, (eventData) =>
       return unless @timer.started
       if $.assessment.currentPage.timer.hasStartedAndStopped()
-        $("##{@pageId} span.grid").removeClass('last-attempted')
-        $(eventData.target).toggleClass('last-attempted')
+        $("##{@pageId} .grid").removeClass('last-attempted')
+        $(eventData.currentTarget).toggleClass('last-attempted')
       else
-        $(eventData.target).toggleClass("selected")
+        $(eventData.currentTarget).toggleClass("selected")
 
-    $("##{@pageId} span.grid.toggle-row").live selectEvent, (eventData) =>
+    $("##{@pageId} .grid.toggle-row").live selectEvent, (eventData) =>
       toggleRow = $(eventData.currentTarget)
       for gridItem in toggleRow.prevAll()
         gridItem = $(gridItem)
@@ -780,18 +798,15 @@ Dictation.deserialize = (pageObject) ->
   dictationPage.load(pageObject)
   return dictationPage
 
-
-
 class Interview extends AssessmentPage
   constructor: (options) ->
-    @radioButtons = options.radioButtons
+    @questions = options.questions
     super(options)
     @content = Interview.template(this)
-    
 
   propertiesForSerialization: ->
     properties = super()
-    properties.push("radioButtons")
+    properties.push("questions")
     return properties
 
   validate: ->
@@ -799,15 +814,15 @@ class Interview extends AssessmentPage
 
 Interview.template = Handlebars.compile "
   <form>
-    {{#radioButtons}}
+    {{#questions}}
       <fieldset data-type='{{type}}' data-role='controlgroup'>
-        <legend>{{label}}</legend>
+      <legend>{{label}}</legend>
         {{#options}}
           <label for='{{.}}'>{{.}}</label>
-          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
         {{/options}}
       </fieldset>
-    {{/radioButtons}}
+    {{/questions}}
   </form>
 "
 

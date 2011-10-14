@@ -158,7 +158,7 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
           return callback(jqueryMobilePage);
         }
       } catch (error) {
-        console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
+        console.log("Error in JQueryMobilePage.loadFromHTTP: while loading the following object:");
         return console.log(result);
       }
     },
@@ -394,7 +394,7 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage(options) {
     ResultsPage.__super__.constructor.call(this, options);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + ($.assessment.resetURL()) + "'>Begin Another Assessment</a>        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>      </div>    ");
+    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + (document.location.pathname + document.location.search) + "'>Begin Another Assessment</a>        <!--        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>        -->      </div>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
@@ -432,33 +432,30 @@ TextPage = (function() {
 })();
 ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
-  function ConsentPage() {
-    ConsentPage.__super__.constructor.apply(this, arguments);
-  }
-  $("div#" + ConsentPage.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
-    $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
-    $.mobile.changePage("#_infoPage");
-    return $.assessment.saveResults(__bind(function(results) {
-      return setTimeout((function() {
-        $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
+  function ConsentPage(options) {
+    ConsentPage.__super__.constructor.call(this, options);
+    $("div#" + this.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
+      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
+      $.mobile.changePage("#_infoPage");
+      return $.assessment.saveResults(__bind(function(results) {
         return setTimeout((function() {
-          return $.assessment.reset();
-        }), 1000);
-      }), 2000);
+          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
+          return setTimeout((function() {
+            return $.assessment.reset();
+          }), 1000);
+        }), 2000);
+      }, this));
     }, this));
-  }, ConsentPage));
-  return ConsentPage;
-}).call(this);
-({
-  validate: function() {
-    return true;
+  }
+  ConsentPage.prototype.validate = function() {
     if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
       return true;
     } else {
       return "You must answer the consent question";
     }
-  }
-});
+  };
+  return ConsentPage;
+})();
 UntimedSubtest = (function() {
   __extends(UntimedSubtest, AssessmentPage);
   function UntimedSubtest(options) {
@@ -648,25 +645,41 @@ ToggleGridWithTimer = (function() {
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
-      result += "<span class='grid' >" + letter + "</span>";
+      result += "<div class='grid'><span class='grid-text' >" + letter + "</span></div>";
       if ((index + 1) % 5 === 0) {
-        result += "<span class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'>*</span>";
+        result += "<div class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></div>";
       }
     }
     this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
+    $("#" + this.pageId).live("pageshow", __bind(function(eventData) {
+      var fontSize, gridWidth, letterSpan, _i, _len2, _ref2;
+      gridWidth = $("#" + this.pageId + " .grid:first").width();
+      fontSize = $("#" + this.pageId + " .grid:first span").css('font-size');
+      fontSize = fontSize.substr(0, fontSize.indexOf("px"));
+      _ref2 = $("#" + this.pageId + " .grid span");
+      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+        letterSpan = _ref2[_i];
+        letterSpan = $(letterSpan);
+        letterSpan.css('font-size', "" + fontSize + "px");
+        while (letterSpan.width() > gridWidth) {
+          letterSpan.css('font-size', "" + (fontSize--) + "px");
+        }
+      }
+      return $("#" + this.pageId + " .grid span").css('font-size', "" + fontSize + "px");
+    }, this));
     selectEvent = 'ontouchstart' in document.documentElement ? "touchstart" : "click";
-    $("#" + this.pageId + " span.grid").live(selectEvent, __bind(function(eventData) {
+    $("#" + this.pageId + " .grid").live(selectEvent, __bind(function(eventData) {
       if (!this.timer.started) {
         return;
       }
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
-        $("#" + this.pageId + " span.grid").removeClass('last-attempted');
-        return $(eventData.target).toggleClass('last-attempted');
+        $("#" + this.pageId + " .grid").removeClass('last-attempted');
+        return $(eventData.currentTarget).toggleClass('last-attempted');
       } else {
-        return $(eventData.target).toggleClass("selected");
+        return $(eventData.currentTarget).toggleClass("selected");
       }
     }, this));
-    $("#" + this.pageId + " span.grid.toggle-row").live(selectEvent, __bind(function(eventData) {
+    $("#" + this.pageId + " .grid.toggle-row").live(selectEvent, __bind(function(eventData) {
       var gridItem, toggleRow, _i, _len2, _ref2, _results;
       toggleRow = $(eventData.currentTarget);
       _ref2 = toggleRow.prevAll();
@@ -827,14 +840,14 @@ Dictation.deserialize = function(pageObject) {
 Interview = (function() {
   __extends(Interview, AssessmentPage);
   function Interview(options) {
-    this.radioButtons = options.radioButtons;
+    this.questions = options.questions;
     Interview.__super__.constructor.call(this, options);
     this.content = Interview.template(this);
   }
   Interview.prototype.propertiesForSerialization = function() {
     var properties;
     properties = Interview.__super__.propertiesForSerialization.call(this);
-    properties.push("radioButtons");
+    properties.push("questions");
     return properties;
   };
   Interview.prototype.validate = function() {
@@ -842,7 +855,7 @@ Interview = (function() {
   };
   return Interview;
 })();
-Interview.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
+Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset data-type='{{type}}' data-role='controlgroup'>      <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");
 Interview.deserialize = function(pageObject) {
   var interview;
   interview = new Interview(pageObject);

@@ -1,5 +1,6 @@
 $(document).bind "mobileinit", ->
   $.mobile.autoInitializePage = false
+  $.mobile.defaultPageTransition = 'none'
 
 $(document).ready ->
   switch document.location.search
@@ -11,15 +12,19 @@ $(document).ready ->
         document.location = "index.html?showMenu=true"
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
+    when "?compact=true"
+      $.couch.db("egra").compact
+        success:
+          document.location = "index.html?message=Compacting process started"
     when "?SyncToCentral=true"
       $('body').html("Sending data to central please wait.")
-      $.couch.replicate("egra","http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", {
+      $.couch.replicate("the-gambia-egra-may-2011","http://tangerine:tangytangerine@mikeymckay.iriscouch.com/the-gambia-egra-may-2011", {
         success: ->
           document.location = "index.html?message=Synchronization started"
       })
     when "?SyncFromCentral=true"
       $('body').html("Updating system from central please wait.")
-      $.couch.replicate("http://mikeymckay:con7qzw.@mikeymckay.iriscouch.com/egra", "egra", {
+      $.couch.replicate("http://tangerine:tangytangerine@mikeymckay.iriscouch.com/egra", "egra", {
         success: ->
           document.location = "index.html?message=Synchronization started"
       })
@@ -42,7 +47,11 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
     type: 'GET',
     dataType: 'json',
     success: (result) =>
-      documents = ("<a rel='external' href='/_utils/document.html?egra/#{couchDocument.id}'>#{couchDocument.id}</a>" for couchDocument in result.rows)
+      documents = for couchDocument in result.rows
+        "
+          <a rel='external' href='/_utils/document.html?egra/#{couchDocument.id}'>#{couchDocument.id}</a>
+          <a rel='external' href='/egra/_design/app/_show/csv/#{couchDocument.id}'>csv</a>
+        "
       $("body").html("
         <div data-role='page' id='menu'>
           <div data-role='header'>
@@ -53,18 +62,20 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>
             -->
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load Sample Assessment</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Letters Page Demo</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>Demo single subtest</a>
             <!--
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>
             -->
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncToCentral=true'>Send results to TangerineCentral.com</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncToCentral=true'>Send local results to TangerineCentral.com</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?SyncFromCentral=true'>Update system</a>
+            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>
+            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>
+            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?compact=true'>Compact database</a>
             <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
-            <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.Test'>For Testing</a>
             <div data-role='collapsible' data-collapsed='true'>
-              <h3>Results and assessments</h3>
+              <h3>Documents</h3>
               #{documents.join("<br/>")}
             </div>
           </div><!-- /content -->
