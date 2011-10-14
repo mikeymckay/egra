@@ -3996,7 +3996,7 @@ SchoolPage = (function() {
   function SchoolPage(options) {
     SchoolPage.__super__.constructor.call(this, options);
     this.schools = options.schools;
-    $("div#" + this.pageId + " li").live("mousedown", __bind(function(eventData) {
+    $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
       _ref = ["name", "province", "district", "schoolId"];
@@ -4130,7 +4130,7 @@ ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
   function ConsentPage(options) {
     ConsentPage.__super__.constructor.call(this, options);
-    $("div#" + this.pageId + " label[for='consent-no']").live("mousedown", __bind(function(eventData) {
+    $("div#" + this.pageId + " label[for='consent-no']").live("click", __bind(function(eventData) {
       $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
       $.mobile.changePage("#_infoPage");
       return $.assessment.saveResults(__bind(function(results) {
@@ -4593,7 +4593,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 if ($.assessment === void 0) {
   throw "No assessment loaded";
 }
-$("div.timer button").live('mousedown', function(eventData) {
+$("div.timer button").live('click', function(eventData) {
   var buttonPressed;
   buttonPressed = eventData.target.innerHTML;
   return $.assessment.currentPage.timer[buttonPressed]();

@@ -1,7 +1,7 @@
 throw "No assessment loaded" if $.assessment is undefined
 
 # Live handler for buttons in timer control
-$("div.timer button").live 'mousedown', (eventData) ->
+$("div.timer button").live 'click', (eventData) ->
   buttonPressed = eventData.target.innerHTML
 # Call the timer method that has the same name as the button just pressed, i.e. "start" 
   $.assessment.currentPage.timer[buttonPressed]()

@@ -3,7 +3,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 if ($.assessment === void 0) {
   throw "No assessment loaded";
 }
-$("div.timer button").live('mousedown', function(eventData) {
+$("div.timer button").live('click', function(eventData) {
   var buttonPressed;
   buttonPressed = eventData.target.innerHTML;
   return $.assessment.currentPage.timer[buttonPressed]();

@@ -283,7 +283,7 @@ class SchoolPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @schools = options.schools
-    $("div##{@pageId} li").live "mousedown", (eventData) =>
+    $("div##{@pageId} li").live "click", (eventData) =>
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
@@ -446,7 +446,7 @@ class ConsentPage extends TextPage
   constructor: (options) ->
     super(options)
 
-    $("div##{@pageId} label[for='consent-no']").live "mousedown", (eventData) =>
+    $("div##{@pageId} label[for='consent-no']").live "click", (eventData) =>
       $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
       $.mobile.changePage("#_infoPage")
       $.assessment.saveResults (results) =>
