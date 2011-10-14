@@ -158,8 +158,7 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
           return callback(jqueryMobilePage);
         }
       } catch (error) {
-        console.log("Error in JQueryMobilePage.loadFromHTTP: " + error);
-        console.trace();
+        console.log("Error in JQueryMobilePage.loadFromHTTP: while loading the following object:");
         return console.log(result);
       }
     },

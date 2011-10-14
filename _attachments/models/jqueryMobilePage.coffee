@@ -137,8 +137,8 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         jqueryMobilePage.revision = result._rev
         callback(jqueryMobilePage) if callback?
       catch error
-        console.log "Error in JQueryMobilePage.loadFromHTTP: " + error
-        console.trace()
+        console.log "Error in JQueryMobilePage.loadFromHTTP: while loading the following object:"
+#        console.trace()
         console.log result
     error: ->
       throw "Failed to load: #{urlPath}"
@@ -798,14 +798,11 @@ Dictation.deserialize = (pageObject) ->
   dictationPage.load(pageObject)
   return dictationPage
 
-
-
 class Interview extends AssessmentPage
   constructor: (options) ->
     @questions = options.questions
     super(options)
     @content = Interview.template(this)
-    
 
   propertiesForSerialization: ->
     properties = super()
