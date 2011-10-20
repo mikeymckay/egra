@@ -23,6 +23,7 @@ When /^(?:|I )go to (.+)$/ do |page_name|
   visit path_to(page_name)
 end
 
+
 When /^(?:|I )touch "([^\"]*)"(?: within "([^\"]*)")?$/ do |text, selector|
   selector ||= ".ui-page-active"
   page.execute_script("$('#{selector}').find(':contains(\"#{text}\")').click()")
@@ -96,6 +97,7 @@ Then /^(?:|I )should see "([^\"]*)"(?: within "([^\"]*)")?$/ do |text, selector|
   while (timer < timer_max) do
     selector ||= ".ui-page-active"
 #    puts page.body
+#    puts ("$('#{selector}:contains(#{text})').length > 0")
     found_text = page.evaluate_script("$('#{selector}:contains(#{text})').length > 0")
     break if found_text
     sleep(0.5)

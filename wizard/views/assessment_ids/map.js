@@ -1,5 +1,5 @@
 function(doc) {
-  if(doc.type == "assessment" ){
+  if(doc.urlPathsForPages){
     emit( doc.updated, doc.name );
   }
 }
