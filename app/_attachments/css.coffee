@@ -40,7 +40,7 @@ $("head").append "
       float: left;
       width: 50px;
       height: 50px;
-      margin: 10px;
+      margin: 3px;
       border: 3px outset gray;
       background-color: lightgray;
       color: lightgray;
@@ -76,12 +76,12 @@ $("head").append "
 
     @media screen and (orientation:portrait){ 
       .grid-width{
-        width: 440px;
+        width: 360px;
       }
     }
     @media screen and (orientation:landscape) {
       .grid-width{
-        width: 820px;
+        width: 670px;
       }
       .toggle-row-portrait{
         display: none;

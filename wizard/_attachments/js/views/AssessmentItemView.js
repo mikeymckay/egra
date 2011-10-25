@@ -23,6 +23,7 @@ var AssessmentItemView = Backbone.View.extend({
     },
     
     switchActiveAssessment: function() {
+      console.log("swith")
     	window.assessment.set({ _id: this.model.get("_id"), urlPathsForPages: undefined }, {silent: true} );
     	window.assessment.fetch({
     		success:function(model){

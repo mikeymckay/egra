@@ -1,10 +1,4 @@
-<!doctype html>
-<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
-<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
-<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<html>
 <head>
   <meta charset="utf-8">
 
@@ -49,7 +43,7 @@
 			<a href="#assessment-form" data-role="button" data-icon="plus" id="new-egra-button">Create new assessment</a>
 			
 
-			<h2>Edit existing assessments</h2>
+			<h2>Existing assessments</h2>
 			<ul data-role="listview" data-inset="true" id="assessment-list">
 			</ul>
 		</div> 
@@ -62,7 +56,7 @@
 	<div data-role="page" id="assessment-form"> 
 		<div data-role="header">
 			<a href="index.html" data-icon="arrow-l" data-direction="reverse">Home</a>
-			<h1>Add/Edit Assessment</h1>
+			<h1>Add/Edit Assessment</h1><a onClick='document.location = "/egra/_design/app/index.html?" + window.assessment.get("_id")' href=''>Preview</a>
 		</div> 
 		<div data-role="content">
 			<div id="assessment-edit-form"></div>

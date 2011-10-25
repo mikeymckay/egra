@@ -38,26 +38,3 @@ $(function(){
 	window.assessments.fetchAll();
 
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -8,15 +8,20 @@ var AssessmentFormView = Backbone.View.extend({
   
   events : {
   	"click #save-assessment-meta-button" : "save",
+  	"click #preview" : "preview",
   },
   
+  preview : function(){
+    console.log("wooT");
+  },
+
   save : function() {
   	//validate the form
   	var nameField = this.$("input#name")
-	var errorBar = this.$(".error-bar");
+    var errorBar = this.$(".error-bar");
 
   	nameField.parent().removeClass("error");
-	errorBar.hide();
+    errorBar.hide();
 
   	var name = this.$("input#name").val();
   	var language = this.$("#language").val();
