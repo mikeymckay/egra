@@ -32,6 +32,8 @@ $(document).ready ->
     when "?loadFromTestDataSaveToCouch=true"
       EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch ->
         document.location = "index.html?showMenu=true"
+    when "?studentPrintout=true"
+      EarlyGradeReadingAssessment.studentPrintout()
     when "?printout=true"
       EarlyGradeReadingAssessment.print()
     when "?compact=true"
@@ -91,6 +93,7 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
         <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?compact=true'>Compact database</a>
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?printout=true'>Generate printout</a>
+        <a data-ajax='false' data-role='button' href='#{document.location.pathname}?studentPrintout=true'>Student printout</a>
         <div data-role='collapsible' data-collapsed='true'>
           <h3>Documents</h3>
           #{documents.join("<br/>")}
@@ -99,6 +102,45 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
       $.mobile.initializePage()
     error: ->
       throw "Could not GET #{url}"
+
+EarlyGradeReadingAssessment.studentPrintout = ->
+  Assessment.loadFromHTTP "/egra/Assessment.The Gambia EGRA May 2011", (assessment) ->
+    assessment.toPaper (result) ->
+      style = "
+        <style>
+          body{
+            font-family: Arial;
+            font-size: 200%;
+          }
+          .page-break{
+            display: none;
+          }
+          input{
+            height: 50px;  
+            border: 1px;
+          }
+          .subtest.ToggleGridWithTimer{
+            page-break-after: always;
+            display:block;
+            padding: 15px;
+          }
+          .subtest, button, h1{
+            display:none;
+          }
+          .grid{
+            display: inline;
+            margin: 5px;
+          }
+        </style>
+      "
+      $("style").remove()
+      $("body").html(result + style)
+      $("span:contains(*)").parent().remove()
+      # Remove the jquery mobile stylesheet
+      $("link").remove()
+
+      $('.grid').each (index) ->
+        $(this).nextAll().andSelf().slice(0,10).wrapAll('<div class="grid-row"></div>') if( index % 10 == 0 )
 
 EarlyGradeReadingAssessment.print = ->
   Assessment.loadFromHTTP "/egra/Assessment.The Gambia EGRA May 2011", (assessment) ->

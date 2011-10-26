@@ -21,6 +21,8 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
         return document.location = "index.html?showMenu=true";
       });
+    case "?studentPrintout=true":
+      return EarlyGradeReadingAssessment.studentPrintout();
     case "?printout=true":
       return EarlyGradeReadingAssessment.print();
     case "?compact=true":
@@ -78,12 +80,29 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         }
         return _results;
       })();
-      $("div[data-role='content']").html("        " + message + "        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>        <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>        <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>        <div data-role='collapsible' data-collapsed='true'>          <h3>Documents</h3>          " + (documents.join("<br/>")) + "        </div>      ");
+      $("div[data-role='content']").html("        " + message + "        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>        <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>        <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?studentPrintout=true'>Student printout</a>        <div data-role='collapsible' data-collapsed='true'>          <h3>Documents</h3>          " + (documents.join("<br/>")) + "        </div>      ");
       return $.mobile.initializePage();
     }, this),
     error: function() {
       throw "Could not GET " + url;
     }
+  });
+};
+EarlyGradeReadingAssessment.studentPrintout = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.The Gambia EGRA May 2011", function(assessment) {
+    return assessment.toPaper(function(result) {
+      var style;
+      style = "        <style>          body{            font-family: Arial;            font-size: 200%;          }          .page-break{            display: none;          }          input{            height: 50px;              border: 1px;          }          .subtest.ToggleGridWithTimer{            page-break-after: always;            display:block;            padding: 15px;          }          .subtest, button, h1{            display:none;          }          .grid{            display: inline;            margin: 5px;          }        </style>      ";
+      $("style").remove();
+      $("body").html(result + style);
+      $("span:contains(*)").parent().remove();
+      $("link").remove();
+      return $('.grid').each(function(index) {
+        if (index % 10 === 0) {
+          return $(this).nextAll().andSelf().slice(0, 10).wrapAll('<div class="grid-row"></div>');
+        }
+      });
+    });
   });
 };
 EarlyGradeReadingAssessment.print = function() {

@@ -316,7 +316,7 @@ Assessment = (function() {
         _results = [];
         for (i = 0, _len = _ref.length; i < _len; i++) {
           page = _ref[i];
-          _results.push(("<h1>" + (page.name()) + "</h1>") + page.toPaper());
+          _results.push(("<div class='subtest " + page.pageType + "'><h1>" + (page.name()) + "</h1>") + page.toPaper() + "</div>");
         }
         return _results;
       }).call(this);

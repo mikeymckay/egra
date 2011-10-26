@@ -216,7 +216,7 @@ class Assessment
   toPaper: (callback) ->
     @onReady =>
       result = for page,i in @pages
-        "<h1>#{page.name()}</h1>" + page.toPaper()
+        "<div class='subtest #{page.pageType}'><h1>#{page.name()}</h1>" + page.toPaper() + "</div>"
       result = result.join("<div class='page-break'><hr/></div>")
       callback(result) if callback?
       return result
