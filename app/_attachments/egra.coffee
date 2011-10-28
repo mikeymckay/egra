@@ -1,7 +1,3 @@
-$(document).bind "mobileinit", ->
-  $.mobile.autoInitializePage = false
-  $.mobile.defaultPageTransition = 'none'
-
 $(document).ready ->
 
   $("body").html "
@@ -167,13 +163,23 @@ EarlyGradeReadingAssessment.loadFromCouch = (path) ->
   #Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
-      $.mobile.initializePage()
+
+      $("div[data-role='page']").hide()
+      assessment.currentPage = assessment.pages[0]
+      $("##{assessment.currentPage.pageId}").show()
+
+      _.each $('button:contains(Next)'), (button) ->
+        new MBP.fastButton button, ->
+          assessment.nextPage()
+
+      _.each $('button:contains(Back)'), (button) ->
+        new MBP.fastButton button, ->
+          assessment.backPage()
 
 EarlyGradeReadingAssessment.loadTest = ->
   Assessment.loadFromHTTP "/egra/Assessment.Test", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
-      $.mobile.initializePage()
 
 EarlyGradeReadingAssessment.deleteFromCouch = (callback) ->
   url = "/egra/_all_docs"

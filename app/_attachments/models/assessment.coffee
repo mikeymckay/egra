@@ -244,6 +244,25 @@ class Assessment
         $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         document.location = document.location.href
 
+  nextPage: ->
+    validationResult = @currentPage.validate()
+    unless validationResult is true
+      validationMessageElement = $("##{@currentPage.pageId} div.validation-message")
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000)
+      return
+    $("##{@currentPage.pageId}").hide()
+    @currentPage = _.find @pages, (page) =>
+      page.pageId == @currentPage.nextPage
+    $("##{@currentPage.pageId}").show()
+    window.scrollTo(0,0)
+
+  backPage: ->
+    $("##{@currentPage.pageId}").hide()
+    @currentPage = _.find @pages, (page) =>
+      page.pageId == @currentPage.previousPage
+    $("##{@currentPage.pageId}").show()
+    window.scrollTo(0,0)
+
 
 Assessment.load = (url, callback) ->
   try

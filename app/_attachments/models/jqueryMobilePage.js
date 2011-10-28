@@ -1,4 +1,4 @@
-var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage, hideListUntilSearchInterval;
+var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -102,7 +102,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->";
   };
   JQueryMobilePage.prototype.toPaper = function() {
     return this.content;
@@ -224,8 +224,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
     return;
   }
   passedValidation = $.assessment.currentPage.validate() === true;
-  $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
-  return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
+  return $("div#" + $.assessment.currentPage.pageId + " button:contains(Next)").toggleClass("passedValidation", passedValidation);
 };
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800);
 $('div.ui-footer button').live('click', function(event, ui) {
@@ -300,6 +299,19 @@ SchoolPage = (function() {
   function SchoolPage(options) {
     SchoolPage.__super__.constructor.call(this, options);
     this.schools = options.schools;
+    $("div#" + this.pageId + " form#" + this.pageId + "-form input").live("propertychange keyup input paste", __bind(function(event) {
+      var currentName, school, _i, _len, _ref, _results;
+      currentName = $(event.target).val();
+      _ref = $("div#" + this.pageId + " li");
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        school = _ref[_i];
+        school = $(school);
+        school.hide();
+        _results.push(school.html().match(new RegExp(currentName, "i")) ? school.show() : void 0);
+      }
+      return _results;
+    }, this));
     $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
       var dataAttribute, selectedElement, _i, _len, _ref, _results;
       selectedElement = $(eventData.currentTarget);
@@ -332,13 +344,13 @@ SchoolPage = (function() {
       dataAttribute = properties[_i];
       listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
     }
-    listElement = "<li " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
+    listElement = "<li style='display:none' " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
     inputElements = "";
     for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
       dataAttribute = properties[_j];
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <form id='" + this.pageId + "-form'>      " + inputElements + "    </form>    <ul>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>  ";
   };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -360,33 +372,23 @@ SchoolPage.deserialize = function(pageObject) {
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
-SchoolPage.hideListUntilSearch = function() {
-  if ($("#School input[data-type='search']").val() !== "") {
-    $("#School ul").show();
-    return clearInterval(hideListUntilSearchInterval);
-  }
-};
-hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch, 500);
 DateTimePage = (function() {
   __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
   DateTimePage.prototype.load = function(data) {
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
-    DateTimePage.__super__.load.call(this, data);
-    return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var dateTime, minutes;
-      dateTime = new Date();
-      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
-      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
-      $("div#" + this.pageId + " #day").val(dateTime.getDate());
-      minutes = dateTime.getMinutes();
-      if (minutes < 10) {
-        minutes = "0" + minutes;
-      }
-      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
-    }, this));
+    var dateTime, day, minutes, month, time, year;
+    dateTime = new Date();
+    year = dateTime.getFullYear();
+    month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()];
+    day = dateTime.getDate();
+    minutes = dateTime.getMinutes();
+    if (minutes < 10) {
+      minutes = "0" + minutes;
+    }
+    time = dateTime.getHours() + ":" + minutes;
+    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
   };
   return DateTimePage;
 })();
@@ -434,22 +436,16 @@ ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
   function ConsentPage(options) {
     ConsentPage.__super__.constructor.call(this, options);
-    $("div#" + this.pageId + " label[for='consent-no']").live("click", __bind(function(eventData) {
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
-      $.mobile.changePage("#_infoPage");
-      return $.assessment.saveResults(__bind(function(results) {
-        return setTimeout((function() {
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
-          return setTimeout((function() {
-            return $.assessment.reset();
-          }), 1000);
-        }), 2000);
-      }, this));
-    }, this));
+    $('#save-reset').live("click", function() {
+      $.assessment.saveResults();
+      return $.assessment.reset();
+    });
   }
   ConsentPage.prototype.validate = function() {
-    if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
+    if ($("div#" + this.pageId + " input#consent-yes:checked").length > 0) {
       return true;
+    } else if ($("div#" + this.pageId + " input#consent-no:checked").length > 0) {
+      return "Click to confirm that the child has not consented <button id='save-reset'>Confirm</button>";
     } else {
       return "You must answer the consent question";
     }

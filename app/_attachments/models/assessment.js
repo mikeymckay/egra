@@ -356,6 +356,29 @@ Assessment = (function() {
       }
     }
   };
+  Assessment.prototype.nextPage = function() {
+    var validationMessageElement, validationResult;
+    validationResult = this.currentPage.validate();
+    if (validationResult !== true) {
+      validationMessageElement = $("#" + this.currentPage.pageId + " div.validation-message");
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+      return;
+    }
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.nextPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    return window.scrollTo(0, 0);
+  };
+  Assessment.prototype.backPage = function() {
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.previousPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    return window.scrollTo(0, 0);
+  };
   return Assessment;
 })();
 Assessment.load = function(url, callback) {

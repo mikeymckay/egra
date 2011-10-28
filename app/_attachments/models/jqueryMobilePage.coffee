@@ -79,7 +79,7 @@ class JQueryMobilePage
   _template: -> "
 <div data-role='page' id='{{{pageId}}'>
   <div data-role='header'>
-    <a href='\#{{previousPage}}'>Back</a>
+    <button href='\#{{previousPage}}'>Back</button>
     <h1>{{name}}</h1>
   </div><!-- /header -->
   <div data-role='content'>	
@@ -89,6 +89,7 @@ class JQueryMobilePage
   <div data-role='footer'>
     {{footerMessage}}
     <button href='\#{{nextPage}}'>Next</button>
+    <div class='validation-message'></div>
   </div><!-- /footer -->
 </div><!-- /page -->
 "
@@ -193,8 +194,7 @@ class AssessmentPage extends JQueryMobilePage
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
   passedValidation = ($.assessment.currentPage.validate() is true)
-  $('div.ui-footer button').toggleClass("passedValidation", passedValidation)
-  $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b",passedValidation).toggleClass("ui-btn-up-c", !passedValidation)
+  $("div##{$.assessment.currentPage.pageId} button:contains(Next)").toggleClass("passedValidation", passedValidation)
 
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800)
 
@@ -283,11 +283,18 @@ class SchoolPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @schools = options.schools
+
+    $("div##{@pageId} form##{@pageId}-form input").live "propertychange keyup input paste", (event) =>
+      currentName = $(event.target).val()
+      for school in $("div##{@pageId} li")
+        school = $(school)
+        school.hide()
+        school.show() if school.html().match(new RegExp(currentName, "i"))
+
     $("div##{@pageId} li").live "click", (eventData) =>
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
-
 
   propertiesForSerialization: ->
     properties = super()
@@ -296,14 +303,13 @@ class SchoolPage extends AssessmentPage
     properties.push(property+"Text") for property in ["name","province","district","schoolId"]
     return properties
 
-  #TODO remove onClick, switch to live
   _schoolTemplate: ->
     properties = ["name","province","district","schoolId"]
 
     listAttributes = ""
     for dataAttribute in properties
       listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
-    listElement = "<li #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
+    listElement = "<li style='display:none' #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
 
     inputElements = ""
     for dataAttribute in properties
@@ -320,16 +326,16 @@ class SchoolPage extends AssessmentPage
         {{selectSchoolText}}
       </h4>
     </div>
-    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>
+    <form id='#{@pageId}-form'>
+      #{inputElements}
+    </form>
+    <ul>
       {{#schools}}
         #{listElement}
       {{/schools}}
     </ul>
     <br/>
     <br/>
-    <form>
-      #{inputElements}
-    </form>
   "
 
 
@@ -346,49 +352,38 @@ SchoolPage.deserialize = (pageObject) ->
   return schoolPage
 
 
-# HACK!
-SchoolPage.hideListUntilSearch = ->
-  if $("#School input[data-type='search']").val() != ""
-    $("#School ul").show()
-    clearInterval(hideListUntilSearchInterval)
-
-hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch,500)
-
-
 #TODO Internationalize
 class DateTimePage extends AssessmentPage
 
   load: (data) ->
+    dateTime = new Date()
+    year = dateTime.getFullYear()
+    month = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dateTime.getMonth()]
+    day = dateTime.getDate()
+    minutes = dateTime.getMinutes()
+    minutes = "0" + minutes if minutes < 10
+    time = dateTime.getHours() + ":" + minutes
     @content = "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='year'>Year:</label>
-    <input type='number' name='year' id='year' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='month'>Month:</label>
-    <input type='text' name='month' id='month' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='day'>Day:</label>
-    <input type='number' name='day' id='day' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='time'>Time:</label>
-    <input type='text' name='time' id='time' />
-  </div>
-</form>
-"
-    super(data)
-    $("div##{@pageId}").live "pageshow", =>
-      dateTime = new Date()
-      $("div##{@pageId} #year").val(dateTime.getFullYear())
-      $("div##{@pageId} #month").val(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dateTime.getMonth()])
-      $("div##{@pageId} #day").val(dateTime.getDate())
-      minutes = dateTime.getMinutes()
-      minutes = "0" + minutes if minutes < 10
-      $("div##{@pageId} #time").val(dateTime.getHours() + ":" + minutes)
-      
+      <form>
+        <div data-role='fieldcontain'>
+          <label for='year'>Year:</label>
+          <input type='number' name='year' id='year' value='#{year}' />
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='month'>Month:</label>
+          <input type='text' name='month' id='month' value='#{month}'/>
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='day'>Day:</label>
+          <input type='number' name='day' id='day' value='#{day}' />
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='time'>Time:</label>
+          <input type='text' name='time' id='time' value='#{time}' />
+        </div>
+      </form>
+      "
+
 
 class ResultsPage extends AssessmentPage
   constructor: (options) ->
@@ -445,24 +440,19 @@ class TextPage extends AssessmentPage
 class ConsentPage extends TextPage
   constructor: (options) ->
     super(options)
-
-    $("div##{@pageId} label[for='consent-no']").live "click", (eventData) =>
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
-      $.mobile.changePage("#_infoPage")
-      $.assessment.saveResults (results) =>
-        setTimeout ( ->
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.")
-          setTimeout ( ->
-            $.assessment.reset()
-          ), 1000
-        ), 2000
-
+    $('#save-reset').live "click", ->
+      $.assessment.saveResults()
+      $.assessment.reset()
+      
 
   validate: ->
-    if $("div##{@pageId} input[@name='childConsents']:checked").val()
+    if $("div##{@pageId} input#consent-yes:checked").length > 0
       return true
+    else if $("div##{@pageId} input#consent-no:checked").length > 0
+      return "Click to confirm that the child has not consented <button id='save-reset'>Confirm</button>"
     else
       return "You must answer the consent question"
+
 
 
 class UntimedSubtest extends AssessmentPage

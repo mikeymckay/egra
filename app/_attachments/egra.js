@@ -1,9 +1,5 @@
 var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-$(document).bind("mobileinit", function() {
-  $.mobile.autoInitializePage = false;
-  return $.mobile.defaultPageTransition = 'none';
-});
 $(document).ready(function() {
   $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
   switch ($.deparam.querystring().role) {
@@ -119,15 +115,26 @@ EarlyGradeReadingAssessment.loadFromCouch = function(path) {
   return Assessment.loadFromHTTP("/egra/" + path, function(assessment) {
     return assessment.render(function(result) {
       $("body").html(result);
-      return $.mobile.initializePage();
+      $("div[data-role='page']").hide();
+      assessment.currentPage = assessment.pages[0];
+      $("#" + assessment.currentPage.pageId).show();
+      _.each($('button:contains(Next)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.nextPage();
+        });
+      });
+      return _.each($('button:contains(Back)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.backPage();
+        });
+      });
     });
   });
 };
 EarlyGradeReadingAssessment.loadTest = function() {
   return Assessment.loadFromHTTP("/egra/Assessment.Test", function(assessment) {
     return assessment.render(function(result) {
-      $("body").html(result);
-      return $.mobile.initializePage();
+      return $("body").html(result);
     });
   });
 };

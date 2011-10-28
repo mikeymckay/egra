@@ -11,6 +11,14 @@ red = "red"
 $("head").append "
   <style>
 
+    body{
+      font-size: 150%;
+    }
+
+    label{
+      display: block;
+    }
+
     span.timer-seconds{
       float:right;
       margin-right:10px;
