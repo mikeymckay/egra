@@ -1,4 +1,4 @@
-footerMessage = "Good effort, let's go onto the next page"
+-footerMessage = "Good effort, let's go onto the next page"
 
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
@@ -102,8 +102,6 @@ JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
     when "SchoolPage"
       return SchoolPage.deserialize(pageObject)
-    when "StudentInformationPage"
-      return StudentInformationPage.deserialize(pageObject)
     when "UntimedSubtest"
       return UntimedSubtest.deserialize(pageObject)
     when "UntimedSubtestLinked"
@@ -245,19 +243,25 @@ class JQueryLogin extends AssessmentPage
     
 
 class StudentInformationPage extends AssessmentPage
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("radioButtons")
-    return properties
+  constructor: (options) ->
+    super(options)
+    @radioButtons = options.radioButtons
+    # Create some id friendly attributes
+    for radioButton in @radioButtons
+      radioButton.name = radioButton.label.toLowerCase().dasherize()
+      radioButton.options = for option in radioButton.options
+        {
+          id : radioButton.name + "-"+ option.toLowerCase().dasherize()
+          label: option
+        }
+    @content = StudentInformationPage.template(this)
 
   validate: ->
-    
-    if $("#StudentInformation input:'radio':checked").length == 7
-      return true
-    else
-      #console.log $("#StudentInformation input[type='radio']").not(":checked")
-      # return which element is not selected
-      return "All elements are required"
+    names = ($(inputElement).html().toLowerCase().dasherize() for inputElement in $("div##{@pageId} form legend"))
+    for name in names
+      unless $("input[name=#{name}]").is(":checked")
+        return $("input[name=#{name}]").first().parent().find("legend").html() + " is not complete"
+    return true
 
 StudentInformationPage.template = Handlebars.compile "
   <form>
@@ -265,19 +269,13 @@ StudentInformationPage.template = Handlebars.compile "
       <fieldset data-type='{{type}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
         {{#options}}
-          <label for='{{.}}'>{{.}}</label>
-          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+          <label for='{{id}}'>{{label}}</label>
+          <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>
         {{/options}}
       </fieldset>
     {{/radioButtons}}
   </form>
 "
-
-StudentInformationPage.deserialize = (pageObject) ->
-  studentInformationPage = new StudentInformationPage()
-  studentInformationPage.load(pageObject)
-  studentInformationPage.content = StudentInformationPage.template(studentInformationPage)
-  return studentInformationPage
 
 class SchoolPage extends AssessmentPage
   constructor: (options) ->
@@ -292,6 +290,7 @@ class SchoolPage extends AssessmentPage
         school.show() if school.html().match(new RegExp(currentName, "i"))
 
     $("div##{@pageId} li").live "click", (eventData) =>
+      $(school).hide() for school in $("div##{@pageId} li")
       selectedElement = $(eventData.currentTarget)
       for dataAttribute in ["name","province","district","schoolId"]
         $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
@@ -340,7 +339,7 @@ class SchoolPage extends AssessmentPage
 
 
   validate: ->
-    for inputElement in $("div##{@pageId} form div.ui-field-contain input")
+    for inputElement in $("div##{@pageId} form input")
       if $(inputElement).val() == ""
         return "'#{$("label[for="+inputElement.id+"]").html()}' is empty"
     return true
@@ -547,8 +546,10 @@ class PhonemePage extends AssessmentPage
       wordName = @subtestId + "-number-sound-" + (index+1)
       "
       <div data-role='fieldcontain'>
-          <legend>#{item["word"]} - #{item["number-of-sounds"]}</legend>
           <fieldset data-role='controlgroup' data-type='horizontal'>
+            <legend>#{item["word"]}</legend>
+            <fieldset data-role='controlgroup' data-type='horizontal'>
+              <legend>Number of phonemes: #{item["number-of-sounds"]}</legend>
       " +
       (for answer in ["Correct", "Incorrect"]
         "
@@ -557,20 +558,21 @@ class PhonemePage extends AssessmentPage
         "
       ).join("") +
       "
-          </fieldset>
-          <fieldset data-role='controlgroup' data-type='horizontal'>
+        </fieldset>
+        <fieldset data-role='controlgroup' data-type='horizontal'>
+          <legend>Phonemes identified</legend>
       " +
       (for phoneme in item["phonemes"]
         phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
         "
-          <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
-          <label for='#{phonemeName}'>#{phoneme}</label>
+            <label for='#{phonemeName}'>#{phoneme}</label>
+            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
         "
       ).join("") +
       "
+            </fieldset>
           </fieldset>
       </div>
-      <hr/>
       "
     ).join("") + "</form>"
 
@@ -604,18 +606,17 @@ PhonemePage.deserialize = (pageObject) ->
 class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
-    #@pageId = options.pageId
     @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
     @addTimer()
 
-    result = ""
+    result = "<table><tr>"
     for letter,index in @letters
-      result += "<div class='grid'><span class='grid-text' >#{letter}</span></div>"
-      if ((index+1) % 5 == 0)
-        result += "<div class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></div>"
-
+      result += "<td class='grid'><span class='grid-text' >#{letter}</span></td>"
+      if ((index+1) % 10 == 0)
+        result += "<td class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></td></tr><tr>"
+    result += "</tr></table>"
 
     @content =  "
       <div class='timer'>
@@ -669,12 +670,6 @@ class ToggleGridWithTimer extends AssessmentPage
           # Need to turn off only non toggled
           gridItem.removeClass("selected rowtoggled") if gridItem.hasClass("rowtoggled")
 
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("letters")
-    return properties
-
-
   results: ->
     results = {}
 
@@ -693,9 +688,9 @@ class ToggleGridWithTimer extends AssessmentPage
     else
       @autostop = false
 
-    return false unless @timer.hasStartedAndStopped()
-    results.letters = new Array()
     results.time_remain = @timer.seconds
+    return results unless @timer.hasStartedAndStopped() #optimization
+    results.letters = new Array()
     # Initialize to all wrong
     results.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
     results.attempted = null
@@ -716,6 +711,7 @@ class ToggleGridWithTimer extends AssessmentPage
 
   validate: ->
     results = @results()
+    console.log results
     if results.time_remain == 60 or results.time_remain == undefined
       return "The timer must be started"
     if @timer.running

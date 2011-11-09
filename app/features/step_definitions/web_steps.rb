@@ -15,6 +15,8 @@ module WithinHelpers
 end
 World(WithinHelpers)
 
+active_page = "div[data-role=page]:visible"
+
 Given /^(?:|I )am on (.+)$/ do |url|
   visit (url)
 end
@@ -25,7 +27,7 @@ end
 
 
 When /^(?:|I )touch "([^\"]*)"(?: within "([^\"]*)")?$/ do |text, selector|
-  selector ||= ".ui-page-active"
+  selector ||= active_page
   page.execute_script("$('#{selector}').find(':contains(\"#{text}\")').click()")
 end
 
@@ -95,7 +97,7 @@ Then /^(?:|I )should see "([^\"]*)"(?: within "([^\"]*)")?$/ do |text, selector|
   timer = 0
   timer_max = 10
   while (timer < timer_max) do
-    selector ||= ".ui-page-active"
+    selector ||= active_page
 #    puts page.body
 #    puts ("$('#{selector}:contains(#{text})').length > 0")
     found_text = page.evaluate_script("$('#{selector}:contains(#{text})').length > 0")
@@ -111,7 +113,7 @@ Then /^(?:|I )should not see "([^\"]*)"(?: within "([^\"]*)")?$/ do |text, selec
   timer = 0
   timer_max = 10
   while (timer < timer_max) do
-    selector ||= ".ui-page-active"
+    selector ||= active_page
 #    puts page.body
     found_text = page.evaluate_script("$('#{selector}:contains(#{text})').length > 0")
     break unless found_text

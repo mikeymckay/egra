@@ -18,7 +18,6 @@ $(document).ready ->
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?role=enumerator'>My completed assessments</a>
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Start assessment</a>
       "
-      $.mobile.initializePage()
       return
 
   switch document.location.search
@@ -95,7 +94,6 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
           #{documents.join("<br/>")}
         </div>
       "
-      $.mobile.initializePage()
     error: ->
       throw "Could not GET #{url}"
 
@@ -167,6 +165,7 @@ EarlyGradeReadingAssessment.loadFromCouch = (path) ->
       $("div[data-role='page']").hide()
       assessment.currentPage = assessment.pages[0]
       $("##{assessment.currentPage.pageId}").show()
+      $("##{assessment.currentPage.pageId}").trigger("pageshow")
 
       _.each $('button:contains(Next)'), (button) ->
         new MBP.fastButton button, ->

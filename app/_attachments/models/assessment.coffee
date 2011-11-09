@@ -191,15 +191,15 @@ class Assessment
       result = for page,i in @pages
         page.render()
       result = result.join("")
-      result += "
-        <div data-role='dialog' id='_infoPage'>
-          <div data-role='header'>	
-            <h1>Information</h1>
-          </div>
-          <div data-role='content'>	
-          </div><!-- /content -->
-        </div>
-      "
+#      result += "
+#        <div data-role='dialog' id='_infoPage'>
+#          <div data-role='header'>	
+#            <h1>Information</h1>
+#          </div>
+#          <div data-role='content'>	
+#          </div><!-- /content -->
+#        </div>
+#      "
       callback(result) if callback?
       return result
 
@@ -255,6 +255,7 @@ class Assessment
       page.pageId == @currentPage.nextPage
     $("##{@currentPage.pageId}").show()
     window.scrollTo(0,0)
+    $("##{@currentPage.pageId}").trigger("pageshow")
 
   backPage: ->
     $("##{@currentPage.pageId}").hide()
@@ -262,6 +263,7 @@ class Assessment
       page.pageId == @currentPage.previousPage
     $("##{@currentPage.pageId}").show()
     window.scrollTo(0,0)
+    $("##{@currentPage.pageId}").trigger("pageshow")
 
 
 Assessment.load = (url, callback) ->
@@ -303,7 +305,6 @@ Assessment.loadFromHTTP = (url, callback) ->
     type: 'GET',
     dataType: 'json',
     success: (result) ->
-      try
         assessment = new Assessment(result.name)
         pages = []
         for urlPath in result.urlPathsForPages
@@ -313,8 +314,6 @@ Assessment.loadFromHTTP = (url, callback) ->
             pages.push result
         assessment.setPages(pages)
         callback(assessment) if callback?
-      catch error
-        console.log "Error in Assessment.loadFromHTTP:" + error
 
     error: ->
       throw "Failed to load: #{url}"

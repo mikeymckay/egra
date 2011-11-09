@@ -290,7 +290,6 @@ Assessment = (function() {
         return _results;
       }).call(this);
       result = result.join("");
-      result += "        <div data-role='dialog' id='_infoPage'>          <div data-role='header'>	            <h1>Information</h1>          </div>          <div data-role='content'>	          </div><!-- /content -->        </div>      ";
       if (callback != null) {
         callback(result);
       }
@@ -369,7 +368,8 @@ Assessment = (function() {
       return page.pageId === this.currentPage.nextPage;
     }, this));
     $("#" + this.currentPage.pageId).show();
-    return window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
   };
   Assessment.prototype.backPage = function() {
     $("#" + this.currentPage.pageId).hide();
@@ -377,7 +377,8 @@ Assessment = (function() {
       return page.pageId === this.currentPage.previousPage;
     }, this));
     $("#" + this.currentPage.pageId).show();
-    return window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
   };
   return Assessment;
 })();
@@ -435,27 +436,23 @@ Assessment.loadFromHTTP = function(url, callback) {
     dataType: 'json',
     success: function(result) {
       var pages, urlPath, _i, _len, _ref;
-      try {
-        assessment = new Assessment(result.name);
-        pages = [];
-        _ref = result.urlPathsForPages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          urlPath = _ref[_i];
-          url = baseUrl + urlPath;
-          JQueryMobilePage.loadFromHTTP({
-            url: url,
-            async: false
-          }, __bind(function(result) {
-            result.assessment = assessment;
-            return pages.push(result);
-          }, this));
-        }
-        assessment.setPages(pages);
-        if (callback != null) {
-          return callback(assessment);
-        }
-      } catch (error) {
-        return console.log("Error in Assessment.loadFromHTTP:" + error);
+      assessment = new Assessment(result.name);
+      pages = [];
+      _ref = result.urlPathsForPages;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        urlPath = _ref[_i];
+        url = baseUrl + urlPath;
+        JQueryMobilePage.loadFromHTTP({
+          url: url,
+          async: false
+        }, __bind(function(result) {
+          result.assessment = assessment;
+          return pages.push(result);
+        }, this));
+      }
+      assessment.setPages(pages);
+      if (callback != null) {
+        return callback(assessment);
       }
     },
     error: function() {
