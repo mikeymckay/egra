@@ -711,7 +711,6 @@ class ToggleGridWithTimer extends AssessmentPage
 
   validate: ->
     results = @results()
-    console.log results
     if results.time_remain == 60 or results.time_remain == undefined
       return "The timer must be started"
     if @timer.running

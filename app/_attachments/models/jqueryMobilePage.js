@@ -770,7 +770,6 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
-    console.log(results);
     if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }

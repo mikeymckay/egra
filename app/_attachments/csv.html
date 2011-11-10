@@ -41,7 +41,7 @@
 */
 
     database = $.urlParam("database")
-    view = "egra-aggregator/fields"
+    view = "aggregate/fields"
 
     $.couch.db(database).view(view, {
       success: function(result){

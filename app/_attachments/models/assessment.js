@@ -114,6 +114,15 @@ Assessment = (function() {
           console.log("creating " + databaseName);
           return $.couch.db(databaseName).create({
             success: __bind(function() {
+              $.couch.db(databaseName).saveDoc({
+                "_id": "_design/aggregate",
+                "language": "javascript",
+                "views": {
+                  "fields": {
+                    "map": '(function(doc, req) {\n  var concatNodes, fields;\n  fields = [];\n  concatNodes = function(parent, o) {\n    var index, key, value, _len, _results, _results2;\n    if (o instanceof Array) {\n      _results = [];\n      for (index = 0, _len = o.length; index < _len; index++) {\n        value = o[index];\n        _results.push(typeof o !== "string" ? concatNodes(parent + "." + index, value) : void 0);\n      }\n      return _results;\n    } else {\n      if (typeof o === "string") {\n        return fields.push("" + parent + ",\\"" + o + "\\"\\n");\n      } else {\n        _results2 = [];\n        for (key in o) {\n          value = o[key];\n          _results2.push(concatNodes(parent + "." + key, value));\n        }\n        return _results2;\n      }\n    }\n  };\n  concatNodes("", doc);\n  return emit(null, fields);\n});'
+                  }
+                }
+              });
               return this.saveResults(callback, true);
             }, this),
             error: __bind(function() {

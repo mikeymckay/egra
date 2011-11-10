@@ -1,7 +1,10 @@
 var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $(document).ready(function() {
-  $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
+  $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>        <div id='version'></div>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
+  $.get('version', function(result) {
+    return $("#version").html(result);
+  });
   switch ($.deparam.querystring().role) {
     case "enumerator":
       $("div[data-role='content']").html("        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?role=enumerator'>My completed assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Start assessment</a>      ");
