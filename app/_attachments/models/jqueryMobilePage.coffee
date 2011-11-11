@@ -1,4 +1,4 @@
--footerMessage = "Good effort, let's go onto the next page"
+footerMessage = "Good effort, let's go onto the next page"
 
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
@@ -7,7 +7,7 @@ class JQueryMobilePage
     @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
-    Mustache.to_html(@_template(),this)
+    JQueryMobilePage.template(this)
 
   #url: ->
   #  return "#{@urlScheme}://#{@urlPath}"
@@ -76,23 +76,6 @@ class JQueryMobilePage
       error: ->
         throw "Error deleting #{url}"
 
-  _template: -> "
-<div data-role='page' id='{{{pageId}}'>
-  <div data-role='header'>
-    <button href='\#{{previousPage}}'>Back</button>
-    <h1>{{name}}</h1>
-  </div><!-- /header -->
-  <div data-role='content'>	
-    {{{controls}}}
-    {{{content}}}
-  </div><!-- /content -->
-  <div data-role='footer'>
-    {{footerMessage}}
-    <button href='\#{{nextPage}}'>Next</button>
-    <div class='validation-message'></div>
-  </div><!-- /footer -->
-</div><!-- /page -->
-"
   toPaper: ->
     @content
 
@@ -100,8 +83,6 @@ class JQueryMobilePage
 # Should not need these separate deserialize just use the last generic one and the constructor
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
-    when "SchoolPage"
-      return SchoolPage.deserialize(pageObject)
     when "UntimedSubtest"
       return UntimedSubtest.deserialize(pageObject)
     when "UntimedSubtestLinked"
@@ -146,6 +127,24 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
 
 JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
   return JQueryMobilePage.loadFromHTTP({url:$.couchDBDatabasePath+urlPath}, callback)
+
+JQueryMobilePage.template = Handlebars.compile "
+<div data-role='page' id='{{{pageId}}'>
+  <div data-role='header'>
+    <button href='\#{{previousPage}}'>Back</button>
+    <h1>{{name}}</h1>
+  </div><!-- /header -->
+  <div data-role='content'>	
+    {{{controls}}}
+    {{{content}}}
+  </div><!-- /content -->
+  <div data-role='footer'>
+    {{footerMessage}}
+    <button href='\#{{nextPage}}'>Next</button>
+    <div class='validation-message'></div>
+  </div><!-- /footer -->
+</div><!-- /page -->
+"
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->
@@ -281,6 +280,51 @@ class SchoolPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @schools = options.schools
+    @selectNameText = options.selectNameText
+
+    properties = ["name","province","district","schoolId"]
+  
+    # Load from the object
+    for property in properties
+      this[property + "Text"] = options[property + "Text"]
+
+    listAttributes = ""
+    for dataAttribute in properties
+      listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
+
+    listElement = "<li style='display:none' #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
+
+    inputElements = ""
+    for dataAttribute in properties
+      inputElements += "
+      <div data-role='fieldcontain'>
+        <label for='#{dataAttribute}'>{{#{dataAttribute}Text}}</label>
+        <input type='text' name='#{dataAttribute}' id='#{dataAttribute}'></input>
+      </div>
+      "
+    template = "
+      <div>
+        <h4>
+          {{selectSchoolText}}
+        </h4>
+      </div>
+      <form id='{{pageId}}-form'>
+        #{inputElements}
+      </form>
+      <ul>
+        {{#schools}}
+          #{listElement}
+        {{/schools}}
+      </ul>
+      <br/>
+      <br/>
+    "
+    console.log template
+    console.log this
+    @schoolTemplate = Handlebars.compile template
+
+    @content = @schoolTemplate(this)
+    console.log @content
 
     $("div##{@pageId} form##{@pageId}-form input").live "propertychange keyup input paste", (event) =>
       currentName = $(event.target).val()
@@ -302,40 +346,6 @@ class SchoolPage extends AssessmentPage
     properties.push(property+"Text") for property in ["name","province","district","schoolId"]
     return properties
 
-  _schoolTemplate: ->
-    properties = ["name","province","district","schoolId"]
-
-    listAttributes = ""
-    for dataAttribute in properties
-      listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
-    listElement = "<li style='display:none' #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
-
-    inputElements = ""
-    for dataAttribute in properties
-      inputElements += "
-      <div data-role='fieldcontain'>
-        <label for='#{dataAttribute}'>{{#{dataAttribute}Text}}</label>
-        <input type='text' name='#{dataAttribute}' id='#{dataAttribute}'></input>
-      </div>
-      "
-  
-    return "
-    <div>
-      <h4>
-        {{selectSchoolText}}
-      </h4>
-    </div>
-    <form id='#{@pageId}-form'>
-      #{inputElements}
-    </form>
-    <ul>
-      {{#schools}}
-        #{listElement}
-      {{/schools}}
-    </ul>
-    <br/>
-    <br/>
-  "
 
 
   validate: ->
@@ -347,9 +357,8 @@ class SchoolPage extends AssessmentPage
 SchoolPage.deserialize = (pageObject) ->
   schoolPage = new SchoolPage(pageObject)
   schoolPage.load(pageObject)
-  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(),schoolPage)
+  schoolPage.content = schoolPage.template(schoolPage._schoolTemplate(),schoolPage)
   return schoolPage
-
 
 #TODO Internationalize
 class DateTimePage extends AssessmentPage

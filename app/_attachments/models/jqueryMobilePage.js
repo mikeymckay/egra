@@ -7,14 +7,14 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
--(footerMessage = "Good effort, let's go onto the next page");
+footerMessage = "Good effort, let's go onto the next page";
 JQueryMobilePage = (function() {
   function JQueryMobilePage(options) {
     this.pageId = (options != null ? options.pageId : void 0) || "";
     this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
-    return Mustache.to_html(this._template(), this);
+    return JQueryMobilePage.template(this);
   };
   JQueryMobilePage.prototype.propertiesForSerialization = function() {
     return ["pageId", "pageType", "urlPath", "urlScheme"];
@@ -101,9 +101,6 @@ JQueryMobilePage = (function() {
       }
     });
   };
-  JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->";
-  };
   JQueryMobilePage.prototype.toPaper = function() {
     return this.content;
   };
@@ -112,8 +109,6 @@ JQueryMobilePage = (function() {
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "SchoolPage":
-      return SchoolPage.deserialize(pageObject);
     case "UntimedSubtest":
       return UntimedSubtest.deserialize(pageObject);
     case "UntimedSubtestLinked":
@@ -171,6 +166,7 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
     url: $.couchDBDatabasePath + urlPath
   }, callback);
 };
+JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->");
 AssessmentPage = (function() {
   __extends(AssessmentPage, JQueryMobilePage);
   function AssessmentPage() {
@@ -316,15 +312,39 @@ StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButton
 SchoolPage = (function() {
   __extends(SchoolPage, AssessmentPage);
   function SchoolPage(options) {
+    var dataAttribute, inputElements, listAttributes, listElement, properties, property, template, _i, _j, _k, _len, _len2, _len3;
     SchoolPage.__super__.constructor.call(this, options);
     this.schools = options.schools;
+    this.selectNameText = options.selectNameText;
+    properties = ["name", "province", "district", "schoolId"];
+    for (_i = 0, _len = properties.length; _i < _len; _i++) {
+      property = properties[_i];
+      this[property + "Text"] = options[property + "Text"];
+    }
+    listAttributes = "";
+    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
+      dataAttribute = properties[_j];
+      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
+    }
+    listElement = "<li style='display:none' " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
+    inputElements = "";
+    for (_k = 0, _len3 = properties.length; _k < _len3; _k++) {
+      dataAttribute = properties[_k];
+      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
+    }
+    template = "      <div>        <h4>          {{selectSchoolText}}        </h4>      </div>      <form id='{{pageId}}-form'>        " + inputElements + "      </form>      <ul>        {{#schools}}          " + listElement + "        {{/schools}}      </ul>      <br/>      <br/>    ";
+    console.log(template);
+    console.log(this);
+    this.schoolTemplate = Handlebars.compile(template);
+    this.content = this.schoolTemplate(this);
+    console.log(this.content);
     $("div#" + this.pageId + " form#" + this.pageId + "-form input").live("propertychange keyup input paste", __bind(function(event) {
-      var currentName, school, _i, _len, _ref, _results;
+      var currentName, school, _l, _len4, _ref, _results;
       currentName = $(event.target).val();
       _ref = $("div#" + this.pageId + " li");
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        school = _ref[_i];
+      for (_l = 0, _len4 = _ref.length; _l < _len4; _l++) {
+        school = _ref[_l];
         school = $(school);
         school.hide();
         _results.push(school.html().match(new RegExp(currentName, "i")) ? school.show() : void 0);
@@ -332,17 +352,17 @@ SchoolPage = (function() {
       return _results;
     }, this));
     $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
-      var dataAttribute, school, selectedElement, _i, _j, _len, _len2, _ref, _ref2, _results;
+      var dataAttribute, school, selectedElement, _l, _len4, _len5, _m, _ref, _ref2, _results;
       _ref = $("div#" + this.pageId + " li");
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        school = _ref[_i];
+      for (_l = 0, _len4 = _ref.length; _l < _len4; _l++) {
+        school = _ref[_l];
         $(school).hide();
       }
       selectedElement = $(eventData.currentTarget);
       _ref2 = ["name", "province", "district", "schoolId"];
       _results = [];
-      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-        dataAttribute = _ref2[_j];
+      for (_m = 0, _len5 = _ref2.length; _m < _len5; _m++) {
+        dataAttribute = _ref2[_m];
         _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
       }
       return _results;
@@ -359,22 +379,6 @@ SchoolPage = (function() {
       properties.push(property + "Text");
     }
     return properties;
-  };
-  SchoolPage.prototype._schoolTemplate = function() {
-    var dataAttribute, inputElements, listAttributes, listElement, properties, _i, _j, _len, _len2;
-    properties = ["name", "province", "district", "schoolId"];
-    listAttributes = "";
-    for (_i = 0, _len = properties.length; _i < _len; _i++) {
-      dataAttribute = properties[_i];
-      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
-    }
-    listElement = "<li style='display:none' " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
-    inputElements = "";
-    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
-      dataAttribute = properties[_j];
-      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
-    }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <form id='" + this.pageId + "-form'>      " + inputElements + "    </form>    <ul>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>  ";
   };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
@@ -393,7 +397,7 @@ SchoolPage.deserialize = function(pageObject) {
   var schoolPage;
   schoolPage = new SchoolPage(pageObject);
   schoolPage.load(pageObject);
-  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
+  schoolPage.content = schoolPage.template(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
 DateTimePage = (function() {
