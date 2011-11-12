@@ -152,7 +152,8 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
         }
       } catch (error) {
         console.log("Error in JQueryMobilePage.loadFromHTTP: while loading the following object:");
-        return console.log(result);
+        console.log(result);
+        return console.trace();
       }
     },
     error: function() {
@@ -333,11 +334,8 @@ SchoolPage = (function() {
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
     template = "      <div>        <h4>          {{selectSchoolText}}        </h4>      </div>      <form id='{{pageId}}-form'>        " + inputElements + "      </form>      <ul>        {{#schools}}          " + listElement + "        {{/schools}}      </ul>      <br/>      <br/>    ";
-    console.log(template);
-    console.log(this);
     this.schoolTemplate = Handlebars.compile(template);
     this.content = this.schoolTemplate(this);
-    console.log(this.content);
     $("div#" + this.pageId + " form#" + this.pageId + "-form input").live("propertychange keyup input paste", __bind(function(event) {
       var currentName, school, _l, _len4, _ref, _results;
       currentName = $(event.target).val();
@@ -434,7 +432,7 @@ ResultsPage = (function() {
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
-      if (validationResult === true) {
+      if (validationResult == null) {
         $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
         return $.assessment.saveResults(__bind(function(results) {
           $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");

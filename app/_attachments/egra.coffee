@@ -1,18 +1,5 @@
 $(document).ready ->
 
-  $("body").html "
-    <div data-role='page' id='menu'>
-      <div data-role='header'>
-        <h1>Tangerine</h1>
-        <div id='version'></div>
-      </div><!-- /header -->
-      <div data-role='content'>	
-      </div><!-- /content -->
-      <div data-role='footer'>
-      </div><!-- /footer -->
-    </div><!-- /page -->
-  "
-
   # Loads from the version file
   $.get 'version', (result) ->
     $("#version").html(result)

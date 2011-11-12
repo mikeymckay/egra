@@ -1,7 +1,6 @@
 var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $(document).ready(function() {
-  $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>        <div id='version'></div>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
   $.get('version', function(result) {
     return $("#version").html(result);
   });

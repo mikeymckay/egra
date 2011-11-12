@@ -118,8 +118,8 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         callback(jqueryMobilePage) if callback?
       catch error
         console.log "Error in JQueryMobilePage.loadFromHTTP: while loading the following object:"
-#        console.trace()
         console.log result
+        console.trace()
     error: ->
       throw "Failed to load: #{urlPath}"
   $.ajax options
@@ -319,12 +319,9 @@ class SchoolPage extends AssessmentPage
       <br/>
       <br/>
     "
-    console.log template
-    console.log this
     @schoolTemplate = Handlebars.compile template
 
     @content = @schoolTemplate(this)
-    console.log @content
 
     $("div##{@pageId} form##{@pageId}-form input").live "propertychange keyup input paste", (event) =>
       currentName = $(event.target).val()
@@ -431,7 +428,7 @@ class ResultsPage extends AssessmentPage
       $("div##{@pageId} div[data-role='header'] a").hide()
       $("div##{@pageId} div[data-role='footer'] div").hide()
       validationResult = $.assessment.validate()
-      if validationResult == true
+      unless validationResult?
         $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Validated")
         $.assessment.saveResults (results) =>
           $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")

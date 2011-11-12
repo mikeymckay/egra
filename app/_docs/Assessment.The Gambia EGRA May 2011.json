@@ -30,6 +30,7 @@
     "Assessment.The Gambia EGRA May 2011.PupilContextInterview",
     "Assessment.The Gambia EGRA May 2011.Results"
   ],
+  "collection" : "assessment",
   "couchapp": {
   }
 }

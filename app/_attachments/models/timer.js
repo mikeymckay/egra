@@ -49,16 +49,13 @@ Timer = (function() {
   Timer.prototype.render = function() {
     this.id = "timer";
     this.seconds = 60;
-    return Mustache.to_html(this._template(), this);
+    return "<span class='timer-seconds'></span>";
   };
   Timer.prototype.hideGridItems = function() {
     return $("#" + this.page.pageId + " .grid").removeClass("show");
   };
   Timer.prototype.showGridItems = function() {
     return $("#" + this.page.pageId + " .grid").addClass("show");
-  };
-  Timer.prototype._template = function() {
-    return "  <span class='timer-seconds'></span>";
   };
   return Timer;
 })();

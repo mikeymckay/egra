@@ -1,19 +1,19 @@
 # Global assessment object
 $.assessment = null
 
-class Assessment
-  constructor: (@name) ->
-    @urlPath = "Assessment.#{@name}"
-    @targetDatabase = "/" + @name.toLowerCase().dasherize() + "/"
+class Assessment extends Backbone.Model
+
+  url: '/assessment'
 
   changeName: (newName) ->
     @name = newName
     @urlPath = "Assessment.#{@name}"
     @targetDatabase = "/" + @name.toLowerCase().dasherize() + "/"
     @urlPathsForPages = []
-    for page in @pages
-      page.urlPath = @urlPath + "." + page.pageId
-      @urlPathsForPages.push(page.urlPath)
+    if @pages?
+      for page in @pages
+        page.urlPath = @urlPath + "." + page.pageId
+        @urlPathsForPages.push(page.urlPath)
 
   setPages: (pages) ->
     @pages = pages
@@ -128,14 +128,13 @@ class Assessment
 
   validate: ->
     validationErrors = ""
-    for page in @pages
-      pageResult = page.validate()
-      validationErrors += "'#{page.name()}' page invalid: #{pageResult} <br/>" unless pageResult is true
+    if @pages?
+      for page in @pages
+        pageResult = page.validate()
+        validationErrors += "'#{page.name()}' page invalid: #{pageResult} <br/>" unless pageResult is true
 
     unless validationErrors is ""
       return validationErrors
-    else
-      return true
 
   toJSON: ->
     JSON.stringify
@@ -302,55 +301,18 @@ class Assessment
     $("##{@currentPage.pageId}").trigger("pageshow")
 
 
-Assessment.load = (url, callback) ->
-  try
-    urlScheme = url.substring(0,url.indexOf("://"))
-    urlPath = url.substring(url.indexOf("://")+3)
-  catch error
-    throw "Invalid url: #{url}"
-
-  switch urlScheme
-    when "localstorage"
-      assessment = Assessment.loadFromLocalStorage(urlPath)
+Assessment.load = (id, callback) ->
+  assessment = new Assessment {_id:id}
+  assessment.fetch
+    success: ->
+      assessment.changeName(assessment.get("name"))
+      pages = []
+      for urlPath in assessment.get("urlPathsForPages")
+        url = "/#{Tangerine.config.db_name}/#{urlPath}"
+        JQueryMobilePage.loadFromHTTP {url: url, async: false}, (page) =>
+          page.assessment = assessment
+          pages.push page
+      assessment.setPages(pages)
       callback(assessment) if callback?
-    when "http"
-      Assessment.loadFromHTTP urlPath, (result) ->
-        callback(result) if callback?
-    else
-      throw "URL type not yet implemented: #{urlScheme}"
-
-  return assessment
-
-
-Assessment.loadFromLocalStorage = (urlPath) ->
-  assessmentObject = JSON.parse(localStorage[urlPath])
-  throw "Could not load localStorage['#{urlPath}'], #{error}" unless assessmentObject?
-  assessment = new Assessment(assessmentObject.name)
-  assessment.urlScheme = "localstorage"
-  pages = []
-  for urlPath in assessmentObject.urlPathsForPages
-    pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath))
-  assessment.setPages(pages)
-  return assessment
-
-Assessment.loadFromHTTP = (url, callback) ->
-  assessment = null
-  baseUrl = url.substring(0,url.lastIndexOf("/")+1)
-  $.ajax
-    url: url,
-    type: 'GET',
-    dataType: 'json',
-    success: (result) ->
-        assessment = new Assessment(result.name)
-        pages = []
-        for urlPath in result.urlPathsForPages
-          url = baseUrl + urlPath
-          JQueryMobilePage.loadFromHTTP {url: url, async: false}, (result) =>
-            result.assessment = assessment
-            pages.push result
-        assessment.setPages(pages)
-        callback(assessment) if callback?
-
     error: ->
       throw "Failed to load: #{url}"
-  return assessment
