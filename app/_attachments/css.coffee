@@ -11,6 +11,37 @@ red = "red"
 $("head").append "
   <style>
 
+    body{
+      font-size: 150%;
+    }
+
+    legend{
+      font-weight: bold;
+    }
+
+    fieldset fieldset legend{
+      font-weight: normal;
+    }
+
+    label{
+      display: block;
+    }
+
+    fieldset{
+      border-width: 1px;
+      border-style: solid;
+      margin: 5px;
+      padding: 5px;
+    }
+
+    fieldset[data-type=horizontal] label{
+      display: inline;
+    }
+
+    fieldset[data-type=horizontal] input{
+      margin-right:20px;
+    }
+
     span.timer-seconds{
       float:right;
       margin-right:10px;
@@ -36,8 +67,8 @@ $("head").append "
     }
 
     .grid{
-      text-align: center;
       float: left;
+      text-align: center;
       width: 50px;
       height: 50px;
       margin: 3px;
@@ -74,18 +105,14 @@ $("head").append "
       border-style: solid;
     }
 
-    @media screen and (orientation:portrait){ 
-      .grid-width{
-        width: 360px;
-      }
-    }
     @media screen and (orientation:landscape) {
-      .grid-width{
-        width: 670px;
-      }
       .toggle-row-portrait{
         display: none;
       }
+    }
+
+    .grid-row{
+      display: block;
     }
 
     .toggle-row{

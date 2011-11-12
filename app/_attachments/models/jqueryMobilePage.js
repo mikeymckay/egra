@@ -1,4 +1,4 @@
-var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage, hideListUntilSearchInterval;
+var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -14,7 +14,7 @@ JQueryMobilePage = (function() {
     this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
-    return Mustache.to_html(this._template(), this);
+    return JQueryMobilePage.template(this);
   };
   JQueryMobilePage.prototype.propertiesForSerialization = function() {
     return ["pageId", "pageType", "urlPath", "urlScheme"];
@@ -101,9 +101,6 @@ JQueryMobilePage = (function() {
       }
     });
   };
-  JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->";
-  };
   JQueryMobilePage.prototype.toPaper = function() {
     return this.content;
   };
@@ -112,10 +109,6 @@ JQueryMobilePage = (function() {
 JQueryMobilePage.deserialize = function(pageObject) {
   var result;
   switch (pageObject.pageType) {
-    case "SchoolPage":
-      return SchoolPage.deserialize(pageObject);
-    case "StudentInformationPage":
-      return StudentInformationPage.deserialize(pageObject);
     case "UntimedSubtest":
       return UntimedSubtest.deserialize(pageObject);
     case "UntimedSubtestLinked":
@@ -159,7 +152,8 @@ JQueryMobilePage.loadFromHTTP = function(options, callback) {
         }
       } catch (error) {
         console.log("Error in JQueryMobilePage.loadFromHTTP: while loading the following object:");
-        return console.log(result);
+        console.log(result);
+        return console.trace();
       }
     },
     error: function() {
@@ -173,6 +167,7 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
     url: $.couchDBDatabasePath + urlPath
   }, callback);
 };
+JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->");
 AssessmentPage = (function() {
   __extends(AssessmentPage, JQueryMobilePage);
   function AssessmentPage() {
@@ -224,8 +219,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
     return;
   }
   passedValidation = $.assessment.currentPage.validate() === true;
-  $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
-  return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
+  return $("div#" + $.assessment.currentPage.pageId + " button:contains(Next)").toggleClass("passedValidation", passedValidation);
 };
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800);
 $('div.ui-footer button').live('click', function(event, ui) {
@@ -269,44 +263,104 @@ JQueryLogin = (function() {
 })();
 StudentInformationPage = (function() {
   __extends(StudentInformationPage, AssessmentPage);
-  function StudentInformationPage() {
-    StudentInformationPage.__super__.constructor.apply(this, arguments);
-  }
-  StudentInformationPage.prototype.propertiesForSerialization = function() {
-    var properties;
-    properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
-    properties.push("radioButtons");
-    return properties;
-  };
-  StudentInformationPage.prototype.validate = function() {
-    if ($("#StudentInformation input:'radio':checked").length === 7) {
-      return true;
-    } else {
-      return "All elements are required";
+  function StudentInformationPage(options) {
+    var option, radioButton, _i, _len, _ref;
+    StudentInformationPage.__super__.constructor.call(this, options);
+    this.radioButtons = options.radioButtons;
+    _ref = this.radioButtons;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      radioButton = _ref[_i];
+      radioButton.name = radioButton.label.toLowerCase().dasherize();
+      radioButton.options = (function() {
+        var _j, _len2, _ref2, _results;
+        _ref2 = radioButton.options;
+        _results = [];
+        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+          option = _ref2[_j];
+          _results.push({
+            id: radioButton.name + "-" + option.toLowerCase().dasherize(),
+            label: option
+          });
+        }
+        return _results;
+      })();
     }
+    this.content = StudentInformationPage.template(this);
+  }
+  StudentInformationPage.prototype.validate = function() {
+    var inputElement, name, names, _i, _len;
+    names = (function() {
+      var _i, _len, _ref, _results;
+      _ref = $("div#" + this.pageId + " form legend");
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        inputElement = _ref[_i];
+        _results.push($(inputElement).html().toLowerCase().dasherize());
+      }
+      return _results;
+    }).call(this);
+    for (_i = 0, _len = names.length; _i < _len; _i++) {
+      name = names[_i];
+      if (!$("input[name=" + name + "]").is(":checked")) {
+        return $("input[name=" + name + "]").first().parent().find("legend").html() + " is not complete";
+      }
+    }
+    return true;
   };
   return StudentInformationPage;
 })();
-StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
-StudentInformationPage.deserialize = function(pageObject) {
-  var studentInformationPage;
-  studentInformationPage = new StudentInformationPage();
-  studentInformationPage.load(pageObject);
-  studentInformationPage.content = StudentInformationPage.template(studentInformationPage);
-  return studentInformationPage;
-};
+StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{label}}</label>          <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
 SchoolPage = (function() {
   __extends(SchoolPage, AssessmentPage);
   function SchoolPage(options) {
+    var dataAttribute, inputElements, listAttributes, listElement, properties, property, template, _i, _j, _k, _len, _len2, _len3;
     SchoolPage.__super__.constructor.call(this, options);
     this.schools = options.schools;
-    $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
-      var dataAttribute, selectedElement, _i, _len, _ref, _results;
-      selectedElement = $(eventData.currentTarget);
-      _ref = ["name", "province", "district", "schoolId"];
+    this.selectNameText = options.selectNameText;
+    properties = ["name", "province", "district", "schoolId"];
+    for (_i = 0, _len = properties.length; _i < _len; _i++) {
+      property = properties[_i];
+      this[property + "Text"] = options[property + "Text"];
+    }
+    listAttributes = "";
+    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
+      dataAttribute = properties[_j];
+      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
+    }
+    listElement = "<li style='display:none' " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
+    inputElements = "";
+    for (_k = 0, _len3 = properties.length; _k < _len3; _k++) {
+      dataAttribute = properties[_k];
+      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
+    }
+    template = "      <div>        <h4>          {{selectSchoolText}}        </h4>      </div>      <form id='{{pageId}}-form'>        " + inputElements + "      </form>      <ul>        {{#schools}}          " + listElement + "        {{/schools}}      </ul>      <br/>      <br/>    ";
+    this.schoolTemplate = Handlebars.compile(template);
+    this.content = this.schoolTemplate(this);
+    $("div#" + this.pageId + " form#" + this.pageId + "-form input").live("propertychange keyup input paste", __bind(function(event) {
+      var currentName, school, _l, _len4, _ref, _results;
+      currentName = $(event.target).val();
+      _ref = $("div#" + this.pageId + " li");
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        dataAttribute = _ref[_i];
+      for (_l = 0, _len4 = _ref.length; _l < _len4; _l++) {
+        school = _ref[_l];
+        school = $(school);
+        school.hide();
+        _results.push(school.html().match(new RegExp(currentName, "i")) ? school.show() : void 0);
+      }
+      return _results;
+    }, this));
+    $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
+      var dataAttribute, school, selectedElement, _l, _len4, _len5, _m, _ref, _ref2, _results;
+      _ref = $("div#" + this.pageId + " li");
+      for (_l = 0, _len4 = _ref.length; _l < _len4; _l++) {
+        school = _ref[_l];
+        $(school).hide();
+      }
+      selectedElement = $(eventData.currentTarget);
+      _ref2 = ["name", "province", "district", "schoolId"];
+      _results = [];
+      for (_m = 0, _len5 = _ref2.length; _m < _len5; _m++) {
+        dataAttribute = _ref2[_m];
         _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
       }
       return _results;
@@ -324,25 +378,9 @@ SchoolPage = (function() {
     }
     return properties;
   };
-  SchoolPage.prototype._schoolTemplate = function() {
-    var dataAttribute, inputElements, listAttributes, listElement, properties, _i, _j, _len, _len2;
-    properties = ["name", "province", "district", "schoolId"];
-    listAttributes = "";
-    for (_i = 0, _len = properties.length; _i < _len; _i++) {
-      dataAttribute = properties[_i];
-      listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
-    }
-    listElement = "<li " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
-    inputElements = "";
-    for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
-      dataAttribute = properties[_j];
-      inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
-    }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
-  };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
-    _ref = $("div#" + this.pageId + " form div.ui-field-contain input");
+    _ref = $("div#" + this.pageId + " form input");
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       inputElement = _ref[_i];
       if ($(inputElement).val() === "") {
@@ -357,36 +395,26 @@ SchoolPage.deserialize = function(pageObject) {
   var schoolPage;
   schoolPage = new SchoolPage(pageObject);
   schoolPage.load(pageObject);
-  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
+  schoolPage.content = schoolPage.template(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
-SchoolPage.hideListUntilSearch = function() {
-  if ($("#School input[data-type='search']").val() !== "") {
-    $("#School ul").show();
-    return clearInterval(hideListUntilSearchInterval);
-  }
-};
-hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch, 500);
 DateTimePage = (function() {
   __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
   DateTimePage.prototype.load = function(data) {
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
-    DateTimePage.__super__.load.call(this, data);
-    return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var dateTime, minutes;
-      dateTime = new Date();
-      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
-      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
-      $("div#" + this.pageId + " #day").val(dateTime.getDate());
-      minutes = dateTime.getMinutes();
-      if (minutes < 10) {
-        minutes = "0" + minutes;
-      }
-      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
-    }, this));
+    var dateTime, day, minutes, month, time, year;
+    dateTime = new Date();
+    year = dateTime.getFullYear();
+    month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()];
+    day = dateTime.getDate();
+    minutes = dateTime.getMinutes();
+    if (minutes < 10) {
+      minutes = "0" + minutes;
+    }
+    time = dateTime.getHours() + ":" + minutes;
+    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
   };
   return DateTimePage;
 })();
@@ -404,7 +432,7 @@ ResultsPage = (function() {
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
       validationResult = $.assessment.validate();
-      if (validationResult === true) {
+      if (validationResult == null) {
         $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
         return $.assessment.saveResults(__bind(function(results) {
           $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
@@ -434,22 +462,16 @@ ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
   function ConsentPage(options) {
     ConsentPage.__super__.constructor.call(this, options);
-    $("div#" + this.pageId + " label[for='consent-no']").live("click", __bind(function(eventData) {
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
-      $.mobile.changePage("#_infoPage");
-      return $.assessment.saveResults(__bind(function(results) {
-        return setTimeout((function() {
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
-          return setTimeout((function() {
-            return $.assessment.reset();
-          }), 1000);
-        }), 2000);
-      }, this));
-    }, this));
+    $('#save-reset').live("click", function() {
+      $.assessment.saveResults();
+      return $.assessment.reset();
+    });
   }
   ConsentPage.prototype.validate = function() {
-    if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
+    if ($("div#" + this.pageId + " input#consent-yes:checked").length > 0) {
       return true;
+    } else if ($("div#" + this.pageId + " input#consent-no:checked").length > 0) {
+      return "Click to confirm that the child has not consented <button id='save-reset'>Confirm</button>";
     } else {
       return "You must answer the consent question";
     }
@@ -572,7 +594,7 @@ PhonemePage = (function() {
       for (index = 0, _len = _ref.length; index < _len; index++) {
         item = _ref[index];
         wordName = this.subtestId + "-number-sound-" + (index + 1);
-        _results.push(("      <div data-role='fieldcontain'>          <legend>" + item["word"] + " - " + item["number-of-sounds"] + "</legend>          <fieldset data-role='controlgroup' data-type='horizontal'>      ") + ((function() {
+        _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + item["word"] + "</legend>            <fieldset data-role='controlgroup' data-type='horizontal'>              <legend>Number of phonemes: " + item["number-of-sounds"] + "</legend>      ") + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = ["Correct", "Incorrect"];
           _results2 = [];
@@ -581,17 +603,17 @@ PhonemePage = (function() {
             _results2.push("        <label for='" + wordName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + wordName + "' id='" + wordName + "-" + answer + "' value='" + answer + "' />        ");
           }
           return _results2;
-        })()).join("") + "          </fieldset>          <fieldset data-role='controlgroup' data-type='horizontal'>      " + ((function() {
+        })()).join("") + "        </fieldset>        <fieldset data-role='controlgroup' data-type='horizontal'>          <legend>Phonemes identified</legend>      " + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = item["phonemes"];
           _results2 = [];
           for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
             phoneme = _ref2[_i];
             phonemeName = this.subtestId + "-phoneme-sound-" + phonemeIndex++;
-            _results2.push("          <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />          <label for='" + phonemeName + "'>" + phoneme + "</label>        ");
+            _results2.push("            <label for='" + phonemeName + "'>" + phoneme + "</label>            <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />        ");
           }
           return _results2;
-        }).call(this)).join("") + "          </fieldset>      </div>      <hr/>      ");
+        }).call(this)).join("") + "            </fieldset>          </fieldset>      </div>      ");
       }
       return _results;
     }).call(this)).join("") + "</form>";
@@ -641,15 +663,16 @@ ToggleGridWithTimer = (function() {
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
-    result = "";
+    result = "<table><tr>";
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
-      result += "<div class='grid'><span class='grid-text' >" + letter + "</span></div>";
-      if ((index + 1) % 5 === 0) {
-        result += "<div class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></div>";
+      result += "<td class='grid'><span class='grid-text' >" + letter + "</span></td>";
+      if ((index + 1) % 10 === 0) {
+        result += "<td class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></td></tr><tr>";
       }
     }
+    result += "</tr></table>";
     this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
     $("#" + this.pageId).live("pageshow", __bind(function(eventData) {
       var fontSize, gridWidth, letterSpan, _i, _len2, _ref2;
@@ -695,12 +718,6 @@ ToggleGridWithTimer = (function() {
       return _results;
     }, this));
   }
-  ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
-    var properties;
-    properties = ToggleGridWithTimer.__super__.propertiesForSerialization.call(this);
-    properties.push("letters");
-    return properties;
-  };
   ToggleGridWithTimer.prototype.results = function() {
     var firstTenPercent, gridItem, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
@@ -720,11 +737,11 @@ ToggleGridWithTimer = (function() {
     } else {
       this.autostop = false;
     }
+    results.time_remain = this.timer.seconds;
     if (!this.timer.hasStartedAndStopped()) {
-      return false;
+      return results;
     }
     results.letters = new Array();
-    results.time_remain = this.timer.seconds;
     _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       gridItem = _ref[index];

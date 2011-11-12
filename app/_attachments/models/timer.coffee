@@ -42,7 +42,7 @@ class Timer
   render: ->
     @id = "timer"
     @seconds = 60
-    Mustache.to_html(@_template(),this)
+    "<span class='timer-seconds'></span>"
 
   hideGridItems: ->
     $("##{@page.pageId} .grid").removeClass("show")
@@ -50,6 +50,3 @@ class Timer
   showGridItems: ->
     $("##{@page.pageId} .grid").addClass("show")
 
-  _template: -> "
-  <span class='timer-seconds'></span>
-"

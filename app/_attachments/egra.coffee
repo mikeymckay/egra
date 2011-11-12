@@ -1,20 +1,8 @@
-$(document).bind "mobileinit", ->
-  $.mobile.autoInitializePage = false
-  $.mobile.defaultPageTransition = 'none'
-
 $(document).ready ->
 
-  $("body").html "
-    <div data-role='page' id='menu'>
-      <div data-role='header'>
-        <h1>Tangerine</h1>
-      </div><!-- /header -->
-      <div data-role='content'>	
-      </div><!-- /content -->
-      <div data-role='footer'>
-      </div><!-- /footer -->
-    </div><!-- /page -->
-  "
+  # Loads from the version file
+  $.get 'version', (result) ->
+    $("#version").html(result)
 
   switch $.deparam.querystring().role
     when "enumerator"
@@ -22,7 +10,6 @@ $(document).ready ->
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?role=enumerator'>My completed assessments</a>
         <a data-ajax='false' data-role='button' href='#{document.location.pathname}?Assessment.The Gambia EGRA May 2011'>Start assessment</a>
       "
-      $.mobile.initializePage()
       return
 
   switch document.location.search
@@ -99,7 +86,6 @@ EarlyGradeReadingAssessment.showMenu = (message = "") ->
           #{documents.join("<br/>")}
         </div>
       "
-      $.mobile.initializePage()
     error: ->
       throw "Could not GET #{url}"
 
@@ -167,13 +153,19 @@ EarlyGradeReadingAssessment.loadFromCouch = (path) ->
   #Assessment.loadFromHTTP "/egra/Assessment.EGRA Prototype", (assessment) ->
     assessment.render (result) ->
       $("body").html(result)
-      $.mobile.initializePage()
 
-EarlyGradeReadingAssessment.loadTest = ->
-  Assessment.loadFromHTTP "/egra/Assessment.Test", (assessment) ->
-    assessment.render (result) ->
-      $("body").html(result)
-      $.mobile.initializePage()
+      $("div[data-role='page']").hide()
+      assessment.currentPage = assessment.pages[0]
+      $("##{assessment.currentPage.pageId}").show()
+      $("##{assessment.currentPage.pageId}").trigger("pageshow")
+
+      _.each $('button:contains(Next)'), (button) ->
+        new MBP.fastButton button, ->
+          assessment.nextPage()
+
+      _.each $('button:contains(Back)'), (button) ->
+        new MBP.fastButton button, ->
+          assessment.backPage()
 
 EarlyGradeReadingAssessment.deleteFromCouch = (callback) ->
   url = "/egra/_all_docs"
@@ -196,34 +188,3 @@ EarlyGradeReadingAssessment.deleteFromCouch = (callback) ->
       throw "Could not GET #{url}"
     complete: =>
       callback() if callback?
-
-EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch = (callback) ->
-  Assessment.loadFromHTTP "tests/testData/Assessment.TEST EGRA Prototype", (assessment) ->
-    assessment.changeName("EGRA Prototype")
-    assessment.saveToCouchDB(callback)
-
-
-EarlyGradeReadingAssessment.createFromGoogle = ->
-
-  assessment= new Assessment("EGRA Prototype")
-
-  login= new JQueryMobilePage()
-  instructions= new InstructionsPage()
-  letters= new LettersPage()
-
-  login.pageId= "Login"
-  login.header= "<h1>EGRA</h1>"
-  login.content= (new JQueryLogin()).render()
-
-  instructions.pageId= "Instructions"
-  instructions.header= "<h1>EGRA</h1>"
-  instructions.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html"
-  instructions.updateFromGoogle()
-
-  letters.pageId= "Letters"
-  letters.header= "<h1>EGRA</h1>"
-  letters.url= "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html"
-  letters.updateFromGoogle()
-
-  assessment.setPages([login, instructions, letters])
-  return assessment

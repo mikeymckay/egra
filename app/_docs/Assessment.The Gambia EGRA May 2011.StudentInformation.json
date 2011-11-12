@@ -6,7 +6,6 @@
   "radioButtons": [
     {
       "label": "School Shift",
-      "name": "school-shift",
       "type": "horizontal",
       "options": [
         "Full day",
@@ -15,8 +14,7 @@
       ]
     },
     {
-      "label": "Multigrade class?",
-      "name": "multigrade",
+      "label": "Multigrade class",
       "type": "horizontal",
       "options": [
         "No",
@@ -25,7 +23,6 @@
     },
     {
       "label": "Grade",
-      "name": "grade",
       "type": "horizontal",
       "options": [
         "1st",
@@ -36,7 +33,6 @@
     },
     {
       "label": "Class",
-      "name": "class",
       "type": "horizontal",
       "options": [
         "A",
@@ -46,7 +42,6 @@
     },
     {
       "label": "Year of birth",
-      "name": "yearOfBirth",
       "type": "horizontal",
       "options": [
         "Unknown",
@@ -65,7 +60,6 @@
     },
     {
       "label": "Month of Birth",
-      "name": "monthOfBirth",
       "type": "horizontal",
       "options": [
         "Unknown",
@@ -85,7 +79,6 @@
     },
     {
       "label": "Gender",
-      "name": "gender",
       "type": "horizontal",
       "options": [
         "Female",

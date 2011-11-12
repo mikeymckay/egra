@@ -2,8 +2,10 @@
   "name": "Test",
   "_id": "Assessment.Test",
   "urlPathsForPages": [
-    "Assessment.The Gambia EGRA May 2011.StudentInformation"
+    "Assessment.The Gambia EGRA May 2011.School",
+    "Assessment.The Gambia EGRA May 2011.Results"
   ],
+  "collection" : "assessment",
   "couchapp": {
   }
 }

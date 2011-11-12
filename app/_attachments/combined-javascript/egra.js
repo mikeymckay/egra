@@ -3544,7 +3544,6 @@ Assessment = (function() {
         return _results;
       }).call(this);
       result = result.join("");
-      result += "        <div data-role='dialog' id='_infoPage'>          <div data-role='header'>	            <h1>Information</h1>          </div>          <div data-role='content'>	          </div><!-- /content -->        </div>      ";
       if (callback != null) {
         callback(result);
       }
@@ -3570,7 +3569,7 @@ Assessment = (function() {
         _results = [];
         for (i = 0, _len = _ref.length; i < _len; i++) {
           page = _ref[i];
-          _results.push(("<h1>" + (page.name()) + "</h1>") + page.toPaper());
+          _results.push(("<div class='subtest " + page.pageType + "'><h1>" + (page.name()) + "</h1>") + page.toPaper() + "</div>");
         }
         return _results;
       }).call(this);
@@ -3609,6 +3608,31 @@ Assessment = (function() {
         return document.location = document.location.href;
       }
     }
+  };
+  Assessment.prototype.nextPage = function() {
+    var validationMessageElement, validationResult;
+    validationResult = this.currentPage.validate();
+    if (validationResult !== true) {
+      validationMessageElement = $("#" + this.currentPage.pageId + " div.validation-message");
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+      return;
+    }
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.nextPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
+  };
+  Assessment.prototype.backPage = function() {
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.previousPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
   };
   return Assessment;
 })();
@@ -3666,27 +3690,23 @@ Assessment.loadFromHTTP = function(url, callback) {
     dataType: 'json',
     success: function(result) {
       var pages, urlPath, _i, _len, _ref;
-      try {
-        assessment = new Assessment(result.name);
-        pages = [];
-        _ref = result.urlPathsForPages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          urlPath = _ref[_i];
-          url = baseUrl + urlPath;
-          JQueryMobilePage.loadFromHTTP({
-            url: url,
-            async: false
-          }, __bind(function(result) {
-            result.assessment = assessment;
-            return pages.push(result);
-          }, this));
-        }
-        assessment.setPages(pages);
-        if (callback != null) {
-          return callback(assessment);
-        }
-      } catch (error) {
-        return console.log("Error in Assessment.loadFromHTTP:" + error);
+      assessment = new Assessment(result.name);
+      pages = [];
+      _ref = result.urlPathsForPages;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        urlPath = _ref[_i];
+        url = baseUrl + urlPath;
+        JQueryMobilePage.loadFromHTTP({
+          url: url,
+          async: false
+        }, __bind(function(result) {
+          result.assessment = assessment;
+          return pages.push(result);
+        }, this));
+      }
+      assessment.setPages(pages);
+      if (callback != null) {
+        return callback(assessment);
       }
     },
     error: function() {
@@ -3694,7 +3714,7 @@ Assessment.loadFromHTTP = function(url, callback) {
     }
   });
   return assessment;
-};var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage, hideListUntilSearchInterval;
+};var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -3703,7 +3723,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.__super__ = parent.prototype;
   return child;
 };
-footerMessage = "Good effort, let's go onto the next page";
+-(footerMessage = "Good effort, let's go onto the next page");
 JQueryMobilePage = (function() {
   function JQueryMobilePage(options) {
     this.pageId = (options != null ? options.pageId : void 0) || "";
@@ -3798,7 +3818,7 @@ JQueryMobilePage = (function() {
     });
   };
   JQueryMobilePage.prototype._template = function() {
-    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <a href='\#{{previousPage}}'>Back</a>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->";
+    return "<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->";
   };
   JQueryMobilePage.prototype.toPaper = function() {
     return this.content;
@@ -3810,8 +3830,6 @@ JQueryMobilePage.deserialize = function(pageObject) {
   switch (pageObject.pageType) {
     case "SchoolPage":
       return SchoolPage.deserialize(pageObject);
-    case "StudentInformationPage":
-      return StudentInformationPage.deserialize(pageObject);
     case "UntimedSubtest":
       return UntimedSubtest.deserialize(pageObject);
     case "UntimedSubtestLinked":
@@ -3920,8 +3938,7 @@ AssessmentPage.validateCurrentPageUpdateNextButton = function() {
     return;
   }
   passedValidation = $.assessment.currentPage.validate() === true;
-  $('div.ui-footer button').toggleClass("passedValidation", passedValidation);
-  return $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b", passedValidation).toggleClass("ui-btn-up-c", !passedValidation);
+  return $("div#" + $.assessment.currentPage.pageId + " button:contains(Next)").toggleClass("passedValidation", passedValidation);
 };
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800);
 $('div.ui-footer button').live('click', function(event, ui) {
@@ -3965,44 +3982,83 @@ JQueryLogin = (function() {
 })();
 StudentInformationPage = (function() {
   __extends(StudentInformationPage, AssessmentPage);
-  function StudentInformationPage() {
-    StudentInformationPage.__super__.constructor.apply(this, arguments);
-  }
-  StudentInformationPage.prototype.propertiesForSerialization = function() {
-    var properties;
-    properties = StudentInformationPage.__super__.propertiesForSerialization.call(this);
-    properties.push("radioButtons");
-    return properties;
-  };
-  StudentInformationPage.prototype.validate = function() {
-    if ($("#StudentInformation input:'radio':checked").length === 7) {
-      return true;
-    } else {
-      return "All elements are required";
+  function StudentInformationPage(options) {
+    var option, radioButton, _i, _len, _ref;
+    StudentInformationPage.__super__.constructor.call(this, options);
+    this.radioButtons = options.radioButtons;
+    _ref = this.radioButtons;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      radioButton = _ref[_i];
+      radioButton.name = radioButton.label.toLowerCase().dasherize();
+      radioButton.options = (function() {
+        var _j, _len2, _ref2, _results;
+        _ref2 = radioButton.options;
+        _results = [];
+        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+          option = _ref2[_j];
+          _results.push({
+            id: radioButton.name + "-" + option.toLowerCase().dasherize(),
+            label: option
+          });
+        }
+        return _results;
+      })();
     }
+    this.content = StudentInformationPage.template(this);
+  }
+  StudentInformationPage.prototype.validate = function() {
+    var inputElement, name, names, _i, _len;
+    names = (function() {
+      var _i, _len, _ref, _results;
+      _ref = $("div#" + this.pageId + " form legend");
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        inputElement = _ref[_i];
+        _results.push($(inputElement).html().toLowerCase().dasherize());
+      }
+      return _results;
+    }).call(this);
+    for (_i = 0, _len = names.length; _i < _len; _i++) {
+      name = names[_i];
+      if (!$("input[name=" + name + "]").is(":checked")) {
+        return $("input[name=" + name + "]").first().parent().find("legend").html() + " is not complete";
+      }
+    }
+    return true;
   };
   return StudentInformationPage;
 })();
-StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{.}}'>{{.}}</label>          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
-StudentInformationPage.deserialize = function(pageObject) {
-  var studentInformationPage;
-  studentInformationPage = new StudentInformationPage();
-  studentInformationPage.load(pageObject);
-  studentInformationPage.content = StudentInformationPage.template(studentInformationPage);
-  return studentInformationPage;
-};
+StudentInformationPage.template = Handlebars.compile("  <form>    {{#radioButtons}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{label}}</label>          <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/radioButtons}}  </form>");
 SchoolPage = (function() {
   __extends(SchoolPage, AssessmentPage);
   function SchoolPage(options) {
     SchoolPage.__super__.constructor.call(this, options);
     this.schools = options.schools;
-    $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
-      var dataAttribute, selectedElement, _i, _len, _ref, _results;
-      selectedElement = $(eventData.currentTarget);
-      _ref = ["name", "province", "district", "schoolId"];
+    $("div#" + this.pageId + " form#" + this.pageId + "-form input").live("propertychange keyup input paste", __bind(function(event) {
+      var currentName, school, _i, _len, _ref, _results;
+      currentName = $(event.target).val();
+      _ref = $("div#" + this.pageId + " li");
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        dataAttribute = _ref[_i];
+        school = _ref[_i];
+        school = $(school);
+        school.hide();
+        _results.push(school.html().match(new RegExp(currentName, "i")) ? school.show() : void 0);
+      }
+      return _results;
+    }, this));
+    $("div#" + this.pageId + " li").live("click", __bind(function(eventData) {
+      var dataAttribute, school, selectedElement, _i, _j, _len, _len2, _ref, _ref2, _results;
+      _ref = $("div#" + this.pageId + " li");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        school = _ref[_i];
+        $(school).hide();
+      }
+      selectedElement = $(eventData.currentTarget);
+      _ref2 = ["name", "province", "district", "schoolId"];
+      _results = [];
+      for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+        dataAttribute = _ref2[_j];
         _results.push($("div#" + this.pageId + " form input#" + dataAttribute).val(selectedElement.attr("data-" + dataAttribute)));
       }
       return _results;
@@ -4028,17 +4084,17 @@ SchoolPage = (function() {
       dataAttribute = properties[_i];
       listAttributes += "data-" + dataAttribute + "='{{" + dataAttribute + "}}' ";
     }
-    listElement = "<li " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
+    listElement = "<li style='display:none' " + listAttributes + ">{{district}} - {{province}} - {{name}}</li>";
     inputElements = "";
     for (_j = 0, _len2 = properties.length; _j < _len2; _j++) {
       dataAttribute = properties[_j];
       inputElements += "      <div data-role='fieldcontain'>        <label for='" + dataAttribute + "'>{{" + dataAttribute + "Text}}</label>        <input type='text' name='" + dataAttribute + "' id='" + dataAttribute + "'></input>      </div>      ";
     }
-    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>    <form>      " + inputElements + "    </form>  ";
+    return "    <div>      <h4>        {{selectSchoolText}}      </h4>    </div>    <form id='" + this.pageId + "-form'>      " + inputElements + "    </form>    <ul>      {{#schools}}        " + listElement + "      {{/schools}}    </ul>    <br/>    <br/>  ";
   };
   SchoolPage.prototype.validate = function() {
     var inputElement, _i, _len, _ref;
-    _ref = $("div#" + this.pageId + " form div.ui-field-contain input");
+    _ref = $("div#" + this.pageId + " form input");
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       inputElement = _ref[_i];
       if ($(inputElement).val() === "") {
@@ -4056,33 +4112,23 @@ SchoolPage.deserialize = function(pageObject) {
   schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(), schoolPage);
   return schoolPage;
 };
-SchoolPage.hideListUntilSearch = function() {
-  if ($("#School input[data-type='search']").val() !== "") {
-    $("#School ul").show();
-    return clearInterval(hideListUntilSearchInterval);
-  }
-};
-hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch, 500);
 DateTimePage = (function() {
   __extends(DateTimePage, AssessmentPage);
   function DateTimePage() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
   DateTimePage.prototype.load = function(data) {
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='year'>Year:</label>    <input type='number' name='year' id='year' />  </div>  <div data-role='fieldcontain'>    <label for='month'>Month:</label>    <input type='text' name='month' id='month' />  </div>  <div data-role='fieldcontain'>    <label for='day'>Day:</label>    <input type='number' name='day' id='day' />  </div>  <div data-role='fieldcontain'>    <label for='time'>Time:</label>    <input type='text' name='time' id='time' />  </div></form>";
-    DateTimePage.__super__.load.call(this, data);
-    return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var dateTime, minutes;
-      dateTime = new Date();
-      $("div#" + this.pageId + " #year").val(dateTime.getFullYear());
-      $("div#" + this.pageId + " #month").val(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()]);
-      $("div#" + this.pageId + " #day").val(dateTime.getDate());
-      minutes = dateTime.getMinutes();
-      if (minutes < 10) {
-        minutes = "0" + minutes;
-      }
-      return $("div#" + this.pageId + " #time").val(dateTime.getHours() + ":" + minutes);
-    }, this));
+    var dateTime, day, minutes, month, time, year;
+    dateTime = new Date();
+    year = dateTime.getFullYear();
+    month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()];
+    day = dateTime.getDate();
+    minutes = dateTime.getMinutes();
+    if (minutes < 10) {
+      minutes = "0" + minutes;
+    }
+    time = dateTime.getHours() + ":" + minutes;
+    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
   };
   return DateTimePage;
 })();
@@ -4130,22 +4176,16 @@ ConsentPage = (function() {
   __extends(ConsentPage, TextPage);
   function ConsentPage(options) {
     ConsentPage.__super__.constructor.call(this, options);
-    $("div#" + this.pageId + " label[for='consent-no']").live("click", __bind(function(eventData) {
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.");
-      $.mobile.changePage("#_infoPage");
-      return $.assessment.saveResults(__bind(function(results) {
-        return setTimeout((function() {
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.");
-          return setTimeout((function() {
-            return $.assessment.reset();
-          }), 1000);
-        }), 2000);
-      }, this));
-    }, this));
+    $('#save-reset').live("click", function() {
+      $.assessment.saveResults();
+      return $.assessment.reset();
+    });
   }
   ConsentPage.prototype.validate = function() {
-    if ($("div#" + this.pageId + " input[@name='childConsents']:checked").val()) {
+    if ($("div#" + this.pageId + " input#consent-yes:checked").length > 0) {
       return true;
+    } else if ($("div#" + this.pageId + " input#consent-no:checked").length > 0) {
+      return "Click to confirm that the child has not consented <button id='save-reset'>Confirm</button>";
     } else {
       return "You must answer the consent question";
     }
@@ -4268,7 +4308,7 @@ PhonemePage = (function() {
       for (index = 0, _len = _ref.length; index < _len; index++) {
         item = _ref[index];
         wordName = this.subtestId + "-number-sound-" + (index + 1);
-        _results.push(("      <div data-role='fieldcontain'>          <legend>" + item["word"] + " - " + item["number-of-sounds"] + "</legend>          <fieldset data-role='controlgroup' data-type='horizontal'>      ") + ((function() {
+        _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + item["word"] + "</legend>            <fieldset data-role='controlgroup' data-type='horizontal'>              <legend>Number of phonemes: " + item["number-of-sounds"] + "</legend>      ") + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = ["Correct", "Incorrect"];
           _results2 = [];
@@ -4277,17 +4317,17 @@ PhonemePage = (function() {
             _results2.push("        <label for='" + wordName + "-" + answer + "'>" + answer + "</label>        <input type='radio' name='" + wordName + "' id='" + wordName + "-" + answer + "' value='" + answer + "' />        ");
           }
           return _results2;
-        })()).join("") + "          </fieldset>          <fieldset data-role='controlgroup' data-type='horizontal'>      " + ((function() {
+        })()).join("") + "        </fieldset>        <fieldset data-role='controlgroup' data-type='horizontal'>          <legend>Phonemes identified</legend>      " + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = item["phonemes"];
           _results2 = [];
           for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
             phoneme = _ref2[_i];
             phonemeName = this.subtestId + "-phoneme-sound-" + phonemeIndex++;
-            _results2.push("          <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />          <label for='" + phonemeName + "'>" + phoneme + "</label>        ");
+            _results2.push("            <label for='" + phonemeName + "'>" + phoneme + "</label>            <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />        ");
           }
           return _results2;
-        }).call(this)).join("") + "          </fieldset>      </div>      <hr/>      ");
+        }).call(this)).join("") + "            </fieldset>          </fieldset>      </div>      ");
       }
       return _results;
     }).call(this)).join("") + "</form>";
@@ -4337,15 +4377,16 @@ ToggleGridWithTimer = (function() {
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer();
-    result = "";
+    result = "<table><tr>";
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       letter = _ref[index];
-      result += "<div class='grid'><span class='grid-text' >" + letter + "</span></div>";
-      if ((index + 1) % 5 === 0) {
-        result += "<div class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></div>";
+      result += "<td class='grid'><span class='grid-text' >" + letter + "</span></td>";
+      if ((index + 1) % 10 === 0) {
+        result += "<td class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></td></tr><tr>";
       }
     }
+    result += "</tr></table>";
     this.content = "      <div class='timer'>        <button>start</button>      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <div class='timer'>        <button>stop</button>      </div>      ";
     $("#" + this.pageId).live("pageshow", __bind(function(eventData) {
       var fontSize, gridWidth, letterSpan, _i, _len2, _ref2;
@@ -4391,12 +4432,6 @@ ToggleGridWithTimer = (function() {
       return _results;
     }, this));
   }
-  ToggleGridWithTimer.prototype.propertiesForSerialization = function() {
-    var properties;
-    properties = ToggleGridWithTimer.__super__.propertiesForSerialization.call(this);
-    properties.push("letters");
-    return properties;
-  };
   ToggleGridWithTimer.prototype.results = function() {
     var firstTenPercent, gridItem, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
     results = {};
@@ -4416,11 +4451,11 @@ ToggleGridWithTimer = (function() {
     } else {
       this.autostop = false;
     }
+    results.time_remain = this.timer.seconds;
     if (!this.timer.hasStartedAndStopped()) {
-      return false;
+      return results;
     }
     results.letters = new Array();
-    results.time_remain = this.timer.seconds;
     _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       gridItem = _ref[index];
@@ -4451,6 +4486,7 @@ ToggleGridWithTimer = (function() {
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
     results = this.results();
+    console.log(results);
     if (results.time_remain === 60 || results.time_remain === void 0) {
       return "The timer must be started";
     }
@@ -4653,11 +4689,13 @@ Timer = (function() {
   return Timer;
 })();var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-$(document).bind("mobileinit", function() {
-  $.mobile.autoInitializePage = false;
-  return $.mobile.defaultPageTransition = 'none';
-});
 $(document).ready(function() {
+  $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
+  switch ($.deparam.querystring().role) {
+    case "enumerator":
+      $("div[data-role='content']").html("        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?role=enumerator'>My completed assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Start assessment</a>      ");
+      return;
+  }
   switch (document.location.search) {
     case "?deleteFromCouch=true":
       return EarlyGradeReadingAssessment.deleteFromCouch(function() {
@@ -4667,6 +4705,8 @@ $(document).ready(function() {
       return EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch(function() {
         return document.location = "index.html?showMenu=true";
       });
+    case "?studentPrintout=true":
+      return EarlyGradeReadingAssessment.studentPrintout();
     case "?printout=true":
       return EarlyGradeReadingAssessment.print();
     case "?compact=true":
@@ -4724,12 +4764,28 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         }
         return _results;
       })();
-      $("body").html("        <div data-role='page' id='menu'>          <div data-role='header'>            <h1>Admin Menu</h1>          </div><!-- /header -->          <div data-role='content'>	            " + message + "            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>            <!--            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>            -->            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>            <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>            <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>            <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>            <div data-role='collapsible' data-collapsed='true'>              <h3>Documents</h3>              " + (documents.join("<br/>")) + "            </div>          </div><!-- /content -->          <div data-role='footer'>          </div><!-- /footer -->        </div><!-- /page -->      ");
-      return $.mobile.initializePage();
+      return $("div[data-role='content']").html("        " + message + "        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>        <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>        <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?studentPrintout=true'>Student printout</a>        <div data-role='collapsible' data-collapsed='true'>          <h3>Documents</h3>          " + (documents.join("<br/>")) + "        </div>      ");
     }, this),
     error: function() {
       throw "Could not GET " + url;
     }
+  });
+};
+EarlyGradeReadingAssessment.studentPrintout = function() {
+  return Assessment.loadFromHTTP("/egra/Assessment.The Gambia EGRA May 2011", function(assessment) {
+    return assessment.toPaper(function(result) {
+      var style;
+      style = "        <style>          body{            font-family: Arial;            font-size: 200%;          }          .page-break{            display: none;          }          input{            height: 50px;              border: 1px;          }          .subtest.ToggleGridWithTimer{            page-break-after: always;            display:block;            padding: 15px;          }          .subtest, button, h1{            display:none;          }          .grid{            display: inline;            margin: 5px;          }        </style>      ";
+      $("style").remove();
+      $("body").html(result + style);
+      $("span:contains(*)").parent().remove();
+      $("link").remove();
+      return $('.grid').each(function(index) {
+        if (index % 10 === 0) {
+          return $(this).nextAll().andSelf().slice(0, 10).wrapAll('<div class="grid-row"></div>');
+        }
+      });
+    });
   });
 };
 EarlyGradeReadingAssessment.print = function() {
@@ -4746,15 +4802,27 @@ EarlyGradeReadingAssessment.loadFromCouch = function(path) {
   return Assessment.loadFromHTTP("/egra/" + path, function(assessment) {
     return assessment.render(function(result) {
       $("body").html(result);
-      return $.mobile.initializePage();
+      $("div[data-role='page']").hide();
+      assessment.currentPage = assessment.pages[0];
+      $("#" + assessment.currentPage.pageId).show();
+      $("#" + assessment.currentPage.pageId).trigger("pageshow");
+      _.each($('button:contains(Next)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.nextPage();
+        });
+      });
+      return _.each($('button:contains(Back)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.backPage();
+        });
+      });
     });
   });
 };
 EarlyGradeReadingAssessment.loadTest = function() {
   return Assessment.loadFromHTTP("/egra/Assessment.Test", function(assessment) {
     return assessment.render(function(result) {
-      $("body").html(result);
-      return $.mobile.initializePage();
+      return $("body").html(result);
     });
   });
 };
@@ -4982,4 +5050,4 @@ yellow = "#F7C942";
 first_click_color = yellow;
 second_click_color = blue;
 red = "red";
-$("head").append("  <style>    span.timer-seconds{      float:right;      margin-right:10px;      margin-top:5px;      font-size: large;    }    .controls.flash{      color: black;      background-color: " + red + ";    }    .flash {      color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }    .grid{      text-align: center;      float: left;      width: 50px;      height: 50px;      margin: 10px;      border: 3px outset gray;      background-color: lightgray;      color: lightgray;      -webkit-user-select: none;      -khtml-user-select: none;      -moz-user-select: none;      -o-user-select: none;      user-select: none;    }    .grid.show{      color: black;    }    .grid span{      font-size: 50px;      vertical-align: middle;    }    .grid.selected{      text-decoration: line-through;      color: white;      background-color: " + blue + ";    }    .grid.last-attempted{      color: red;      border-right-color: red;      border-top-color: red;      border-bottom-color: red;      border-style: solid;    }    @media screen and (orientation:portrait){       .grid-width{        width: 440px;      }    }    @media screen and (orientation:landscape) {      .grid-width{        width: 820px;      }      .toggle-row-portrait{        display: none;      }    }    .toggle-row{      background-color: " + blue + ";      width: 30px;      height: 30px;      margin-top: 22px;    }    /* Next button size */    div.ui-footer .ui-btn{      font-size: 20px;    }      </style>  ");
+$("head").append("  <style>    body{      font-size: 150%;    }    legend{      font-weight: bold;    }    fieldset fieldset legend{      font-weight: normal;    }    label{      display: block;    }    fieldset{      border-width: 1px;      border-style: solid;      margin: 5px;      padding: 5px;    }    fieldset[data-type=horizontal] label{      display: inline;    }    fieldset[data-type=horizontal] input{      margin-right:20px;    }    span.timer-seconds{      float:right;      margin-right:10px;      margin-top:5px;      font-size: large;    }    .controls.flash{      color: black;      background-color: " + red + ";    }    .flash {      color: " + red + ";    }    #InitialSound .ui-controlgroup-label{      font-size: x-large;    }    #Phonemes legend{      font-size: x-large;    }    .grid{      float: left;      text-align: center;      width: 50px;      height: 50px;      margin: 3px;      border: 3px outset gray;      background-color: lightgray;      color: lightgray;      -webkit-user-select: none;      -khtml-user-select: none;      -moz-user-select: none;      -o-user-select: none;      user-select: none;    }    .grid.show{      color: black;    }    .grid span{      font-size: 50px;      vertical-align: middle;    }    .grid.selected{      text-decoration: line-through;      color: white;      background-color: " + blue + ";    }    .grid.last-attempted{      color: red;      border-right-color: red;      border-top-color: red;      border-bottom-color: red;      border-style: solid;    }    @media screen and (orientation:landscape) {      .toggle-row-portrait{        display: none;      }    }    .grid-row{      display: block;    }    .toggle-row{      background-color: " + blue + ";      width: 30px;      height: 30px;      margin-top: 22px;    }    /* Next button size */    div.ui-footer .ui-btn{      font-size: 20px;    }      </style>  ");

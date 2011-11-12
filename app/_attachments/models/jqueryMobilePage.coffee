@@ -7,7 +7,7 @@ class JQueryMobilePage
     @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
-    Mustache.to_html(@_template(),this)
+    JQueryMobilePage.template(this)
 
   #url: ->
   #  return "#{@urlScheme}://#{@urlPath}"
@@ -76,22 +76,6 @@ class JQueryMobilePage
       error: ->
         throw "Error deleting #{url}"
 
-  _template: -> "
-<div data-role='page' id='{{{pageId}}'>
-  <div data-role='header'>
-    <a href='\#{{previousPage}}'>Back</a>
-    <h1>{{name}}</h1>
-  </div><!-- /header -->
-  <div data-role='content'>	
-    {{{controls}}}
-    {{{content}}}
-  </div><!-- /content -->
-  <div data-role='footer'>
-    {{footerMessage}}
-    <button href='\#{{nextPage}}'>Next</button>
-  </div><!-- /footer -->
-</div><!-- /page -->
-"
   toPaper: ->
     @content
 
@@ -99,10 +83,6 @@ class JQueryMobilePage
 # Should not need these separate deserialize just use the last generic one and the constructor
 JQueryMobilePage.deserialize = (pageObject) ->
   switch pageObject.pageType
-    when "SchoolPage"
-      return SchoolPage.deserialize(pageObject)
-    when "StudentInformationPage"
-      return StudentInformationPage.deserialize(pageObject)
     when "UntimedSubtest"
       return UntimedSubtest.deserialize(pageObject)
     when "UntimedSubtestLinked"
@@ -138,8 +118,8 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
         callback(jqueryMobilePage) if callback?
       catch error
         console.log "Error in JQueryMobilePage.loadFromHTTP: while loading the following object:"
-#        console.trace()
         console.log result
+        console.trace()
     error: ->
       throw "Failed to load: #{urlPath}"
   $.ajax options
@@ -147,6 +127,24 @@ JQueryMobilePage.loadFromHTTP = (options, callback) ->
 
 JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
   return JQueryMobilePage.loadFromHTTP({url:$.couchDBDatabasePath+urlPath}, callback)
+
+JQueryMobilePage.template = Handlebars.compile "
+<div data-role='page' id='{{{pageId}}'>
+  <div data-role='header'>
+    <button href='\#{{previousPage}}'>Back</button>
+    <h1>{{name}}</h1>
+  </div><!-- /header -->
+  <div data-role='content'>	
+    {{{controls}}}
+    {{{content}}}
+  </div><!-- /content -->
+  <div data-role='footer'>
+    {{footerMessage}}
+    <button href='\#{{nextPage}}'>Next</button>
+    <div class='validation-message'></div>
+  </div><!-- /footer -->
+</div><!-- /page -->
+"
 
 class AssessmentPage extends JQueryMobilePage
   addTimer: ->
@@ -193,8 +191,7 @@ class AssessmentPage extends JQueryMobilePage
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
   passedValidation = ($.assessment.currentPage.validate() is true)
-  $('div.ui-footer button').toggleClass("passedValidation", passedValidation)
-  $('div.ui-footer div.ui-btn').toggleClass("ui-btn-up-b",passedValidation).toggleClass("ui-btn-up-c", !passedValidation)
+  $("div##{$.assessment.currentPage.pageId} button:contains(Next)").toggleClass("passedValidation", passedValidation)
 
 setInterval(AssessmentPage.validateCurrentPageUpdateNextButton, 800)
 
@@ -245,19 +242,25 @@ class JQueryLogin extends AssessmentPage
     
 
 class StudentInformationPage extends AssessmentPage
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("radioButtons")
-    return properties
+  constructor: (options) ->
+    super(options)
+    @radioButtons = options.radioButtons
+    # Create some id friendly attributes
+    for radioButton in @radioButtons
+      radioButton.name = radioButton.label.toLowerCase().dasherize()
+      radioButton.options = for option in radioButton.options
+        {
+          id : radioButton.name + "-"+ option.toLowerCase().dasherize()
+          label: option
+        }
+    @content = StudentInformationPage.template(this)
 
   validate: ->
-    
-    if $("#StudentInformation input:'radio':checked").length == 7
-      return true
-    else
-      #console.log $("#StudentInformation input[type='radio']").not(":checked")
-      # return which element is not selected
-      return "All elements are required"
+    names = ($(inputElement).html().toLowerCase().dasherize() for inputElement in $("div##{@pageId} form legend"))
+    for name in names
+      unless $("input[name=#{name}]").is(":checked")
+        return $("input[name=#{name}]").first().parent().find("legend").html() + " is not complete"
+    return true
 
 StudentInformationPage.template = Handlebars.compile "
   <form>
@@ -265,45 +268,31 @@ StudentInformationPage.template = Handlebars.compile "
       <fieldset data-type='{{type}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
         {{#options}}
-          <label for='{{.}}'>{{.}}</label>
-          <input type='radio' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+          <label for='{{id}}'>{{label}}</label>
+          <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>
         {{/options}}
       </fieldset>
     {{/radioButtons}}
   </form>
 "
 
-StudentInformationPage.deserialize = (pageObject) ->
-  studentInformationPage = new StudentInformationPage()
-  studentInformationPage.load(pageObject)
-  studentInformationPage.content = StudentInformationPage.template(studentInformationPage)
-  return studentInformationPage
-
 class SchoolPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @schools = options.schools
-    $("div##{@pageId} li").live "click", (eventData) =>
-      selectedElement = $(eventData.currentTarget)
-      for dataAttribute in ["name","province","district","schoolId"]
-        $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
+    @selectNameText = options.selectNameText
 
-
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("schools")
-    properties.push("selectNameText")
-    properties.push(property+"Text") for property in ["name","province","district","schoolId"]
-    return properties
-
-  #TODO remove onClick, switch to live
-  _schoolTemplate: ->
     properties = ["name","province","district","schoolId"]
+  
+    # Load from the object
+    for property in properties
+      this[property + "Text"] = options[property + "Text"]
 
     listAttributes = ""
     for dataAttribute in properties
       listAttributes += "data-#{dataAttribute}='{{#{dataAttribute}}}' "
-    listElement = "<li #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
+
+    listElement = "<li style='display:none' #{listAttributes}>{{district}} - {{province}} - {{name}}</li>"
 
     inputElements = ""
     for dataAttribute in properties
@@ -313,28 +302,51 @@ class SchoolPage extends AssessmentPage
         <input type='text' name='#{dataAttribute}' id='#{dataAttribute}'></input>
       </div>
       "
-  
-    return "
-    <div>
-      <h4>
-        {{selectSchoolText}}
-      </h4>
-    </div>
-    <ul style='display:none' data-filter='true' data-filter-placeholder='Search for school...' data-role='listview'>
-      {{#schools}}
-        #{listElement}
-      {{/schools}}
-    </ul>
-    <br/>
-    <br/>
-    <form>
-      #{inputElements}
-    </form>
-  "
+    template = "
+      <div>
+        <h4>
+          {{selectSchoolText}}
+        </h4>
+      </div>
+      <form id='{{pageId}}-form'>
+        #{inputElements}
+      </form>
+      <ul>
+        {{#schools}}
+          #{listElement}
+        {{/schools}}
+      </ul>
+      <br/>
+      <br/>
+    "
+    @schoolTemplate = Handlebars.compile template
+
+    @content = @schoolTemplate(this)
+
+    $("div##{@pageId} form##{@pageId}-form input").live "propertychange keyup input paste", (event) =>
+      currentName = $(event.target).val()
+      for school in $("div##{@pageId} li")
+        school = $(school)
+        school.hide()
+        school.show() if school.html().match(new RegExp(currentName, "i"))
+
+    $("div##{@pageId} li").live "click", (eventData) =>
+      $(school).hide() for school in $("div##{@pageId} li")
+      selectedElement = $(eventData.currentTarget)
+      for dataAttribute in ["name","province","district","schoolId"]
+        $("div##{@pageId} form input##{dataAttribute}").val(selectedElement.attr("data-#{dataAttribute}"))
+
+  propertiesForSerialization: ->
+    properties = super()
+    properties.push("schools")
+    properties.push("selectNameText")
+    properties.push(property+"Text") for property in ["name","province","district","schoolId"]
+    return properties
+
 
 
   validate: ->
-    for inputElement in $("div##{@pageId} form div.ui-field-contain input")
+    for inputElement in $("div##{@pageId} form input")
       if $(inputElement).val() == ""
         return "'#{$("label[for="+inputElement.id+"]").html()}' is empty"
     return true
@@ -342,53 +354,41 @@ class SchoolPage extends AssessmentPage
 SchoolPage.deserialize = (pageObject) ->
   schoolPage = new SchoolPage(pageObject)
   schoolPage.load(pageObject)
-  schoolPage.content = Mustache.to_html(schoolPage._schoolTemplate(),schoolPage)
+  schoolPage.content = schoolPage.template(schoolPage._schoolTemplate(),schoolPage)
   return schoolPage
-
-
-# HACK!
-SchoolPage.hideListUntilSearch = ->
-  if $("#School input[data-type='search']").val() != ""
-    $("#School ul").show()
-    clearInterval(hideListUntilSearchInterval)
-
-hideListUntilSearchInterval = setInterval(SchoolPage.hideListUntilSearch,500)
-
 
 #TODO Internationalize
 class DateTimePage extends AssessmentPage
 
   load: (data) ->
+    dateTime = new Date()
+    year = dateTime.getFullYear()
+    month = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dateTime.getMonth()]
+    day = dateTime.getDate()
+    minutes = dateTime.getMinutes()
+    minutes = "0" + minutes if minutes < 10
+    time = dateTime.getHours() + ":" + minutes
     @content = "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='year'>Year:</label>
-    <input type='number' name='year' id='year' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='month'>Month:</label>
-    <input type='text' name='month' id='month' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='day'>Day:</label>
-    <input type='number' name='day' id='day' />
-  </div>
-  <div data-role='fieldcontain'>
-    <label for='time'>Time:</label>
-    <input type='text' name='time' id='time' />
-  </div>
-</form>
-"
-    super(data)
-    $("div##{@pageId}").live "pageshow", =>
-      dateTime = new Date()
-      $("div##{@pageId} #year").val(dateTime.getFullYear())
-      $("div##{@pageId} #month").val(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dateTime.getMonth()])
-      $("div##{@pageId} #day").val(dateTime.getDate())
-      minutes = dateTime.getMinutes()
-      minutes = "0" + minutes if minutes < 10
-      $("div##{@pageId} #time").val(dateTime.getHours() + ":" + minutes)
-      
+      <form>
+        <div data-role='fieldcontain'>
+          <label for='year'>Year:</label>
+          <input type='number' name='year' id='year' value='#{year}' />
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='month'>Month:</label>
+          <input type='text' name='month' id='month' value='#{month}'/>
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='day'>Day:</label>
+          <input type='number' name='day' id='day' value='#{day}' />
+        </div>
+        <div data-role='fieldcontain'>
+          <label for='time'>Time:</label>
+          <input type='text' name='time' id='time' value='#{time}' />
+        </div>
+      </form>
+      "
+
 
 class ResultsPage extends AssessmentPage
   constructor: (options) ->
@@ -428,7 +428,7 @@ class ResultsPage extends AssessmentPage
       $("div##{@pageId} div[data-role='header'] a").hide()
       $("div##{@pageId} div[data-role='footer'] div").hide()
       validationResult = $.assessment.validate()
-      if validationResult == true
+      unless validationResult?
         $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Validated")
         $.assessment.saveResults (results) =>
           $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
@@ -445,24 +445,19 @@ class TextPage extends AssessmentPage
 class ConsentPage extends TextPage
   constructor: (options) ->
     super(options)
-
-    $("div##{@pageId} label[for='consent-no']").live "click", (eventData) =>
-      $("#_infoPage div[data-role='content']").html("<b>Thank you for your time</b>. Saving partial results.")
-      $.mobile.changePage("#_infoPage")
-      $.assessment.saveResults (results) =>
-        setTimeout ( ->
-          $("#_infoPage div[data-role='content']").html("Resetting assessment for next student.")
-          setTimeout ( ->
-            $.assessment.reset()
-          ), 1000
-        ), 2000
-
+    $('#save-reset').live "click", ->
+      $.assessment.saveResults()
+      $.assessment.reset()
+      
 
   validate: ->
-    if $("div##{@pageId} input[@name='childConsents']:checked").val()
+    if $("div##{@pageId} input#consent-yes:checked").length > 0
       return true
+    else if $("div##{@pageId} input#consent-no:checked").length > 0
+      return "Click to confirm that the child has not consented <button id='save-reset'>Confirm</button>"
     else
       return "You must answer the consent question"
+
 
 
 class UntimedSubtest extends AssessmentPage
@@ -557,8 +552,10 @@ class PhonemePage extends AssessmentPage
       wordName = @subtestId + "-number-sound-" + (index+1)
       "
       <div data-role='fieldcontain'>
-          <legend>#{item["word"]} - #{item["number-of-sounds"]}</legend>
           <fieldset data-role='controlgroup' data-type='horizontal'>
+            <legend>#{item["word"]}</legend>
+            <fieldset data-role='controlgroup' data-type='horizontal'>
+              <legend>Number of phonemes: #{item["number-of-sounds"]}</legend>
       " +
       (for answer in ["Correct", "Incorrect"]
         "
@@ -567,20 +564,21 @@ class PhonemePage extends AssessmentPage
         "
       ).join("") +
       "
-          </fieldset>
-          <fieldset data-role='controlgroup' data-type='horizontal'>
+        </fieldset>
+        <fieldset data-role='controlgroup' data-type='horizontal'>
+          <legend>Phonemes identified</legend>
       " +
       (for phoneme in item["phonemes"]
         phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
         "
-          <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
-          <label for='#{phonemeName}'>#{phoneme}</label>
+            <label for='#{phonemeName}'>#{phoneme}</label>
+            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
         "
       ).join("") +
       "
+            </fieldset>
           </fieldset>
       </div>
-      <hr/>
       "
     ).join("") + "</form>"
 
@@ -614,18 +612,17 @@ PhonemePage.deserialize = (pageObject) ->
 class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     @letters = options.letters
-    #@pageId = options.pageId
     @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
     @addTimer()
 
-    result = ""
+    result = "<table><tr>"
     for letter,index in @letters
-      result += "<div class='grid'><span class='grid-text' >#{letter}</span></div>"
-      if ((index+1) % 5 == 0)
-        result += "<div class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></div>"
-
+      result += "<td class='grid'><span class='grid-text' >#{letter}</span></td>"
+      if ((index+1) % 10 == 0)
+        result += "<td class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></td></tr><tr>"
+    result += "</tr></table>"
 
     @content =  "
       <div class='timer'>
@@ -679,12 +676,6 @@ class ToggleGridWithTimer extends AssessmentPage
           # Need to turn off only non toggled
           gridItem.removeClass("selected rowtoggled") if gridItem.hasClass("rowtoggled")
 
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("letters")
-    return properties
-
-
   results: ->
     results = {}
 
@@ -703,9 +694,9 @@ class ToggleGridWithTimer extends AssessmentPage
     else
       @autostop = false
 
-    return false unless @timer.hasStartedAndStopped()
-    results.letters = new Array()
     results.time_remain = @timer.seconds
+    return results unless @timer.hasStartedAndStopped() #optimization
+    results.letters = new Array()
     # Initialize to all wrong
     results.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
     results.attempted = null

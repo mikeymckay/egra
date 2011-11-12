@@ -3,33 +3,59 @@
 	<head> 
     <title>Tangerine</title> 
     <meta name="viewport" content="width=device-width, user-scalable=no"> 
+    <meta charset="utf-8">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon-precomposed" href="/egra/_design/app/images/TangerineIcon.png"/> 
-    <link rel="stylesheet" href="js-libraries/jquery-mobile/jquery.mobile-1.0b3.min.css" type="text/css"/>
 
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="css/style.css?v=1">
+
+    <!-- All JavaScript at the bottom, except for Modernizr which enables HTML5 elements & feature detects -->
+    <script src="js-libraries/modernizr-custom.js"></script>
+    <script>Modernizr.mq('(min-width:0)') || document.write('<script src="js-libraries/respond.min.js">\x3C/script>')</script>
     <script type="text/javascript" src="js-libraries/jquery-1.6.2.min.js"></script>
-    <script type="text/javascript" src="js-libraries/jquery.couch.js"></script>
-    <!-- TODO switch all mustache to handlebars -->
+    <script src="js-libraries/mobile_boilerplate.js"></script>
     <script type="text/javascript" src="css.js"></script>
-    <script type="text/javascript" src="js-libraries/mustache.js"></script>
+
+  </head> 
+  <body>
+
+    <div data-role='page' id='menu'>
+      <div data-role='header'>
+        <h1>Tangerine</h1>
+        <div id='version'></div>
+      </div><!-- /header -->
+      <div data-role='content'>	
+      </div><!-- /content -->
+      <div data-role='footer'>
+      </div><!-- /footer -->
+    </div><!-- /page -->
+
+    <script type="text/javascript" src="js-libraries/jquery.couch.js"></script>
     <script type="text/javascript" src="js-libraries/underscore.js"></script>
     <script type="text/javascript" src="js-libraries/handlebars.js"></script>
     <script type="text/javascript" src="js-libraries/inflection.js"></script>
     <script type="text/javascript" src="js-libraries/jquery.ba-bbq.min.js"></script>
+    <script type="text/javascript" src="js-libraries/backbone.min.js"></script>
+    <script type="text/javascript" src="js-libraries/backbone-couchdb.js"></script>
 
-    <script type="text/javascript" src="models/template.js"></script>
+    <script type="text/javascript" src="config.js"></script>
     <script type="text/javascript" src="models/assessment.js"></script>
+    <script type="text/javascript" src="models/AssessmentCollection.js"></script>
     <script type="text/javascript" src="models/jqueryMobilePage.js"></script>
     <script type="text/javascript" src="models/scorer.js"></script>
     <script type="text/javascript" src="models/timer.js"></script>
-    <script type="text/javascript" src="egra.js"></script>
-    <script type="text/javascript" src="js-libraries/jquery-mobile/jquery.mobile-1.0b3.min.js"></script>
+    <script type="text/javascript" src="tangerine.js"></script>
+    <script>
+      // iPhone Scale Bug Fix, read this when using http://www.blog.highub.com/mobile-2/a-fix-for-iphone-viewport-scale-bug/
+      MBP.scaleFix();
+    </script>
     <!-- Can replace above js refs with: -->
     <!--
     <script type="text/javascript" src="combined-javascript/egra.min.js"></script>
     -->
     <!-- ** -->
-  </head> 
-  <body>
   </body>
 </html>
 

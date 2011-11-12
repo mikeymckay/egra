@@ -1,26 +1,35 @@
 var Assessment;
-var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
+  function ctor() { this.constructor = child; }
+  ctor.prototype = parent.prototype;
+  child.prototype = new ctor;
+  child.__super__ = parent.prototype;
+  return child;
+}, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 $.assessment = null;
 Assessment = (function() {
-  function Assessment(name) {
-    this.name = name;
-    this.urlPath = "Assessment." + this.name;
-    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
+  __extends(Assessment, Backbone.Model);
+  function Assessment() {
+    Assessment.__super__.constructor.apply(this, arguments);
   }
+  Assessment.prototype.url = '/assessment';
   Assessment.prototype.changeName = function(newName) {
     var page, _i, _len, _ref, _results;
     this.name = newName;
     this.urlPath = "Assessment." + this.name;
     this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
     this.urlPathsForPages = [];
-    _ref = this.pages;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      page.urlPath = this.urlPath + "." + page.pageId;
-      _results.push(this.urlPathsForPages.push(page.urlPath));
+    if (this.pages != null) {
+      _ref = this.pages;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        page = _ref[_i];
+        page.urlPath = this.urlPath + "." + page.pageId;
+        _results.push(this.urlPathsForPages.push(page.urlPath));
+      }
+      return _results;
     }
-    return _results;
   };
   Assessment.prototype.setPages = function(pages) {
     var index, page, _len, _ref, _results;
@@ -114,6 +123,15 @@ Assessment = (function() {
           console.log("creating " + databaseName);
           return $.couch.db(databaseName).create({
             success: __bind(function() {
+              $.couch.db(databaseName).saveDoc({
+                "_id": "_design/aggregate",
+                "language": "javascript",
+                "views": {
+                  "fields": {
+                    "map": '(function(doc, req) {\n  var concatNodes, fields;\n  fields = [];\n  concatNodes = function(parent, o) {\n    var index, key, value, _len, _results, _results2;\n    if (o instanceof Array) {\n      _results = [];\n      for (index = 0, _len = o.length; index < _len; index++) {\n        value = o[index];\n        _results.push(typeof o !== "string" ? concatNodes(parent + "." + index, value) : void 0);\n      }\n      return _results;\n    } else {\n      if (typeof o === "string") {\n        return fields.push("" + parent + ",\\"" + o + "\\"\\n");\n      } else {\n        _results2 = [];\n        for (key in o) {\n          value = o[key];\n          _results2.push(concatNodes(parent + "." + key, value));\n        }\n        return _results2;\n      }\n    }\n  };\n  concatNodes("", doc);\n  return emit(null, fields);\n});'
+                  }
+                }
+              });
               return this.saveResults(callback, true);
             }, this),
             error: __bind(function() {
@@ -133,18 +151,18 @@ Assessment = (function() {
   Assessment.prototype.validate = function() {
     var page, pageResult, validationErrors, _i, _len, _ref;
     validationErrors = "";
-    _ref = this.pages;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      pageResult = page.validate();
-      if (pageResult !== true) {
-        validationErrors += "'" + (page.name()) + "' page invalid: " + pageResult + " <br/>";
+    if (this.pages != null) {
+      _ref = this.pages;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        page = _ref[_i];
+        pageResult = page.validate();
+        if (pageResult !== true) {
+          validationErrors += "'" + (page.name()) + "' page invalid: " + pageResult + " <br/>";
+        }
       }
     }
     if (validationErrors !== "") {
       return validationErrors;
-    } else {
-      return true;
     }
   };
   Assessment.prototype.toJSON = function() {
@@ -290,7 +308,6 @@ Assessment = (function() {
         return _results;
       }).call(this);
       result = result.join("");
-      result += "        <div data-role='dialog' id='_infoPage'>          <div data-role='header'>	            <h1>Information</h1>          </div>          <div data-role='content'>	          </div><!-- /content -->        </div>      ";
       if (callback != null) {
         callback(result);
       }
@@ -356,88 +373,62 @@ Assessment = (function() {
       }
     }
   };
+  Assessment.prototype.nextPage = function() {
+    var validationMessageElement, validationResult;
+    validationResult = this.currentPage.validate();
+    if (validationResult !== true) {
+      validationMessageElement = $("#" + this.currentPage.pageId + " div.validation-message");
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+      return;
+    }
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.nextPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
+  };
+  Assessment.prototype.backPage = function() {
+    $("#" + this.currentPage.pageId).hide();
+    this.currentPage = _.find(this.pages, __bind(function(page) {
+      return page.pageId === this.currentPage.previousPage;
+    }, this));
+    $("#" + this.currentPage.pageId).show();
+    window.scrollTo(0, 0);
+    return $("#" + this.currentPage.pageId).trigger("pageshow");
+  };
   return Assessment;
 })();
-Assessment.load = function(url, callback) {
-  var assessment, urlPath, urlScheme;
-  try {
-    urlScheme = url.substring(0, url.indexOf("://"));
-    urlPath = url.substring(url.indexOf("://") + 3);
-  } catch (error) {
-    throw "Invalid url: " + url;
-  }
-  switch (urlScheme) {
-    case "localstorage":
-      assessment = Assessment.loadFromLocalStorage(urlPath);
-      if (callback != null) {
-        callback(assessment);
+Assessment.load = function(id, callback) {
+  var assessment;
+  assessment = new Assessment({
+    _id: id
+  });
+  return assessment.fetch({
+    success: function() {
+      var pages, url, urlPath, _i, _len, _ref;
+      assessment.changeName(assessment.get("name"));
+      pages = [];
+      _ref = assessment.get("urlPathsForPages");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        urlPath = _ref[_i];
+        url = "/" + Tangerine.config.db_name + "/" + urlPath;
+        JQueryMobilePage.loadFromHTTP({
+          url: url,
+          async: false
+        }, __bind(function(page) {
+          page.assessment = assessment;
+          return pages.push(page);
+        }, this));
       }
-      break;
-    case "http":
-      Assessment.loadFromHTTP(urlPath, function(result) {
-        if (callback != null) {
-          return callback(result);
-        }
-      });
-      break;
-    default:
-      throw "URL type not yet implemented: " + urlScheme;
-  }
-  return assessment;
-};
-Assessment.loadFromLocalStorage = function(urlPath) {
-  var assessment, assessmentObject, pages, _i, _len, _ref;
-  assessmentObject = JSON.parse(localStorage[urlPath]);
-  if (assessmentObject == null) {
-    throw "Could not load localStorage['" + urlPath + "'], " + error;
-  }
-  assessment = new Assessment(assessmentObject.name);
-  assessment.urlScheme = "localstorage";
-  pages = [];
-  _ref = assessmentObject.urlPathsForPages;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    urlPath = _ref[_i];
-    pages.push(JQueryMobilePage.loadFromLocalStorage(urlPath));
-  }
-  assessment.setPages(pages);
-  return assessment;
-};
-Assessment.loadFromHTTP = function(url, callback) {
-  var assessment, baseUrl;
-  assessment = null;
-  baseUrl = url.substring(0, url.lastIndexOf("/") + 1);
-  $.ajax({
-    url: url,
-    type: 'GET',
-    dataType: 'json',
-    success: function(result) {
-      var pages, urlPath, _i, _len, _ref;
-      try {
-        assessment = new Assessment(result.name);
-        pages = [];
-        _ref = result.urlPathsForPages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          urlPath = _ref[_i];
-          url = baseUrl + urlPath;
-          JQueryMobilePage.loadFromHTTP({
-            url: url,
-            async: false
-          }, __bind(function(result) {
-            result.assessment = assessment;
-            return pages.push(result);
-          }, this));
-        }
-        assessment.setPages(pages);
-        if (callback != null) {
-          return callback(assessment);
-        }
-      } catch (error) {
-        return console.log("Error in Assessment.loadFromHTTP:" + error);
+      assessment.setPages(pages);
+      if (callback != null) {
+        return callback(assessment);
       }
     },
     error: function() {
       throw "Failed to load: " + url;
     }
   });
-  return assessment;
 };

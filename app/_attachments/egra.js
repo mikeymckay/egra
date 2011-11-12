@@ -1,15 +1,12 @@
 var EarlyGradeReadingAssessment;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-$(document).bind("mobileinit", function() {
-  $.mobile.autoInitializePage = false;
-  return $.mobile.defaultPageTransition = 'none';
-});
 $(document).ready(function() {
-  $("body").html("    <div data-role='page' id='menu'>      <div data-role='header'>        <h1>Tangerine</h1>      </div><!-- /header -->      <div data-role='content'>	      </div><!-- /content -->      <div data-role='footer'>      </div><!-- /footer -->    </div><!-- /page -->  ");
+  $.get('version', function(result) {
+    return $("#version").html(result);
+  });
   switch ($.deparam.querystring().role) {
     case "enumerator":
       $("div[data-role='content']").html("        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?role=enumerator'>My completed assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Start assessment</a>      ");
-      $.mobile.initializePage();
       return;
   }
   switch (document.location.search) {
@@ -80,8 +77,7 @@ EarlyGradeReadingAssessment.showMenu = function(message) {
         }
         return _results;
       })();
-      $("div[data-role='content']").html("        " + message + "        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>        <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>        <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?studentPrintout=true'>Student printout</a>        <div data-role='collapsible' data-collapsed='true'>          <h3>Documents</h3>          " + (documents.join("<br/>")) + "        </div>      ");
-      return $.mobile.initializePage();
+      return $("div[data-role='content']").html("        " + message + "        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.EGRA Prototype'>Load 'Assessment.EGRA Prototype' from Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.The Gambia EGRA May 2011'>Load sample assessment</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?Assessment.Test'>Demo single subtest</a>        <!--        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?deleteFromCouch=true'>Delete all 'Assessment.EGRA' documents from Couch</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?loadFromTestDataSaveToCouch=true'>Load from Test Data Save To Couch</a>        -->        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncToCentral=true'>Send local results to TangerineCentral.com</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?SyncFromCentral=true'>Update system</a>        <a data-ajax='false' data-role='button' href='csv.html?database=the-gambia-egra-may-2011'>Download aggregated results as CSV file (spreadsheet format)</a>        <a data-ajax='false' data-role='button' href='/egra/_design/tangerine-cloud/index.html'>Create/edit assessments</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?compact=true'>Compact database</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?printout=true'>Generate printout</a>        <a data-ajax='false' data-role='button' href='" + document.location.pathname + "?studentPrintout=true'>Student printout</a>        <div data-role='collapsible' data-collapsed='true'>          <h3>Documents</h3>          " + (documents.join("<br/>")) + "        </div>      ");
     }, this),
     error: function() {
       throw "Could not GET " + url;
@@ -119,15 +115,20 @@ EarlyGradeReadingAssessment.loadFromCouch = function(path) {
   return Assessment.loadFromHTTP("/egra/" + path, function(assessment) {
     return assessment.render(function(result) {
       $("body").html(result);
-      return $.mobile.initializePage();
-    });
-  });
-};
-EarlyGradeReadingAssessment.loadTest = function() {
-  return Assessment.loadFromHTTP("/egra/Assessment.Test", function(assessment) {
-    return assessment.render(function(result) {
-      $("body").html(result);
-      return $.mobile.initializePage();
+      $("div[data-role='page']").hide();
+      assessment.currentPage = assessment.pages[0];
+      $("#" + assessment.currentPage.pageId).show();
+      $("#" + assessment.currentPage.pageId).trigger("pageshow");
+      _.each($('button:contains(Next)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.nextPage();
+        });
+      });
+      return _.each($('button:contains(Back)'), function(button) {
+        return new MBP.fastButton(button, function() {
+          return assessment.backPage();
+        });
+      });
     });
   });
 };
@@ -165,30 +166,4 @@ EarlyGradeReadingAssessment.deleteFromCouch = function(callback) {
       }
     }, this)
   });
-};
-EarlyGradeReadingAssessment.loadFromTestDataSaveToCouch = function(callback) {
-  return Assessment.loadFromHTTP("tests/testData/Assessment.TEST EGRA Prototype", function(assessment) {
-    assessment.changeName("EGRA Prototype");
-    return assessment.saveToCouchDB(callback);
-  });
-};
-EarlyGradeReadingAssessment.createFromGoogle = function() {
-  var assessment, instructions, letters, login;
-  assessment = new Assessment("EGRA Prototype");
-  login = new JQueryMobilePage();
-  instructions = new InstructionsPage();
-  letters = new LettersPage();
-  login.pageId = "Login";
-  login.header = "<h1>EGRA</h1>";
-  login.content = (new JQueryLogin()).render();
-  instructions.pageId = "Instructions";
-  instructions.header = "<h1>EGRA</h1>";
-  instructions.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdGJSZTY2MHU4VlJ3RnNtdnNDVjRjLVE&hl=en&output=html";
-  instructions.updateFromGoogle();
-  letters.pageId = "Letters";
-  letters.header = "<h1>EGRA</h1>";
-  letters.url = "https://spreadsheets.google.com/pub?key=0Ago31JQPZxZrdC1MeGVqd3FZbXM2RnNFREtoVVZFbmc&hl=en&output=html";
-  letters.updateFromGoogle();
-  assessment.setPages([login, instructions, letters]);
-  return assessment;
 };
