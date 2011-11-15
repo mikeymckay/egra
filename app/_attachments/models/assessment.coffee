@@ -226,15 +226,6 @@ class Assessment extends Backbone.Model
       result = for page,i in @pages
         page.render()
       result = result.join("")
-#      result += "
-#        <div data-role='dialog' id='_infoPage'>
-#          <div data-role='header'>	
-#            <h1>Information</h1>
-#          </div>
-#          <div data-role='content'>	
-#          </div><!-- /content -->
-#        </div>
-#      "
       callback(result) if callback?
       return result
 

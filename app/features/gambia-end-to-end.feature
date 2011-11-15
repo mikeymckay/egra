@@ -5,7 +5,8 @@ Feature: Ghana End To End
 
 @javascript
 Scenario: Open page
-  When I am on http://localhost:5984/egra/_design/app/index.html?Assessment.The%20Gambia%20EGRA%20May%202011
+  Given I am on http://localhost:5984/egra/_design/app/index.html
+  When I touch "The Gambia EGRA May 2011"
   Then I should see "Username"
   And I should see "Password"
   When I fill in "username" with "jsmith"

@@ -21,16 +21,16 @@
   </head> 
   <body>
 
-    <div data-role='page' id='menu'>
-      <div data-role='header'>
-        <h1>Tangerine</h1>
-        <div id='version'></div>
-      </div><!-- /header -->
-      <div data-role='content'>	
-      </div><!-- /content -->
-      <div data-role='footer'>
-      </div><!-- /footer -->
-    </div><!-- /page -->
+    <div id='version'>	
+      <img src='images/TangerineNoBackground.png'>
+    </div>
+    <script>
+      // Loads from the version file
+      $.get('version', function(result){$("#version").prepend(result)});
+    </script>
+
+    <div id='content'>	
+    </div><!-- /content -->
 
     <script type="text/javascript" src="js-libraries/jquery.couch.js"></script>
     <script type="text/javascript" src="js-libraries/underscore.js"></script>

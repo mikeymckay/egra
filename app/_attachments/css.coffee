@@ -15,6 +15,26 @@ $("head").append "
       font-size: 150%;
     }
 
+    #version {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 50%;
+    }
+    #assessments li{
+      list-style: none;
+      background:#eee;
+      text-decoration:none;
+      color:#333;
+      font-family:Arial, sans-serif;
+      font-weight:bold;
+      padding:3px 5px;
+      border:1px solid #aaa;
+      border-radius:3px;
+      cursor:pointer;
+      width: 50%;
+    }
+
     legend{
       font-weight: bold;
     }
