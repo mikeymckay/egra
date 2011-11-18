@@ -5,13 +5,14 @@ Feature: Ghana End To End
 
 @javascript
 Scenario: Open page
-  Given I am on http://localhost:5984/egra/_design/app/index.html
-  When I touch "The Gambia EGRA May 2011"
-  Then I should see "Username"
+  Given I am on http://localhost:5984/egra/_design/app/_rewrite
+  Then I should see "Enumerator Name"
+  When I fill in "name" with "jsmith"
   And I should see "Password"
-  When I fill in "username" with "jsmith"
   And I fill in "password" with "secret"
-  And I touch "Next"
+  And I touch "Login"
+  Then I should see "Available Assessments"
+  When I touch "The Gambia EGRA May 2011"
   Then I should see "Date Time"
   And I touch "Next"
   Then I should see "School"
@@ -96,3 +97,4 @@ Scenario: Open page
   Then I should see "Pupil Context Interview"
   And I touch "Next"
   Then I should see "Results"
+  And I should not see "Invalid results"

@@ -14,7 +14,25 @@ JQueryMobilePage = (function() {
     this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
   }
   JQueryMobilePage.prototype.render = function() {
-    return JQueryMobilePage.template(this);
+    this.assessment.currentPage = this;
+    $('div#content').html(JQueryMobilePage.template(this));
+    $("#" + this.pageId).trigger("pageshow");
+    window.scrollTo(0, 0);
+    return _.each($('button:contains(Next)'), __bind(function(button) {
+      return new MBP.fastButton(button, __bind(function() {
+        return this.renderNextPage();
+      }, this));
+    }, this));
+  };
+  JQueryMobilePage.prototype.renderNextPage = function() {
+    var validationMessageElement;
+    if (this.validate() !== true) {
+      validationMessageElement = $("#" + this.pageId + " div.validation-message");
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+      return;
+    }
+    this.results();
+    return this.nextPage.render();
   };
   JQueryMobilePage.prototype.propertiesForSerialization = function() {
     return ["pageId", "pageType", "urlPath", "urlScheme"];
@@ -167,7 +185,7 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
     url: $.couchDBDatabasePath + urlPath
   }, callback);
 };
-JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <button href='\#{{previousPage}}'>Back</button>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->");
+JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>    <div class='validation-message'></div>  </div><!-- /footer --></div><!-- /page -->");
 AssessmentPage = (function() {
   __extends(AssessmentPage, JQueryMobilePage);
   function AssessmentPage() {
@@ -192,6 +210,10 @@ AssessmentPage = (function() {
   };
   AssessmentPage.prototype.results = function() {
     var objectData;
+    if (this.assessment.currentPage.pageId !== this.pageId) {
+      return this.lastResult;
+    }
+    this.lastResult = null;
     objectData = {};
     $.each($("div#" + this.pageId + " form").serializeArray(), function() {
       var value;
@@ -209,7 +231,8 @@ AssessmentPage = (function() {
         return objectData[this.name] = value;
       }
     });
-    return objectData;
+    this.lastResult = objectData;
+    return this.lastResult;
   };
   return AssessmentPage;
 })();
@@ -240,12 +263,6 @@ JQueryLogin = (function() {
     this.randomIdForSubject = ("" + Math.random()).substring(2, 8);
     this.randomIdForSubject = this.randomIdForSubject.substr(0, 3) + "-" + this.randomIdForSubject.substr(3);
     this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
-    $("div").live("pageshow", function() {
-      $.assessment.handleURLParameters();
-      if (!($.assessment.hasUserAuthenticated() || ($.assessment.currentPage.pageId === "Login"))) {
-        return $.mobile.changePage("#Login");
-      }
-    });
   }
   JQueryLogin.prototype.user = function() {
     return this.results().username;
@@ -254,10 +271,13 @@ JQueryLogin = (function() {
     return this.results().password;
   };
   JQueryLogin.prototype.results = function() {
-    var results;
-    results = JQueryLogin.__super__.results.call(this);
-    results["randomIdForSubject"] = this.randomIdForSubject;
-    return results;
+    if (this.assessment.currentPage.pageId !== this.pageId) {
+      return this.lastResult;
+    }
+    this.lastResult = null;
+    this.lastResult = JQueryLogin.__super__.results.call(this);
+    this.lastResult["randomIdForSubject"] = this.randomIdForSubject;
+    return this.lastResult;
   };
   return JQueryLogin;
 })();
@@ -404,7 +424,7 @@ DateTimePage = (function() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
   DateTimePage.prototype.load = function(data) {
-    var dateTime, day, minutes, month, time, year;
+    var dateTime, day, minutes, month, randomIdForSubject, time, year;
     dateTime = new Date();
     year = dateTime.getFullYear();
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()];
@@ -414,7 +434,13 @@ DateTimePage = (function() {
       minutes = "0" + minutes;
     }
     time = dateTime.getHours() + ":" + minutes;
-    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
+    randomIdForSubject = ("" + Math.random()).substring(2, 8);
+    randomIdForSubject = randomIdForSubject.substr(0, 3) + "-" + randomIdForSubject.substr(3);
+    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='student-id'>Student Identifier:</label>          <input type='text' name='student-id' id='student-id' value='" + randomIdForSubject + "' />        </div>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
+  };
+  DateTimePage.prototype.validate = function() {
+    $("#current-student-id").html($("#student-id").val());
+    return DateTimePage.__super__.validate.call(this);
   };
   return DateTimePage;
 })();
@@ -427,20 +453,13 @@ ResultsPage = (function() {
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
-      var validationResult, _ref, _ref2;
-      $("div#" + this.pageId + " div span[class='randomIdForSubject']").html((_ref = $.assessment.results()) != null ? (_ref2 = _ref.Login) != null ? _ref2.randomIdForSubject : void 0 : void 0);
+      $("div#" + this.pageId + " div span[class='randomIdForSubject']").html($("#current-student-id"));
       $("div#" + this.pageId + " div[data-role='header'] a").hide();
       $("div#" + this.pageId + " div[data-role='footer'] div").hide();
-      validationResult = $.assessment.validate();
-      if (validationResult == null) {
-        $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Validated");
-        return $.assessment.saveResults(__bind(function(results) {
-          $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
-          return $("div#" + this.pageId + " div[data-role='content'] div.results pre").html(JSON.stringify(results, null, 2));
-        }, this));
-      } else {
-        return $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> " + validationResult + "<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.");
-      }
+      return $.assessment.saveResults(__bind(function(results) {
+        $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
+        return $("div#" + this.pageId + " div[data-role='content'] div.results pre").html(JSON.stringify(results, null, 2));
+      }, this));
     }, this));
   };
   return ResultsPage;
@@ -625,14 +644,18 @@ PhonemePage = (function() {
     return properties;
   };
   PhonemePage.prototype.results = function() {
-    var input, results, _i, _len, _ref;
-    results = PhonemePage.__super__.results.call(this);
+    var input, _i, _len, _ref;
+    if (this.assessment.currentPage.pageId !== this.pageId) {
+      return this.lastResult;
+    }
+    this.lastResult = null;
+    this.lastResult = PhonemePage.__super__.results.call(this);
     _ref = $("form#" + this.subtestId + " input:checkbox");
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       input = _ref[_i];
-      results["" + input.name] = input.value !== "on";
+      this.lastResult["" + input.name] = input.value !== "on";
     }
-    return results;
+    return this.lastResult;
   };
   PhonemePage.prototype.validate = function() {
     var index, item, results, _len, _ref;
@@ -719,15 +742,18 @@ ToggleGridWithTimer = (function() {
     }, this));
   }
   ToggleGridWithTimer.prototype.results = function() {
-    var firstTenPercent, gridItem, index, items, results, tenPercentOfItems, _len, _len2, _ref, _ref2;
-    results = {};
+    var firstTenPercent, gridItem, index, items, tenPercentOfItems, _len, _len2, _ref, _ref2;
+    if (this.assessment.currentPage.pageId !== this.pageId) {
+      return this.lastResult;
+    }
+    this.lastResult = {};
     items = $("#" + this.pageId + " .grid:not(.toggle-row)");
     tenPercentOfItems = items.length / 10;
     firstTenPercent = items.slice(0, (tenPercentOfItems - 1 + 1) || 9e9);
     if (_.select(firstTenPercent, function(item) {
       return $(item).hasClass("selected");
     }).length === tenPercentOfItems) {
-      results.auto_stop = true;
+      this.lastResult.auto_stop = true;
       if (!this.autostop) {
         $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
         this.timer.stop();
@@ -737,37 +763,37 @@ ToggleGridWithTimer = (function() {
     } else {
       this.autostop = false;
     }
-    results.time_remain = this.timer.seconds;
+    this.lastResult.time_remain = this.timer.seconds;
     if (!this.timer.hasStartedAndStopped()) {
-      return results;
+      return this.lastResult;
     }
-    results.letters = new Array();
+    this.lastResult.letters = new Array();
     _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       gridItem = _ref[index];
-      results.letters[index] = false;
+      this.lastResult.letters[index] = false;
     }
-    results.attempted = null;
+    this.lastResult.attempted = null;
     _ref2 = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
       gridItem = _ref2[index];
       gridItem = $(gridItem);
       if (!gridItem.hasClass("selected")) {
-        results.letters[index] = true;
+        this.lastResult.letters[index] = true;
       }
       if (gridItem.hasClass("last-attempted")) {
-        results.attempted = index + 1;
+        this.lastResult.attempted = index + 1;
         if (this.autostop) {
           $("#" + this.pageId + " .controls .message").html("First " + tenPercentOfItems + " incorrect - autostop.");
         } else {
           $("#" + this.pageId + " .controls .message").html("");
         }
-        return results;
+        return this.lastResult;
       } else {
         $("#" + this.pageId + " .controls .message").html("Select last item attempted");
       }
     }
-    return results;
+    return this.lastResult;
   };
   ToggleGridWithTimer.prototype.validate = function() {
     var results;
@@ -803,45 +829,48 @@ Dictation = (function() {
     return properties;
   };
   Dictation.prototype.results = function() {
-    var enteredData, numberOfSpaces, results;
-    results = {};
+    var enteredData, numberOfSpaces;
+    if (this.assessment.currentPage.pageId !== this.pageId) {
+      return this.lastResult;
+    }
+    this.lastResult = {};
     enteredData = $("div#" + this.pageId + " input[type=text]").val();
     if (enteredData.match(/boys/i)) {
-      results["Wrote boys correctly"] = 2;
+      this.lastResult["Wrote boys correctly"] = 2;
     } else {
       if (enteredData.match(/bo|oy|by/i)) {
-        results["Wrote boys correctly"] = 1;
+        this.lastResult["Wrote boys correctly"] = 1;
       }
     }
     if (enteredData.match(/bikes/i)) {
-      results["Wrote bikes correctly"] = 2;
+      this.lastResult["Wrote bikes correctly"] = 2;
     } else {
       if (enteredData.match(/bi|ik|kes/i)) {
-        results["Wrote bikes correctly"] = 1;
+        this.lastResult["Wrote bikes correctly"] = 1;
       }
     }
     numberOfSpaces = enteredData.split(" ").length - 1;
     if (numberOfSpaces >= 8) {
-      results["Used appropriate spacing between words"] = 2;
+      this.lastResult["Used appropriate spacing between words"] = 2;
     } else {
       if (numberOfSpaces > 3 && numberOfSpaces < 8) {
-        results["Used appropriate spacing between words"] = 1;
+        this.lastResult["Used appropriate spacing between words"] = 1;
       } else {
-        results["Used appropriate spacing between words"] = 0;
+        this.lastResult["Used appropriate spacing between words"] = 0;
       }
     }
-    results["Used appropriate direction of text (left to right)"] = 2;
+    this.lastResult["Used appropriate direction of text (left to right)"] = 2;
     if (enteredData.match(/The/)) {
-      results["Used capital letter for the word 'The'"] = 2;
+      this.lastResult["Used capital letter for the word 'The'"] = 2;
     } else {
-      results["Used capital letter for the word 'The'"] = 0;
+      this.lastResult["Used capital letter for the word 'The'"] = 0;
     }
     if (enteredData.match(/\. *$/)) {
-      results["Used full stop (.) at end of sentence."] = 2;
+      this.lastResult["Used full stop (.) at end of sentence."] = 2;
     } else {
-      results["Used full stop (.) at end of sentence."] = 0;
+      this.lastResult["Used full stop (.) at end of sentence."] = 0;
     }
-    return results;
+    return this.lastResult;
   };
   Dictation.prototype.validate = function() {
     return true;

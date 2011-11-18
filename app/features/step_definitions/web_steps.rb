@@ -15,7 +15,7 @@ module WithinHelpers
 end
 World(WithinHelpers)
 
-active_page = "div[data-role=page]:visible"
+active_page = "div#content"
 
 Given /^(?:|I )am on (.+)$/ do |url|
   visit (url)

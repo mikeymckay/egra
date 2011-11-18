@@ -7,7 +7,21 @@ class JQueryMobilePage
     @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
 
   render: ->
-    JQueryMobilePage.template(this)
+    @assessment.currentPage = this
+    $('div#content').html(JQueryMobilePage.template(this))
+    $("##{@pageId}").trigger("pageshow")
+    window.scrollTo(0,0)
+    _.each $('button:contains(Next)'), (button) =>
+      new MBP.fastButton button, =>
+        @renderNextPage()
+
+  renderNextPage: ->
+    unless @validate() is true
+      validationMessageElement = $("##{@pageId} div.validation-message")
+      validationMessageElement.html("").show().html(validationResult).fadeOut(5000)
+      return
+    @results() # Saves the current result to @lastResult
+    @nextPage.render()
 
   #url: ->
   #  return "#{@urlScheme}://#{@urlPath}"
@@ -131,7 +145,6 @@ JQueryMobilePage.loadFromCouchDB = (urlPath, callback) ->
 JQueryMobilePage.template = Handlebars.compile "
 <div data-role='page' id='{{{pageId}}'>
   <div data-role='header'>
-    <button href='\#{{previousPage}}'>Back</button>
     <h1>{{name}}</h1>
   </div><!-- /header -->
   <div data-role='content'>	
@@ -171,6 +184,11 @@ class AssessmentPage extends JQueryMobilePage
     return true
 
   results: ->
+    unless @assessment.currentPage.pageId == @pageId
+      return @lastResult
+   
+    @lastResult = null
+
     objectData = {}
     $.each $("div##{@pageId} form").serializeArray(), () ->
       if this.value?
@@ -186,7 +204,8 @@ class AssessmentPage extends JQueryMobilePage
       else
         objectData[this.name] = value
 
-    return objectData
+    @lastResult = objectData
+    return @lastResult
 
 AssessmentPage.validateCurrentPageUpdateNextButton = ->
   return unless $.assessment?
@@ -224,11 +243,6 @@ class JQueryLogin extends AssessmentPage
   </div>
 </form>
 "
-    $("div").live "pageshow", ->
-      $.assessment.handleURLParameters()
-      unless $.assessment.hasUserAuthenticated() or ($.assessment.currentPage.pageId is "Login")
-        $.mobile.changePage("#Login")
-
   user: ->
     @results().username
 
@@ -236,9 +250,13 @@ class JQueryLogin extends AssessmentPage
     @results().password
 
   results: ->
-    results = super()
-    results["randomIdForSubject"] = @randomIdForSubject
-    return results
+    unless @assessment.currentPage.pageId == @pageId
+      return @lastResult
+
+    @lastResult = null
+    @lastResult = super()
+    @lastResult["randomIdForSubject"] = @randomIdForSubject
+    return @lastResult
     
 
 class StudentInformationPage extends AssessmentPage
@@ -368,8 +386,15 @@ class DateTimePage extends AssessmentPage
     minutes = dateTime.getMinutes()
     minutes = "0" + minutes if minutes < 10
     time = dateTime.getHours() + ":" + minutes
+    randomIdForSubject = (""+Math.random()).substring(2,8)
+    randomIdForSubject = randomIdForSubject.substr(0,3) + "-" + randomIdForSubject.substr(3)
+
     @content = "
       <form>
+        <div data-role='fieldcontain'>
+          <label for='student-id'>Student Identifier:</label>
+          <input type='text' name='student-id' id='student-id' value='#{randomIdForSubject}' />
+        </div>
         <div data-role='fieldcontain'>
           <label for='year'>Year:</label>
           <input type='number' name='year' id='year' value='#{year}' />
@@ -388,6 +413,10 @@ class DateTimePage extends AssessmentPage
         </div>
       </form>
       "
+
+  validate: ->
+    $("#current-student-id").html $("#student-id").val()
+    super()
 
 
 class ResultsPage extends AssessmentPage
@@ -422,19 +451,15 @@ class ResultsPage extends AssessmentPage
     $("div##{@pageId}").live "pageshow", =>
 
 
-      $("div##{@pageId} div span[class='randomIdForSubject']").html($.assessment.results()?.Login?.randomIdForSubject)
+      $("div##{@pageId} div span[class='randomIdForSubject']").html $("#current-student-id")
 
       # Hide the back and next buttons
       $("div##{@pageId} div[data-role='header'] a").hide()
       $("div##{@pageId} div[data-role='footer'] div").hide()
-      validationResult = $.assessment.validate()
-      unless validationResult?
-        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Validated")
-        $.assessment.saveResults (results) =>
-          $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
-          $("div##{@pageId} div[data-role='content'] div.results pre").html( JSON.stringify(results,null,2) )
-      else
-        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Invalid results:<br/> #{validationResult}<br/>You may start this assessment over again by selecting 'Being Another Assessment' below.")
+
+      $.assessment.saveResults (results) =>
+        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
+        $("div##{@pageId} div[data-role='content'] div.results pre").html( JSON.stringify(results,null,2) )
 
 class TextPage extends AssessmentPage
   propertiesForSerialization: ->
@@ -588,11 +613,15 @@ class PhonemePage extends AssessmentPage
     return properties
 
   results: ->
-    results = super()
+    unless @assessment.currentPage.pageId == @pageId
+      return @lastResult
+
+    @lastResult = null
+    @lastResult = super()
     for input in $("form##{@subtestId} input:checkbox")
       # checked means they got it wrong, so set to false
-      results["#{input.name}"] = (input.value != "on")
-    return results
+      @lastResult["#{input.name}"] = (input.value != "on")
+    return @lastResult
 
   validate: ->
     results = @results()
@@ -677,14 +706,17 @@ class ToggleGridWithTimer extends AssessmentPage
           gridItem.removeClass("selected rowtoggled") if gridItem.hasClass("rowtoggled")
 
   results: ->
-    results = {}
+    unless @assessment.currentPage.pageId == @pageId
+      return @lastResult
+
+    @lastResult = {}
 
     # Check if the first 10% are all wrong, if so auto_stop
     items = $("##{@pageId} .grid:not(.toggle-row)")
     tenPercentOfItems = items.length/10
     firstTenPercent = items[0..tenPercentOfItems-1]
     if _.select(firstTenPercent, (item) -> $(item).hasClass("selected")).length == tenPercentOfItems
-      results.auto_stop = true
+      @lastResult.auto_stop = true
       # Only set do this stuff the first time
       unless @autostop
         $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
@@ -694,26 +726,26 @@ class ToggleGridWithTimer extends AssessmentPage
     else
       @autostop = false
 
-    results.time_remain = @timer.seconds
-    return results unless @timer.hasStartedAndStopped() #optimization
-    results.letters = new Array()
+    @lastResult.time_remain = @timer.seconds
+    return @lastResult unless @timer.hasStartedAndStopped() #optimization
+    @lastResult.letters = new Array()
     # Initialize to all wrong
-    results.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
-    results.attempted = null
+    @lastResult.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+    @lastResult.attempted = null
     for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
       gridItem = $(gridItem)
-      results.letters[index] = true unless gridItem.hasClass("selected")
+      @lastResult.letters[index] = true unless gridItem.hasClass("selected")
       if gridItem.hasClass("last-attempted")
-        results.attempted = index + 1
+        @lastResult.attempted = index + 1
         if @autostop
           $("##{@pageId} .controls .message").html("First #{tenPercentOfItems} incorrect - autostop.")
         else
           $("##{@pageId} .controls .message").html("")
-        return results
+        return @lastResult
       else
         $("##{@pageId} .controls .message").html("Select last item attempted")
 
-    return results
+    return @lastResult
 
   validate: ->
     results = @results()
@@ -743,43 +775,46 @@ class Dictation extends AssessmentPage
     return properties
 
   results: ->
-    results = {}
+    unless @assessment.currentPage.pageId == @pageId
+      return @lastResult
+
+    @lastResult = {}
     enteredData = $("div##{@pageId} input[type=text]").val()
 
     if enteredData.match(/boys/i)
-      results["Wrote boys correctly"] = 2
+      @lastResult["Wrote boys correctly"] = 2
     else
       if enteredData.match(/bo|oy|by/i)
-        results["Wrote boys correctly"] = 1
+        @lastResult["Wrote boys correctly"] = 1
 
     if enteredData.match(/bikes/i)
-      results["Wrote bikes correctly"] = 2
+      @lastResult["Wrote bikes correctly"] = 2
     else
       if enteredData.match(/bi|ik|kes/i)
-        results["Wrote bikes correctly"] = 1
+        @lastResult["Wrote bikes correctly"] = 1
 
     numberOfSpaces = enteredData.split(" ").length - 1
     if numberOfSpaces >= 8
-      results["Used appropriate spacing between words"] = 2
+      @lastResult["Used appropriate spacing between words"] = 2
     else
       if numberOfSpaces > 3 and numberOfSpaces < 8
-        results["Used appropriate spacing between words"] = 1
+        @lastResult["Used appropriate spacing between words"] = 1
       else
-        results["Used appropriate spacing between words"] = 0
+        @lastResult["Used appropriate spacing between words"] = 0
 
     # TODO
-    results["Used appropriate direction of text (left to right)"] = 2
+    @lastResult["Used appropriate direction of text (left to right)"] = 2
 
     if enteredData.match(/The/)
-      results["Used capital letter for the word 'The'"] = 2
+      @lastResult["Used capital letter for the word 'The'"] = 2
     else
-      results["Used capital letter for the word 'The'"] = 0
+      @lastResult["Used capital letter for the word 'The'"] = 0
 
     if enteredData.match(/\. *$/)
-      results["Used full stop (.) at end of sentence."] = 2
+      @lastResult["Used full stop (.) at end of sentence."] = 2
     else
-      results["Used full stop (.) at end of sentence."] = 0
-    return results
+      @lastResult["Used full stop (.) at end of sentence."] = 0
+    return @lastResult
 
   validate: ->
     return true

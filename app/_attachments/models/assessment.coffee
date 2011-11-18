@@ -8,7 +8,7 @@ class Assessment extends Backbone.Model
   changeName: (newName) ->
     @name = newName
     @urlPath = "Assessment.#{@name}"
-    @targetDatabase = "/" + @name.toLowerCase().dasherize() + "/"
+    @targetDatabase = @name.toLowerCase().dasherize()
     @urlPathsForPages = []
     if @pages?
       for page in @pages
@@ -21,8 +21,8 @@ class Assessment extends Backbone.Model
     for page, index in @pages
       page.assessment = this
       page.pageNumber = index
-      page.previousPage = @pages[index - 1].pageId unless index == 0
-      page.nextPage = @pages[index + 1].pageId unless @pages.length == index + 1
+      page.previousPage = @pages[index - 1] unless index == 0
+      page.nextPage = @pages[index + 1] unless @pages.length == index + 1
       page.urlScheme = @urlScheme
       page.urlPath = @urlPath + "." + page.pageId
       @urlPathsForPages.push(page.urlPath)
@@ -54,32 +54,30 @@ class Assessment extends Backbone.Model
   results: ->
     results = {}
     for page in @pages
-      results[page.pageId] = page.results()
+      unless page.pageType == "ResultsPage"
+        results[page.pageId] = page.results()
     results.timestamp = new Date().valueOf()
+    results.enumerator = $('#enumerator').html()
     return results
 
   saveResults: (callback, stopOnError = false ) ->
     results = @results()
-    url = @targetDatabase
-    $.ajax
-      url: url,
-      async: true,
-      type: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(results),
-      complete: ->
+    console.log results
+    $.couch.db(@targetDatabase).saveDoc results,
+      success: ->
         callback(results) if callback?
       error: =>
         if stopOnError
-          throw "Could not PUT to #{url}"
+          throw "Could not create document in #{@targetDatabase}"
           alert "Results NOT saved - do you have permission to save?"
         else
-          databaseName = @targetDatabase.replace(/\//g,"")
-          console.log "creating #{databaseName}"
-          $.couch.db(databaseName).create
+          targetDatabaseWithUserPassword = "#{Tangerine.config.user_with_database_create_permission}:#{Tangerine.config.password_with_database_create_permission}@#{@targetDatabase}"
+          $.couch.db(targetDatabaseWithUserPassword).create
             success: =>
+              # Now that database has been created try and save again
+              @saveResults(callback, true)
               # Create the view needed to aggregate data in the database
-              $.couch.db(databaseName).saveDoc
+              $.couch.db(@targetDatabase).saveDoc
                 "_id":"_design/aggregate",
                 "language":"javascript",
                 "views":
@@ -114,7 +112,6 @@ class Assessment extends Backbone.Model
   return emit(null, fields);
 });
 '''
-              @saveResults(callback, true)
             error: =>
               throw "Could not create database #{databaseName}"
 
@@ -125,17 +122,6 @@ class Assessment extends Backbone.Model
   reset: ->
     document.location = @resetURL()
     
-
-  validate: ->
-    validationErrors = ""
-    if @pages?
-      for page in @pages
-        pageResult = page.validate()
-        validationErrors += "'#{page.name()}' page invalid: #{pageResult} <br/>" unless pageResult is true
-
-    unless validationErrors is ""
-      return validationErrors
-
   toJSON: ->
     JSON.stringify
       name: @name,
@@ -152,46 +138,6 @@ class Assessment extends Backbone.Model
     @urlScheme = "localstorage"
     localStorage[@urlPath] = @toJSON()
     page.saveToLocalStorage() for page in @pages
-
-  saveToCouchDB: (callback) ->
-    @urlScheme = "http"
-    @urlPath = @targetDatabase + @urlPath unless @urlPath[0] == "/"
-    $.ajax
-      url: @urlPath
-      async: true,
-      type: 'PUT',
-      dataType: 'json',
-      data: @toJSON(),
-      success: (result) =>
-        @revision = result.rev
-        page.saveToCouchDB() for page in @pages
-        @onReady ->
-          callback()
-      error: ->
-        throw "Could not PUT to #{@urlPath}"
-
-    return this
-
-  delete: ->
-    if @urlScheme is "localstorage"
-      @deleteFromLocalStorage()
-
-  deleteFromLocalStorage: ->
-    for page in @pages
-      page.deleteFromLocalStorage()
-    localStorage.removeItem(@urlPath)
-
-  deleteFromCouchDB: ->
-    url = @targetDatabase + @urlPath + "?rev=#{@revision}"
-    if @pages
-      for page in @pages
-        page.deleteFromCouchDB()
-    $.ajax
-      url: url,
-      async: true,
-      type: 'DELETE',
-      error: ->
-        throw "Error deleting #{url}"
 
   onReady: (callback) ->
     maxTries = 10
@@ -210,24 +156,10 @@ class Assessment extends Backbone.Model
       callback()
     return checkIfLoading()
 
-  render: (callback) ->
+  render: ->
     @onReady =>
-      # Set the global assessment variable to this assessment
       $.assessment = this
-
-      # Make sure that whenever a new page is shown we have access
-      # To the instantiated page object
-      $('div').live 'pagebeforeshow', (event,ui) =>
-        for page in @pages
-          if page.pageId is $(event.currentTarget).attr('id')
-            @currentPage = page
-            return
-
-      result = for page,i in @pages
-        page.render()
-      result = result.join("")
-      callback(result) if callback?
-      return result
+      @pages[0].render()
 
   flash: ->
     $('.controls').addClass("flash")
@@ -269,27 +201,6 @@ class Assessment extends Backbone.Model
       unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         document.location = document.location.href
-
-  nextPage: ->
-    validationResult = @currentPage.validate()
-    unless validationResult is true
-      validationMessageElement = $("##{@currentPage.pageId} div.validation-message")
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000)
-      return
-    $("##{@currentPage.pageId}").hide()
-    @currentPage = _.find @pages, (page) =>
-      page.pageId == @currentPage.nextPage
-    $("##{@currentPage.pageId}").show()
-    window.scrollTo(0,0)
-    $("##{@currentPage.pageId}").trigger("pageshow")
-
-  backPage: ->
-    $("##{@currentPage.pageId}").hide()
-    @currentPage = _.find @pages, (page) =>
-      page.pageId == @currentPage.previousPage
-    $("##{@currentPage.pageId}").show()
-    window.scrollTo(0,0)
-    $("##{@currentPage.pageId}").trigger("pageshow")
 
 
 Assessment.load = (id, callback) ->

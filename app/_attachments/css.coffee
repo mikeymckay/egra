@@ -15,11 +15,23 @@ $("head").append "
       font-size: 150%;
     }
 
+    #navigation{
+      margin-bottom: 20px;
+      background-color: #{yellow};
+    }
+
+    #navigation{
+      font-size:50%;
+    }
+
     #version {
       position: absolute;
       top: 10px;
       right: 10px;
-      font-size: 50%;
+    }
+    #manage-assessments button{
+      font-size:50%;
+      margin:10px;
     }
     #assessments li{
       list-style: none;

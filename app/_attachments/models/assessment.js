@@ -18,7 +18,7 @@ Assessment = (function() {
     var page, _i, _len, _ref, _results;
     this.name = newName;
     this.urlPath = "Assessment." + this.name;
-    this.targetDatabase = "/" + this.name.toLowerCase().dasherize() + "/";
+    this.targetDatabase = this.name.toLowerCase().dasherize();
     this.urlPathsForPages = [];
     if (this.pages != null) {
       _ref = this.pages;
@@ -42,10 +42,10 @@ Assessment = (function() {
       page.assessment = this;
       page.pageNumber = index;
       if (index !== 0) {
-        page.previousPage = this.pages[index - 1].pageId;
+        page.previousPage = this.pages[index - 1];
       }
       if (this.pages.length !== index + 1) {
-        page.nextPage = this.pages[index + 1].pageId;
+        page.nextPage = this.pages[index + 1];
       }
       page.urlScheme = this.urlScheme;
       page.urlPath = this.urlPath + "." + page.pageId;
@@ -90,40 +90,38 @@ Assessment = (function() {
     _ref = this.pages;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       page = _ref[_i];
-      results[page.pageId] = page.results();
+      if (page.pageType !== "ResultsPage") {
+        results[page.pageId] = page.results();
+      }
     }
     results.timestamp = new Date().valueOf();
+    results.enumerator = $('#enumerator').html();
     return results;
   };
   Assessment.prototype.saveResults = function(callback, stopOnError) {
-    var results, url;
+    var results;
     if (stopOnError == null) {
       stopOnError = false;
     }
     results = this.results();
-    url = this.targetDatabase;
-    return $.ajax({
-      url: url,
-      async: true,
-      type: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(results),
-      complete: function() {
+    console.log(results);
+    return $.couch.db(this.targetDatabase).saveDoc(results, {
+      success: function() {
         if (callback != null) {
           return callback(results);
         }
       },
       error: __bind(function() {
-        var databaseName;
+        var targetDatabaseWithUserPassword;
         if (stopOnError) {
-          throw "Could not PUT to " + url;
+          throw "Could not create document in " + this.targetDatabase;
           return alert("Results NOT saved - do you have permission to save?");
         } else {
-          databaseName = this.targetDatabase.replace(/\//g, "");
-          console.log("creating " + databaseName);
-          return $.couch.db(databaseName).create({
+          targetDatabaseWithUserPassword = "" + Tangerine.config.user_with_database_create_permission + ":" + Tangerine.config.password_with_database_create_permission + "@" + this.targetDatabase;
+          return $.couch.db(targetDatabaseWithUserPassword).create({
             success: __bind(function() {
-              $.couch.db(databaseName).saveDoc({
+              this.saveResults(callback, true);
+              return $.couch.db(this.targetDatabase).saveDoc({
                 "_id": "_design/aggregate",
                 "language": "javascript",
                 "views": {
@@ -132,7 +130,6 @@ Assessment = (function() {
                   }
                 }
               });
-              return this.saveResults(callback, true);
             }, this),
             error: __bind(function() {
               throw "Could not create database " + databaseName;
@@ -147,23 +144,6 @@ Assessment = (function() {
   };
   Assessment.prototype.reset = function() {
     return document.location = this.resetURL();
-  };
-  Assessment.prototype.validate = function() {
-    var page, pageResult, validationErrors, _i, _len, _ref;
-    validationErrors = "";
-    if (this.pages != null) {
-      _ref = this.pages;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        page = _ref[_i];
-        pageResult = page.validate();
-        if (pageResult !== true) {
-          validationErrors += "'" + (page.name()) + "' page invalid: " + pageResult + " <br/>";
-        }
-      }
-    }
-    if (validationErrors !== "") {
-      return validationErrors;
-    }
   };
   Assessment.prototype.toJSON = function() {
     return JSON.stringify({
@@ -190,68 +170,6 @@ Assessment = (function() {
       _results.push(page.saveToLocalStorage());
     }
     return _results;
-  };
-  Assessment.prototype.saveToCouchDB = function(callback) {
-    this.urlScheme = "http";
-    if (this.urlPath[0] !== "/") {
-      this.urlPath = this.targetDatabase + this.urlPath;
-    }
-    $.ajax({
-      url: this.urlPath,
-      async: true,
-      type: 'PUT',
-      dataType: 'json',
-      data: this.toJSON(),
-      success: __bind(function(result) {
-        var page, _i, _len, _ref;
-        this.revision = result.rev;
-        _ref = this.pages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          page = _ref[_i];
-          page.saveToCouchDB();
-        }
-        return this.onReady(function() {
-          return callback();
-        });
-      }, this),
-      error: function() {
-        throw "Could not PUT to " + this.urlPath;
-      }
-    });
-    return this;
-  };
-  Assessment.prototype["delete"] = function() {
-    if (this.urlScheme === "localstorage") {
-      return this.deleteFromLocalStorage();
-    }
-  };
-  Assessment.prototype.deleteFromLocalStorage = function() {
-    var page, _i, _len, _ref;
-    _ref = this.pages;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      page.deleteFromLocalStorage();
-    }
-    return localStorage.removeItem(this.urlPath);
-  };
-  Assessment.prototype.deleteFromCouchDB = function() {
-    var page, url, _i, _len, _ref;
-    url = this.targetDatabase + this.urlPath + ("?rev=" + this.revision);
-    if (this.pages) {
-      _ref = this.pages;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        page = _ref[_i];
-        page.deleteFromCouchDB();
-      }
-    }
-    return $.ajax({
-      url: url,
-      async: true,
-      type: 'DELETE',
-      error: function() {
-        throw "Error deleting " + url;
-      }
-    });
   };
   Assessment.prototype.onReady = function(callback) {
     var checkIfLoading, maxTries, timesTried;
@@ -282,36 +200,10 @@ Assessment = (function() {
     }, this);
     return checkIfLoading();
   };
-  Assessment.prototype.render = function(callback) {
+  Assessment.prototype.render = function() {
     return this.onReady(__bind(function() {
-      var i, page, result;
       $.assessment = this;
-      $('div').live('pagebeforeshow', __bind(function(event, ui) {
-        var page, _i, _len, _ref;
-        _ref = this.pages;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          page = _ref[_i];
-          if (page.pageId === $(event.currentTarget).attr('id')) {
-            this.currentPage = page;
-            return;
-          }
-        }
-      }, this));
-      result = (function() {
-        var _len, _ref, _results;
-        _ref = this.pages;
-        _results = [];
-        for (i = 0, _len = _ref.length; i < _len; i++) {
-          page = _ref[i];
-          _results.push(page.render());
-        }
-        return _results;
-      }).call(this);
-      result = result.join("");
-      if (callback != null) {
-        callback(result);
-      }
-      return result;
+      return this.pages[0].render();
     }, this));
   };
   Assessment.prototype.flash = function() {
@@ -372,31 +264,6 @@ Assessment = (function() {
         return document.location = document.location.href;
       }
     }
-  };
-  Assessment.prototype.nextPage = function() {
-    var validationMessageElement, validationResult;
-    validationResult = this.currentPage.validate();
-    if (validationResult !== true) {
-      validationMessageElement = $("#" + this.currentPage.pageId + " div.validation-message");
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
-      return;
-    }
-    $("#" + this.currentPage.pageId).hide();
-    this.currentPage = _.find(this.pages, __bind(function(page) {
-      return page.pageId === this.currentPage.nextPage;
-    }, this));
-    $("#" + this.currentPage.pageId).show();
-    window.scrollTo(0, 0);
-    return $("#" + this.currentPage.pageId).trigger("pageshow");
-  };
-  Assessment.prototype.backPage = function() {
-    $("#" + this.currentPage.pageId).hide();
-    this.currentPage = _.find(this.pages, __bind(function(page) {
-      return page.pageId === this.currentPage.previousPage;
-    }, this));
-    $("#" + this.currentPage.pageId).show();
-    window.scrollTo(0, 0);
-    return $("#" + this.currentPage.pageId).trigger("pageshow");
   };
   return Assessment;
 })();

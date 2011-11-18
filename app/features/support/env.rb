@@ -8,8 +8,11 @@ require 'headless'
 
 Capybara.run_server = false 
 Capybara.app_host = 'http://localhost/' 
-#Capybara.javascript_driver = :webkit
-Capybara.javascript_driver = :selenium
+if ENV['NOHEADLESS']
+  Capybara.javascript_driver = :selenium
+else
+  Capybara.javascript_driver = :webkit
+end
 #Capybara.default_driver = :selenium
 Capybara.ignore_hidden_elements = true
 Capybara.default_wait_time = 2000
