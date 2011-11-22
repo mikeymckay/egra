@@ -24,6 +24,10 @@ $("head").append "
       font-size:50%;
     }
 
+    button{
+      margin: 10px;
+    }
+
     #version {
       position: absolute;
       top: 10px;
