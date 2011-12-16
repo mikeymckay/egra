@@ -25,59 +25,178 @@ Result = (function() {
     });
   };
   Result.prototype.subtestResults = function() {
-    var itemsToSkip, subtestType;
+    var itemsToSkip, resultCollection, subtestType;
     itemsToSkip = ["database_name", "_id", "_rev", "EnumeratorReminders", "EnumeratorIntroduction", "StudentConsent"];
     for (subtestType in this.toJSON()) {
       if (subtestType.match(/Instructions/)) {
         itemsToSkip.push(subtestType);
       }
     }
-    return _(this.toJSON()).chain().map(__bind(function(result, subtestType) {
+    resultCollection = {};
+    _.each(this.toJSON(), __bind(function(result, subtestType) {
       if (_.contains(itemsToSkip, subtestType)) {
         return;
       }
-      if ((subtestType != null) && (this.templates[subtestType] != null)) {
-        return this.templates[subtestType](result);
+      if ((subtestType != null) && (this.summaryData[subtestType] != null)) {
+        return resultCollection = _.extend(resultCollection, this.summaryData[subtestType](result));
       } else {
-        return subtestType + " " + this.templates["default"](result);
+        return resultCollection = _.extend(resultCollection, this.summaryData["default"](result));
       }
-    }, this)).compact().value().join("<br/>");
+    }, this));
+    console.log(resultCollection);
+    return resultCollection;
+  };
+  Result.prototype.summaryData = {
+    id: function(result) {
+      return {
+        id: result.substr(0, 3) + "..." + result.substr(-3)
+      };
+    },
+    DateTime: function(result) {
+      return {
+        Student: result.student_id,
+        StartTime: new Date("" + result.month + " " + result.day + ", " + result.year + " " + result.time)
+      };
+    },
+    Dictation: function(result) {
+      return {
+        DictationScore: _.values(result).reduce(function(sum, n) {
+          return sum += n;
+        })
+      };
+    },
+    School: function(result) {
+      return {
+        School: result.name
+      };
+    },
+    StudentInformation: function(result) {
+      return {
+        Gender: result.gender
+      };
+    },
+    Letters: function(result) {
+      return {
+        Letters: Result.GridTemplate(result)
+      };
+    },
+    Phonemes: function(result) {
+      return {
+        Phonemes: _.keys(result).length
+      };
+    },
+    Grid: function(result) {},
+    FamiliarWords: function(result) {
+      return {
+        FamiliarWords: Result.GridTemplate(result)
+      };
+    },
+    InventedWords: function(result) {
+      return {
+        InventedWords: Result.GridTemplate(result)
+      };
+    },
+    OralPassageReading: function(result) {
+      return {
+        OralPassageReading: Result.GridTemplate(result)
+      };
+    },
+    ReadingComprehension: function(result) {
+      return {
+        ReadingComprehension: Result.CountCorrectIncorrect(result)
+      };
+    },
+    ListeningComprehension: function(result) {
+      return {
+        ListeningComprehension: Result.CountCorrectIncorrect(result)
+      };
+    },
+    PupilContextInterview: function(result) {
+      return {
+        PupilContextInterview: _.keys(result).length
+      };
+    },
+    timestamp: function(result) {
+      return {
+        FinishTime: new Date(result)
+      };
+    },
+    enumerator: function(result) {
+      return {
+        Enumerator: result
+      };
+    },
+    "default": function(result) {
+      return JSON.stringify(result);
+    }
   };
   Result.prototype.templates = {
-    DateTime: Handlebars.compile("Student: {{student-id}} Timestamp: {{day}}-{{month}}-{{year}} {{time}}}"),
+    id: function(result) {
+      return result.substr(0, 3) + "..." + result.substr(3);
+    },
+    DateTime: Handlebars.compile("Student: {{student-id}} Start Time: {{day}}-{{month}}-{{year}} {{time}}}"),
     Dictation: function(result) {
-      return "Dictation Score:" + _.values(result).reduce(function(sum, n) {
+      return "Dictation Score: " + _.values(result).reduce(function(sum, n) {
         return sum += n;
       });
     },
     School: Handlebars.compile("School: {{name}} ({{schoolId}})"),
     StudentInformation: Handlebars.compile("Gender: {{gender}}"),
-    Letters: __bind(function(result) {
+    Letters: function(result) {
       return "Letters: " + Result.GridTemplate(result);
-    }, Result),
+    },
     Phonemes: function(result) {
-      console.log(result);
       return "Phonemes: Completed " + (_.keys(result).length) + " words";
     },
     Grid: function(result) {},
-    FamiliarWords: __bind(function(result) {
+    FamiliarWords: function(result) {
       return "Familiar Words: " + Result.GridTemplate(result);
-    }, Result),
-    InventedWords: __bind(function(result) {
+    },
+    InventedWords: function(result) {
       return "Invented Words: " + Result.GridTemplate(result);
-    }, Result),
-    OralPassageReading: __bind(function(result) {
+    },
+    OralPassageReading: function(result) {
       return "Oral Passage Reading: " + Result.GridTemplate(result);
-    }, Result),
+    },
+    ReadingComprehension: function(result) {
+      return "Reading Comprehension: " + Result.CountCorrectIncorrect(result);
+    },
+    ListeningComprehension: function(result) {
+      return "Listening Comprehension: " + Result.CountCorrectIncorrect(result);
+    },
+    PupilContextInterview: function(result) {
+      return "Pupil Context Interview:  " + (_.keys(result).length) + " questions answered";
+    },
+    timestamp: function(result) {
+      var date;
+      date = new Date(result);
+      $.date = date;
+      console.log(date.getDay());
+      return "Finish time: " + (date.toString());
+    },
+    enumerator: function(result) {
+      return "Enumerator: " + result;
+    },
     "default": function(result) {
       return JSON.stringify(result);
     }
   };
   return Result;
-}).call(this);
+})();
+Result.CountCorrectIncorrect = function(result) {
+  return _.values(result).reduce(function(memo, result) {
+    if (result === "Correct") {
+      memo.itemsCorrect += 1;
+    }
+    memo.attempted += 1;
+    return memo;
+  }, {
+    itemsCorrect: 0,
+    attempted: 0
+  });
+};
 Result.GridTemplate = function(result) {
   var index, itemResult, itemsCorrect, _len, _len2, _ref, _ref2;
-  console.log(result);
   itemsCorrect = 0;
   if (result.letters != null) {
     _ref = result.letters;
@@ -96,5 +215,8 @@ Result.GridTemplate = function(result) {
       }
     }
   }
-  return " " + itemsCorrect + " correct out of " + result.attempted + " attempted";
+  return {
+    itemsCorrect: itemsCorrect,
+    attempted: result.attempted
+  };
 };
