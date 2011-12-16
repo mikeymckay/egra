@@ -574,7 +574,7 @@ class PhonemePage extends AssessmentPage
     @footerMessage = footerMessage
     phonemeIndex = 1
     @content = "<form id='#{@subtestId}'>" + (for item,index in @words
-      wordName = @subtestId + "-number-sound-" + (index+1)
+      wordName = "#{@subtestId}.#{item.word}.identified-number"
       "
       <div data-role='fieldcontain'>
           <fieldset data-role='controlgroup' data-type='horizontal'>
@@ -594,13 +594,12 @@ class PhonemePage extends AssessmentPage
           <legend>Phonemes identified</legend>
       " +
       (for phoneme in item["phonemes"]
-        phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
+        phonemeName = "#{@subtestId}.#{item.word}.phoneme-#{phoneme}"
         "
             <label for='#{phonemeName}'>#{phoneme}</label>
-            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
+            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' value='Correct'/>
         "
-      ).join("") +
-      "
+      ).join("") +  "
             </fieldset>
           </fieldset>
       </div>
@@ -617,16 +616,15 @@ class PhonemePage extends AssessmentPage
       return @lastResult
 
     @lastResult = null
-    @lastResult = super()
-    for input in $("form##{@subtestId} input:checkbox")
-      # checked means they got it wrong, so set to false
-      @lastResult["#{input.name}"] = (input.value != "on")
+    @lastResult = $("form##{@subtestId}").toObject({skipEmpty:false})
+
     return @lastResult
 
   validate: ->
+    return true
     results = @results()
     for item,index in @words
-      unless results[@subtestId + "-number-sound-" + (index+1)]?
+      unless results[@subtestId + "-number-phonemes" + (index+1)]?
         return "You must select Correct or Incorrect for item ##{index+1}: <b>#{item["word"]}</b>"
     return true
 
@@ -728,13 +726,13 @@ class ToggleGridWithTimer extends AssessmentPage
 
     @lastResult.time_remain = @timer.seconds
     return @lastResult unless @timer.hasStartedAndStopped() #optimization
-    @lastResult.letters = new Array()
+    @lastResult.items = new Array()
     # Initialize to all wrong
-    @lastResult.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+    @lastResult.items[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
     @lastResult.attempted = null
     for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
       gridItem = $(gridItem)
-      @lastResult.letters[index] = true unless gridItem.hasClass("selected")
+      @lastResult.items[index] = true unless gridItem.hasClass("selected")
       if gridItem.hasClass("last-attempted")
         @lastResult.attempted = index + 1
         if @autostop

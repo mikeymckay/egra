@@ -1,6 +1,8 @@
 class Router extends Backbone.Router
   routes:
     "assessment/:id": "assessment"
+    "result/:database_name/:id": "result"
+    "results/:database_name": "results"
     "print/:id": "print"
     "student_printout/:id": "student_printout"
     "login": "login"
@@ -8,6 +10,16 @@ class Router extends Backbone.Router
     "manage": "manage"
     "assessments": "assessments"
     "": "assessments"
+
+  results: (database_name) ->
+    #TODO
+
+  result: (database_name,id) ->
+    resultView = new ResultView()
+    resultView.model = new Result
+      database_name: database_name
+      id: id
+    resultView.render()
 
   manage: ->
     $.couch.session
@@ -128,9 +140,11 @@ class Router extends Backbone.Router
           Tangerine.router.navigate("login", true)
           return
         $('#enumerator').html($.enumerator)
-        console.log "AFSA"
-        Assessment.load id, (assessment) ->
-          assessment.render()
+
+        assessment = new Assessment {_id:id}
+        assessment.fetch
+          success: ->
+            assessment.render()
 
   print: (id) ->
     Assessment.load id, (assessment) ->

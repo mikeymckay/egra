@@ -14,6 +14,8 @@ Router = (function() {
   }
   Router.prototype.routes = {
     "assessment/:id": "assessment",
+    "result/:database_name/:id": "result",
+    "results/:database_name": "results",
     "print/:id": "print",
     "student_printout/:id": "student_printout",
     "login": "login",
@@ -21,6 +23,16 @@ Router = (function() {
     "manage": "manage",
     "assessments": "assessments",
     "": "assessments"
+  };
+  Router.prototype.results = function(database_name) {};
+  Router.prototype.result = function(database_name, id) {
+    var resultView;
+    resultView = new ResultView();
+    resultView.model = new Result({
+      database_name: database_name,
+      id: id
+    });
+    return resultView.render();
   };
   Router.prototype.manage = function() {
     return $.couch.session({
@@ -148,6 +160,7 @@ Router = (function() {
   Router.prototype.assessment = function(id) {
     return $.couch.session({
       success: function(session) {
+        var assessment;
         $.enumerator = session.userCtx.name;
         Tangerine.router.targetroute = document.location.hash;
         if (!session.userCtx.name) {
@@ -155,9 +168,13 @@ Router = (function() {
           return;
         }
         $('#enumerator').html($.enumerator);
-        console.log("AFSA");
-        return Assessment.load(id, function(assessment) {
-          return assessment.render();
+        assessment = new Assessment({
+          _id: id
+        });
+        return assessment.fetch({
+          success: function() {
+            return assessment.render();
+          }
         });
       }
     });
