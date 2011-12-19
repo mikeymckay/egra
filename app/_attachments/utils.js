@@ -19,8 +19,14 @@ Utils.createResultsDatabase = function(databaseName, callback) {
             "map": MapReduce.mapFields.toString()
           },
           "byEnumerator": {
-            "map": MapReduce.mapByEnumerator.toString(),
-            "reduce": MapReduce.reduceByEnumerator.toString()
+            "map": MapReduce.mapByEnumerator.toString()
+          },
+          "countByEnumerator": {
+            "map": MapReduce.mapCountByEnumerator.toString(),
+            "reduce": MapReduce.reduceCountByEnumerator.toString()
+          },
+          "byTimestamp": {
+            "map": MapReduce.mapByTimestamp.toString()
           }
         }
       });
@@ -29,7 +35,6 @@ Utils.createResultsDatabase = function(databaseName, callback) {
       }
     }, this),
     complete: function() {
-      console.log("Logging out");
       return $.couch.logout();
     }
   });
@@ -39,8 +44,7 @@ MapReduce = (function() {
   return MapReduce;
 })();
 MapReduce.mapFields = function(doc, req) {
-  var concatNodes, fields;
-  fields = [];
+  var concatNodes;
   concatNodes = function(parent, o) {
     var index, key, value, _len, _results, _results2;
     if (o instanceof Array) {
@@ -52,7 +56,11 @@ MapReduce.mapFields = function(doc, req) {
       return _results;
     } else {
       if (typeof o === "string") {
-        return fields.push("" + parent + ",\"" + o + "\"\n");
+        return emit(parent, {
+          id: doc._id,
+          fieldname: parent,
+          result: o
+        });
       } else {
         _results2 = [];
         for (key in o) {
@@ -63,14 +71,23 @@ MapReduce.mapFields = function(doc, req) {
       }
     }
   };
-  concatNodes("", doc);
-  return emit(null, fields);
+  return concatNodes("", doc);
 };
 MapReduce.mapByEnumerator = function(doc, req) {
-  if (doc.enumerator != null) {
+  if ((doc.enumerator != null) && (doc.timestamp != null)) {
+    return emit(doc.enumerator, doc);
+  }
+};
+MapReduce.mapCountByEnumerator = function(doc, req) {
+  if ((doc.enumerator != null) && (doc.timestamp != null)) {
     return emit(doc.enumerator, 1);
   }
 };
-MapReduce.reduceByEnumerator = function(keys, values, rereduce) {
+MapReduce.reduceCountByEnumerator = function(keys, values, rereduce) {
   return sum(values);
+};
+MapReduce.mapByTimestamp = function(doc, req) {
+  if ((doc.enumerator != null) && (doc.timestamp != null)) {
+    return emit(doc.timestamp, doc);
+  }
 };

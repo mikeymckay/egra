@@ -1,5 +1,4 @@
 class Utils
-
 Utils.createResultsDatabase = (databaseName, callback) ->
   $.couch.login
     name: Tangerine.config.user_with_database_create_permission
@@ -16,17 +15,17 @@ Utils.createResultsDatabase = (databaseName, callback) ->
             "map": MapReduce.mapFields.toString()
           "byEnumerator":
             "map": MapReduce.mapByEnumerator.toString()
-            "reduce": MapReduce.reduceByEnumerator.toString()
+          "countByEnumerator":
+            "map": MapReduce.mapCountByEnumerator.toString()
+            "reduce": MapReduce.reduceCountByEnumerator.toString()
+          "byTimestamp":
+            "map": MapReduce.mapByTimestamp.toString()
       callback() if callback?
     complete: ->
-      console.log "Logging out"
       $.couch.logout()
 
-
 class MapReduce
-
 MapReduce.mapFields = (doc, req) ->
-  fields = []
 
   #recursion!
   concatNodes = (parent,o) ->
@@ -36,16 +35,24 @@ MapReduce.mapFields = (doc, req) ->
           concatNodes(parent+"."+index,value)
     else
       if typeof o == "string"
-        fields.push("#{parent},\"#{o}\"\n")
+        emit parent,
+          id: doc._id
+          fieldname: parent
+          result: o
       else
         for key,value of o
           concatNodes(parent+"."+key,value)
 
   concatNodes("",doc)
-  emit(null, fields)
 
 MapReduce.mapByEnumerator = (doc,req) ->
-  emit(doc.enumerator,1) if doc.enumerator?
+  emit(doc.enumerator,doc) if (doc.enumerator? and doc.timestamp?)
 
-MapReduce.reduceByEnumerator = (keys,values,rereduce) ->
+MapReduce.mapCountByEnumerator = (doc,req) ->
+  emit(doc.enumerator,1) if (doc.enumerator? and doc.timestamp?)
+
+MapReduce.reduceCountByEnumerator = (keys,values,rereduce) ->
   sum(values)
+
+MapReduce.mapByTimestamp = (doc,req) ->
+  emit(doc.timestamp,doc) if (doc.enumerator? and doc.timestamp?)

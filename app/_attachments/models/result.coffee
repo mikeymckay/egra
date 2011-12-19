@@ -1,5 +1,6 @@
 class Result extends Backbone.Model
 
+
   fetch: (options = {}) =>
     $.couch.db(@get("database_name")).openDoc @get("id"),
       success: (doc) =>
@@ -24,7 +25,6 @@ class Result extends Backbone.Model
         resultCollection = _.extend(resultCollection, @summaryData[subtestType](result))
       else
         resultCollection = _.extend(resultCollection, @summaryData["default"](result))
-    console.log resultCollection
     return resultCollection
 
   summaryData:
@@ -60,39 +60,6 @@ class Result extends Backbone.Model
       return FinishTime: new Date(result)
     enumerator: (result) ->
       Enumerator: result
-    default: (result) ->
-      JSON.stringify(result)
-
-  templates:
-    id: (result) -> return result.substr(0,3) + "..." + result.substr(3)
-    DateTime: Handlebars.compile "Student: {{student-id}} Start Time: {{day}}-{{month}}-{{year}} {{time}}}"
-    Dictation: (result) ->
-      return "Dictation Score: " + _.values(result).reduce((sum,n) -> (sum+=n))
-    School: Handlebars.compile "School: {{name}} ({{schoolId}})"
-    StudentInformation: Handlebars.compile "Gender: {{gender}}"
-    Letters: (result) ->
-      "Letters: " + Result.GridTemplate(result)
-    Phonemes: (result) ->
-      "Phonemes: Completed #{_.keys(result).length} words"
-    Grid: (result) ->
-    FamiliarWords: (result) ->
-      "Familiar Words: " + Result.GridTemplate(result)
-    InventedWords: (result) ->
-      "Invented Words: " + Result.GridTemplate(result)
-    OralPassageReading: (result) ->
-      "Oral Passage Reading: " + Result.GridTemplate(result)
-    ReadingComprehension: (result) ->
-      "Reading Comprehension: " +  Result.CountCorrectIncorrect(result)
-    ListeningComprehension: (result) ->
-      "Listening Comprehension: " +  Result.CountCorrectIncorrect(result)
-    PupilContextInterview: (result) ->
-      "Pupil Context Interview:  #{_.keys(result).length} questions answered"
-    timestamp: (result) ->
-      date = new Date(result)
-      $.date = date
-      console.log date.getDay()
-      "Finish time: #{date.toString()}"
-    enumerator: (result) -> return "Enumerator: #{result}"
     default: (result) ->
       JSON.stringify(result)
 

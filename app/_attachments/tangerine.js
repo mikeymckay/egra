@@ -6,7 +6,7 @@ var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, par
   child.prototype = new ctor;
   child.__super__ = parent.prototype;
   return child;
-};
+}, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 Router = (function() {
   __extends(Router, Backbone.Router);
   function Router() {
@@ -24,15 +24,27 @@ Router = (function() {
     "assessments": "assessments",
     "": "assessments"
   };
-  Router.prototype.results = function(database_name) {};
-  Router.prototype.result = function(database_name, id) {
-    var resultView;
-    resultView = new ResultView();
-    resultView.model = new Result({
-      database_name: database_name,
-      id: id
+  Router.prototype.results = function(database_name) {
+    return $.couch.db(database_name).view("reports/byEnumerator", {
+      key: $.enumerator,
+      success: __bind(function(result) {
+        var resultsView;
+        resultsView = new ResultsView;
+        resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
+        resultsView.results.databaseName = database_name;
+        return resultsView.render();
+      }, this)
     });
-    return resultView.render();
+  };
+  Router.prototype.result = function(database_name, id) {
+    return $.couch.db(database_name).openDoc(id, {
+      success: __bind(function(doc) {
+        var resultView;
+        resultView = new ResultView();
+        resultView.model = new Result(doc);
+        return $("#content").html(resultView.render());
+      }, this)
+    });
   };
   Router.prototype.manage = function() {
     return $.couch.session({
@@ -47,43 +59,9 @@ Router = (function() {
         assessmentCollection = new AssessmentCollection();
         return assessmentCollection.fetch({
           success: function() {
-            $("#content").html("              <h1>Manage</h1>              <button>Update Tangerine</button><br/>              <button href='/" + Tangerine.config.db_name + "/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>              <br/>              Existing Assessments:              <ul id='manage-assessments'></ul>            ");
-            _.each($('button:contains(New Assessment Wizard)'), function(button) {
-              return new MBP.fastButton(button, function(ev) {
-                return document.location = $(ev.target).attr("href");
-              });
-            });
-            _.each($('button:contains(Update Tangerine)'), function(button) {
-              return new MBP.fastButton(button, function(ev) {
-                var source;
-                source = "http://mikeymckay.iriscouch.com/" + Tangerine.config.db_name;
-                $("#content").prepend("<span id='message'>Updating from: " + source + "</span>");
-                return $.couch.replicate("http://mikeymckay.iriscouch.com/" + Tangerine.config.db_name, Tangerine.config.db_name, {
-                  success: function() {
-                    return $("#message").html("Finished");
-                  }
-                });
-              });
-            });
-            return $.couch.allDbs({
-              success: function(databases) {
-                return assessmentCollection.each(function(assessment) {
-                  var assessmentElement, assessmentName;
-                  assessmentName = assessment.get("name");
-                  assessmentElement = "<li>" + assessmentName;
-                  if (!_.include(databases, assessmentName.toLowerCase().dasherize())) {
-                    assessmentElement += "<button>Initialize Database</button>";
-                  }
-                  assessmentElement += "<button style='color:gray'>Edit</button>                                        <button style='color:gray'>Delete Database</button>                                        <button style='color:gray'>Upload Data to Central Server</button>                                      </li>";
-                  $("#manage-assessments").append(assessmentElement);
-                  return _.each($("#manage-assessments li button:contains(Initialize Database)"), function(button) {
-                    return new MBP.fastButton(button, function() {
-                      return Utils.createResultsDatabase(assessment.targetDatabase);
-                    });
-                  });
-                });
-              }
-            });
+            var manageView;
+            manageView = new ManageView();
+            return manageView.render(assessmentCollection);
           }
         });
       }

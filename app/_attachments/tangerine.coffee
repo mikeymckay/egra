@@ -12,14 +12,20 @@ class Router extends Backbone.Router
     "": "assessments"
 
   results: (database_name) ->
-    #TODO
+    $.couch.db(database_name).view "reports/byEnumerator",
+        key: $.enumerator
+        success: (result) =>
+          resultsView = new ResultsView
+          resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
+          resultsView.results.databaseName = database_name
+          resultsView.render()
 
   result: (database_name,id) ->
-    resultView = new ResultView()
-    resultView.model = new Result
-      database_name: database_name
-      id: id
-    resultView.render()
+    $.couch.db(database_name).openDoc id,
+      success: (doc) =>
+        resultView = new ResultView()
+        resultView.model = new Result(doc)
+        $("#content").html resultView.render()
 
   manage: ->
     $.couch.session
@@ -33,42 +39,8 @@ class Router extends Backbone.Router
         assessmentCollection = new AssessmentCollection()
         assessmentCollection.fetch
           success: ->
-            $("#content").html "
-              <h1>Manage</h1>
-              <button>Update Tangerine</button><br/>
-              <button href='/#{Tangerine.config.db_name}/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>
-              <br/>
-              Existing Assessments:
-              <ul id='manage-assessments'></ul>
-            "
-            _.each $('button:contains(New Assessment Wizard)'), (button) ->
-              new MBP.fastButton button, (ev) ->
-                document.location = $(ev.target).attr("href")
-
-            _.each $('button:contains(Update Tangerine)'), (button) ->
-              new MBP.fastButton button, (ev) ->
-                source = "http://mikeymckay.iriscouch.com/#{Tangerine.config.db_name}"
-                $("#content").prepend "<span id='message'>Updating from: #{source}</span>"
-                
-                $.couch.replicate "http://mikeymckay.iriscouch.com/#{Tangerine.config.db_name}", Tangerine.config.db_name,
-                  success: ->
-                    $("#message").html "Finished"
-
-            $.couch.allDbs
-              success: (databases)->
-                assessmentCollection.each (assessment) ->
-                  assessmentName = assessment.get("name")
-                  assessmentElement = "<li>#{assessmentName}"
-                  assessmentElement += "<button>Initialize Database</button>" unless _.include(databases,assessmentName.toLowerCase().dasherize())
-                  assessmentElement += "<button style='color:gray'>Edit</button>
-                                        <button style='color:gray'>Delete Database</button>
-                                        <button style='color:gray'>Upload Data to Central Server</button>
-                                      </li>"
-                  $("#manage-assessments").append(assessmentElement)
-
-                  _.each $("#manage-assessments li button:contains(Initialize Database)"), (button) ->
-                    new MBP.fastButton button, ->
-                      Utils.createResultsDatabase assessment.targetDatabase
+            manageView = new ManageView()
+            manageView.render(assessmentCollection)
 
   assessments: ->
     $.couch.session

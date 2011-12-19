@@ -43,7 +43,6 @@ Result = (function() {
         return resultCollection = _.extend(resultCollection, this.summaryData["default"](result));
       }
     }, this));
-    console.log(resultCollection);
     return resultCollection;
   };
   Result.prototype.summaryData = {
@@ -125,57 +124,6 @@ Result = (function() {
       return {
         Enumerator: result
       };
-    },
-    "default": function(result) {
-      return JSON.stringify(result);
-    }
-  };
-  Result.prototype.templates = {
-    id: function(result) {
-      return result.substr(0, 3) + "..." + result.substr(3);
-    },
-    DateTime: Handlebars.compile("Student: {{student-id}} Start Time: {{day}}-{{month}}-{{year}} {{time}}}"),
-    Dictation: function(result) {
-      return "Dictation Score: " + _.values(result).reduce(function(sum, n) {
-        return sum += n;
-      });
-    },
-    School: Handlebars.compile("School: {{name}} ({{schoolId}})"),
-    StudentInformation: Handlebars.compile("Gender: {{gender}}"),
-    Letters: function(result) {
-      return "Letters: " + Result.GridTemplate(result);
-    },
-    Phonemes: function(result) {
-      return "Phonemes: Completed " + (_.keys(result).length) + " words";
-    },
-    Grid: function(result) {},
-    FamiliarWords: function(result) {
-      return "Familiar Words: " + Result.GridTemplate(result);
-    },
-    InventedWords: function(result) {
-      return "Invented Words: " + Result.GridTemplate(result);
-    },
-    OralPassageReading: function(result) {
-      return "Oral Passage Reading: " + Result.GridTemplate(result);
-    },
-    ReadingComprehension: function(result) {
-      return "Reading Comprehension: " + Result.CountCorrectIncorrect(result);
-    },
-    ListeningComprehension: function(result) {
-      return "Listening Comprehension: " + Result.CountCorrectIncorrect(result);
-    },
-    PupilContextInterview: function(result) {
-      return "Pupil Context Interview:  " + (_.keys(result).length) + " questions answered";
-    },
-    timestamp: function(result) {
-      var date;
-      date = new Date(result);
-      $.date = date;
-      console.log(date.getDay());
-      return "Finish time: " + (date.toString());
-    },
-    enumerator: function(result) {
-      return "Enumerator: " + result;
     },
     "default": function(result) {
       return JSON.stringify(result);

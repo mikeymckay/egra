@@ -41,13 +41,14 @@
 */
 
     database = $.urlParam("database")
-    view = "aggregate/fields"
+    view = "reports/fields"
 
     $.couch.db(database).view(view, {
       success: function(result){
         // Use a hash to collect all of the fieldnames
         // Initialize each csv_rows row
         _.each(result.rows, function(row){
+          console.log(row);
           fields[row.key] = 1
           csv_rows[row.value.id] = {"id":row.value.id} 
         });
