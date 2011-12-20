@@ -41,6 +41,8 @@ class Result extends Backbone.Model
       Gender: result.gender
     Letters: (result) ->
       Letters: Result.GridTemplate(result)
+    Multiplication: (result) ->
+      Multiplication: Result.GridTemplate(result)
     Phonemes: (result) ->
       Phonemes: _.keys(result).length
     Grid: (result) ->
@@ -72,13 +74,9 @@ Result.CountCorrectIncorrect = (result) ->
 
 Result.GridTemplate = (result) ->
   itemsCorrect = 0
-# legacy support
-  if result.letters?
-    for index, itemResult in result.letters
-      itemsCorrect++ if itemResult and index <= result.attempted
-  else
-    for index, itemResult in result.items
-      itemsCorrect++ if itemResult and index <= result.attempted
+  for itemResult,index in result.items
+    if index <= result.attempted
+      itemsCorrect++ if itemResult
   return {
     itemsCorrect: itemsCorrect
     attempted: result.attempted

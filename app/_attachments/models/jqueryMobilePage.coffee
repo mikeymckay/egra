@@ -228,37 +228,6 @@ $('div.ui-footer button').live 'click', (event,ui) ->
     $.mobile.changePage("#_infoPage")
 
 
-class JQueryLogin extends AssessmentPage
-  constructor: ->
-    super()
-    @randomIdForSubject = (""+Math.random()).substring(2,8)
-    @randomIdForSubject = @randomIdForSubject.substr(0,3) + "-" + @randomIdForSubject.substr(3)
-    @content = "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='' />
-    <label for='password'>Password:</label>
-    <input type='password' name='password' id='password' value='' />
-  </div>
-</form>
-"
-  user: ->
-    @results().username
-
-  password: ->
-    @results().password
-
-  results: ->
-    unless @assessment.currentPage.pageId == @pageId
-      return @lastResult
-
-    @lastResult = null
-    @lastResult = super()
-    @lastResult["randomIdForSubject"] = @randomIdForSubject
-    return @lastResult
-    
-
 class StudentInformationPage extends AssessmentPage
   constructor: (options) ->
     super(options)
@@ -386,14 +355,21 @@ class DateTimePage extends AssessmentPage
     minutes = dateTime.getMinutes()
     minutes = "0" + minutes if minutes < 10
     time = dateTime.getHours() + ":" + minutes
-    randomIdForSubject = (""+Math.random()).substring(2,8)
-    randomIdForSubject = randomIdForSubject.substr(0,3) + "-" + randomIdForSubject.substr(3)
+    $('input#student-id').live "change", ->
+      $("#student-id-message").html ""
+      $('input#student-id').val $('input#student-id').val().toUpperCase()
+      $("#student-id-message").html("Invalid Student Identifier") unless Checkdigit.isValidIdentifier($('input#student-id').val())
+    $('button:contains(Create New ID)').live "click", ->
+      $("#student-id-message").html ""
+      $('#student-id').val Checkdigit.randomIdentifier()
 
     @content = "
       <form>
         <div data-role='fieldcontain'>
           <label for='student-id'>Student Identifier:</label>
-          <input type='text' name='student-id' id='student-id' value='#{randomIdForSubject}' />
+          <input type='text' name='student-id' id='student-id' />
+          <div id='student-id-message'></div>
+          <button style='display:block' type='button'>Create New ID</button>
         </div>
         <div data-role='fieldcontain'>
           <label for='year'>Year:</label>
@@ -423,26 +399,20 @@ class ResultsPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @content = Handlebars.compile "
-      <div class='resultsMessage'>
-      </div>
-      <div data-role='collapsible' data-collapsed='true' class='results'>
-        <h3>Results</h3>
-        <pre>
-        </pre>
-      </div>
       <div class='message'>
         You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.
       </div>
-      <div data-inline='true'>
-        <!-- TODO insert username/password into GET string so we don't have to retype -->
-        <!--
-        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
-        -->
-        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname + document.location.search}'>Begin Another Assessment</a>
-        <!--
-        <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
-        -->
+      <div data-role='collapsible' data-collapsed='true' class='results'>
+        You have finished:
+        <h3>Results</h3>
+        <div>
+        </div>
+        <label for='comment'>Comments (if any):</label>
+        <textarea style='width:80%' id='comment' name='resultComment'></textarea>
       </div>
+      <div class='resultsMessage'>
+      </div>
+      <button type='button'>Save Results</button>
     "
 
   load: (data) ->
@@ -453,13 +423,21 @@ class ResultsPage extends AssessmentPage
 
       $("div##{@pageId} div span[class='randomIdForSubject']").html $("#current-student-id")
 
-      # Hide the back and next buttons
-      $("div##{@pageId} div[data-role='header'] a").hide()
-      $("div##{@pageId} div[data-role='footer'] div").hide()
+      $("button:contains(Next)").hide()
 
-      $.assessment.saveResults (results) =>
-        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
-        $("div##{@pageId} div[data-role='content'] div.results pre").html( JSON.stringify(results,null,2) )
+
+      resultView = new ResultView()
+      resultView.model = new Result($.assessment.results())
+      $("div##{@pageId} div[data-role='content'] div.results div").html resultView.render()
+      $('.sparkline').sparkline 'html',
+        type:'pie'
+        sliceColors:['#F7C942','orangered']
+
+      $('button:contains(Save Results)').live "click", ->
+        $.assessment.saveResults (results) =>
+          $("div.resultsMessage").html("Results Saved")
+          $("button:contains(Save Results)").hide()
+
 
 class TextPage extends AssessmentPage
   propertiesForSerialization: ->

@@ -25,25 +25,45 @@ Router = (function() {
     "": "assessments"
   };
   Router.prototype.results = function(database_name) {
-    return $.couch.db(database_name).view("reports/byEnumerator", {
-      key: $.enumerator,
-      success: __bind(function(result) {
-        var resultsView;
-        resultsView = new ResultsView;
-        resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
-        resultsView.results.databaseName = database_name;
-        return resultsView.render();
-      }, this)
+    return $.couch.session({
+      success: function(session) {
+        $.enumerator = session.userCtx.name;
+        Tangerine.router.targetroute = document.location.hash;
+        if (!session.userCtx.name) {
+          Tangerine.router.navigate("login", true);
+          return;
+        }
+        return $.couch.db(database_name).view("reports/byEnumerator", {
+          key: $.enumerator,
+          success: __bind(function(result) {
+            var resultsView;
+            resultsView = new ResultsView;
+            resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
+            resultsView.results.databaseName = database_name;
+            return resultsView.render();
+          }, this)
+        });
+      }
     });
   };
   Router.prototype.result = function(database_name, id) {
-    return $.couch.db(database_name).openDoc(id, {
-      success: __bind(function(doc) {
-        var resultView;
-        resultView = new ResultView();
-        resultView.model = new Result(doc);
-        return $("#content").html(resultView.render());
-      }, this)
+    return $.couch.session({
+      success: function(session) {
+        $.enumerator = session.userCtx.name;
+        Tangerine.router.targetroute = document.location.hash;
+        if (!session.userCtx.name) {
+          Tangerine.router.navigate("login", true);
+          return;
+        }
+        return $.couch.db(database_name).openDoc(id, {
+          success: __bind(function(doc) {
+            var resultView;
+            resultView = new ResultView();
+            resultView.model = new Result(doc);
+            return $("#content").html(resultView.render());
+          }, this)
+        });
+      }
     });
   };
   Router.prototype.manage = function() {

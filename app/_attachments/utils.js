@@ -27,6 +27,9 @@ Utils.createResultsDatabase = function(databaseName, callback) {
           },
           "byTimestamp": {
             "map": MapReduce.mapByTimestamp.toString()
+          },
+          "replicationLog": {
+            "map": MapReduce.mapReplicationLog.toString()
           }
         }
       });
@@ -88,6 +91,11 @@ MapReduce.reduceCountByEnumerator = function(keys, values, rereduce) {
 };
 MapReduce.mapByTimestamp = function(doc, req) {
   if ((doc.enumerator != null) && (doc.timestamp != null)) {
+    return emit(doc.timestamp, doc);
+  }
+};
+MapReduce.mapReplicationLog = function(doc, req) {
+  if (doc.type === "replicationLog") {
     return emit(doc.timestamp, doc);
   }
 };

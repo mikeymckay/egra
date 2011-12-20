@@ -13,23 +13,35 @@ ResultCollection = (function() {
     ResultCollection.__super__.constructor.apply(this, arguments);
   }
   ResultCollection.prototype.model = Result;
-  ResultCollection.prototype.replicate = function(target) {
-    var source;
-    source = document.location.origin + "/" + this.databaseName;
+  ResultCollection.prototype.replicate = function(target, options) {
     target = target + "/" + this.databaseName;
-    return $.couch.replicate(source, target, __bind(function() {
+    $("#message").html("Syncing to " + target);
+    $.couch.db(this.databaseName).saveDoc({
+      type: "replicationLog",
+      timestamp: new Date().getTime(),
+      source: this.databaseName,
+      target: target
+    });
+    return $.couch.replicate(this.databaseName, target, __bind(function() {
       return {
         success: function() {
-          console.log("Saving");
-          return $.couch.db(this.databaseName).saveDoc({
-            type: "replicationLog",
-            timestamp: new Date(),
-            source: databaseName,
-            target: target
-          });
+          return options.success();
         }
       };
     }, this));
+  };
+  ResultCollection.prototype.lastCloudReplication = function(options) {
+    return $.couch.db(this.databaseName).view("reports/replicationLog", {
+      success: function(result) {
+        var latestTimestamp;
+        latestTimestamp = _.max(_.pluck(result.rows, "key"));
+        return _.each(result.rows, function(row) {
+          if (row.key === latestTimestamp) {
+            return options.success(row.value);
+          }
+        });
+      }
+    });
   };
   return ResultCollection;
 })();

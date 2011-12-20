@@ -12,20 +12,36 @@ class Router extends Backbone.Router
     "": "assessments"
 
   results: (database_name) ->
-    $.couch.db(database_name).view "reports/byEnumerator",
-        key: $.enumerator
-        success: (result) =>
-          resultsView = new ResultsView
-          resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
-          resultsView.results.databaseName = database_name
-          resultsView.render()
+    $.couch.session
+      success: (session) ->
+        $.enumerator = session.userCtx.name
+        Tangerine.router.targetroute = document.location.hash
+        unless session.userCtx.name
+          Tangerine.router.navigate("login", true)
+          return
+
+        $.couch.db(database_name).view "reports/byEnumerator",
+          key: $.enumerator
+          success: (result) =>
+            resultsView = new ResultsView
+            resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
+            resultsView.results.databaseName = database_name
+            resultsView.render()
 
   result: (database_name,id) ->
-    $.couch.db(database_name).openDoc id,
-      success: (doc) =>
-        resultView = new ResultView()
-        resultView.model = new Result(doc)
-        $("#content").html resultView.render()
+    $.couch.session
+      success: (session) ->
+        $.enumerator = session.userCtx.name
+        Tangerine.router.targetroute = document.location.hash
+        unless session.userCtx.name
+          Tangerine.router.navigate("login", true)
+          return
+
+        $.couch.db(database_name).openDoc id,
+          success: (doc) =>
+            resultView = new ResultView()
+            resultView.model = new Result(doc)
+            $("#content").html resultView.render()
 
   manage: ->
     $.couch.session

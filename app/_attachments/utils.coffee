@@ -1,4 +1,5 @@
 class Utils
+
 Utils.createResultsDatabase = (databaseName, callback) ->
   $.couch.login
     name: Tangerine.config.user_with_database_create_permission
@@ -20,6 +21,8 @@ Utils.createResultsDatabase = (databaseName, callback) ->
             "reduce": MapReduce.reduceCountByEnumerator.toString()
           "byTimestamp":
             "map": MapReduce.mapByTimestamp.toString()
+          "replicationLog":
+            "map": MapReduce.mapReplicationLog.toString()
       callback() if callback?
     complete: ->
       $.couch.logout()
@@ -56,3 +59,8 @@ MapReduce.reduceCountByEnumerator = (keys,values,rereduce) ->
 
 MapReduce.mapByTimestamp = (doc,req) ->
   emit(doc.timestamp,doc) if (doc.enumerator? and doc.timestamp?)
+
+MapReduce.mapReplicationLog = (doc,req) ->
+  emit(doc.timestamp,doc) if doc.type == "replicationLog"
+
+

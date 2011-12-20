@@ -79,6 +79,11 @@ Result = (function() {
         Letters: Result.GridTemplate(result)
       };
     },
+    Multiplication: function(result) {
+      return {
+        Multiplication: Result.GridTemplate(result)
+      };
+    },
     Phonemes: function(result) {
       return {
         Phonemes: _.keys(result).length
@@ -144,21 +149,13 @@ Result.CountCorrectIncorrect = function(result) {
   });
 };
 Result.GridTemplate = function(result) {
-  var index, itemResult, itemsCorrect, _len, _len2, _ref, _ref2;
+  var index, itemResult, itemsCorrect, _len, _ref;
   itemsCorrect = 0;
-  if (result.letters != null) {
-    _ref = result.letters;
-    for (itemResult = 0, _len = _ref.length; itemResult < _len; itemResult++) {
-      index = _ref[itemResult];
-      if (itemResult && index <= result.attempted) {
-        itemsCorrect++;
-      }
-    }
-  } else {
-    _ref2 = result.items;
-    for (itemResult = 0, _len2 = _ref2.length; itemResult < _len2; itemResult++) {
-      index = _ref2[itemResult];
-      if (itemResult && index <= result.attempted) {
+  _ref = result.items;
+  for (index = 0, _len = _ref.length; index < _len; index++) {
+    itemResult = _ref[index];
+    if (index <= result.attempted) {
+      if (itemResult) {
         itemsCorrect++;
       }
     }
