@@ -3,6 +3,7 @@
   "_id": "Assessment.Test",
   "urlPathsForPages": [
     "Assessment.The Gambia EGRA May 2011.DateTime",
+    "Assessment.The Gambia EGRA May 2011.StudentInformation",
     "Assessment.The Gambia EGRA May 2011.InventedWords",
     "Assessment.Test.Multiplication",
     "Assessment.The Gambia EGRA May 2011.Results"

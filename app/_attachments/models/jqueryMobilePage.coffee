@@ -16,9 +16,9 @@ class JQueryMobilePage
         @renderNextPage()
 
   renderNextPage: ->
-    unless @validate() is true
-      validationMessageElement = $("##{@pageId} div.validation-message")
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000)
+    validationResult = @validate()
+    unless validationResult is true
+      $("##{@pageId} div.validation-message").html("").show().html(validationResult).fadeOut(5000)
       return
     @results() # Saves the current result to @lastResult
     @nextPage.render()

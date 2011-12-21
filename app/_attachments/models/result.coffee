@@ -31,7 +31,7 @@ class Result extends Backbone.Model
     id: (result) ->
       id: result.substr(0,3) + "..." + result.substr(-3)
     DateTime: (result) ->
-      Student: result.student_id
+      Student: result["student-id"]
       StartTime: new Date("#{result.month} #{result.day}, #{result.year} #{result.time}")
     Dictation: (result) ->
       DictationScore: _.values(result).reduce((sum,n) -> (sum+=n))

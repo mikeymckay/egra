@@ -53,7 +53,7 @@ Result = (function() {
     },
     DateTime: function(result) {
       return {
-        Student: result.student_id,
+        Student: result["student-id"],
         StartTime: new Date("" + result.month + " " + result.day + ", " + result.year + " " + result.time)
       };
     },

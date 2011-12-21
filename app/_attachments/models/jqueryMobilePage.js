@@ -25,10 +25,10 @@ JQueryMobilePage = (function() {
     }, this));
   };
   JQueryMobilePage.prototype.renderNextPage = function() {
-    var validationMessageElement;
-    if (this.validate() !== true) {
-      validationMessageElement = $("#" + this.pageId + " div.validation-message");
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+    var validationResult;
+    validationResult = this.validate();
+    if (validationResult !== true) {
+      $("#" + this.pageId + " div.validation-message").html("").show().html(validationResult).fadeOut(5000);
       return;
     }
     this.results();
