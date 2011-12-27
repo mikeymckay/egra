@@ -16,9 +16,9 @@ class JQueryMobilePage
         @renderNextPage()
 
   renderNextPage: ->
-    unless @validate() is true
-      validationMessageElement = $("##{@pageId} div.validation-message")
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000)
+    validationResult = @validate()
+    unless validationResult is true
+      $("##{@pageId} div.validation-message").html("").show().html(validationResult).fadeOut(5000)
       return
     @results() # Saves the current result to @lastResult
     @nextPage.render()
@@ -228,37 +228,6 @@ $('div.ui-footer button').live 'click', (event,ui) ->
     $.mobile.changePage("#_infoPage")
 
 
-class JQueryLogin extends AssessmentPage
-  constructor: ->
-    super()
-    @randomIdForSubject = (""+Math.random()).substring(2,8)
-    @randomIdForSubject = @randomIdForSubject.substr(0,3) + "-" + @randomIdForSubject.substr(3)
-    @content = "
-<form>
-  <div data-role='fieldcontain'>
-    <label for='username'>Username:</label>
-    <input type='text' name='username' id='username' value='' />
-    <label for='password'>Password:</label>
-    <input type='password' name='password' id='password' value='' />
-  </div>
-</form>
-"
-  user: ->
-    @results().username
-
-  password: ->
-    @results().password
-
-  results: ->
-    unless @assessment.currentPage.pageId == @pageId
-      return @lastResult
-
-    @lastResult = null
-    @lastResult = super()
-    @lastResult["randomIdForSubject"] = @randomIdForSubject
-    return @lastResult
-    
-
 class StudentInformationPage extends AssessmentPage
   constructor: (options) ->
     super(options)
@@ -386,14 +355,21 @@ class DateTimePage extends AssessmentPage
     minutes = dateTime.getMinutes()
     minutes = "0" + minutes if minutes < 10
     time = dateTime.getHours() + ":" + minutes
-    randomIdForSubject = (""+Math.random()).substring(2,8)
-    randomIdForSubject = randomIdForSubject.substr(0,3) + "-" + randomIdForSubject.substr(3)
+    $('input#student-id').live "change", ->
+      $("#student-id-message").html ""
+      $('input#student-id').val $('input#student-id').val().toUpperCase()
+      $("#student-id-message").html("Invalid Student Identifier") unless Checkdigit.isValidIdentifier($('input#student-id').val())
+    $('button:contains(Create New ID)').live "click", ->
+      $("#student-id-message").html ""
+      $('#student-id').val Checkdigit.randomIdentifier()
 
     @content = "
       <form>
         <div data-role='fieldcontain'>
           <label for='student-id'>Student Identifier:</label>
-          <input type='text' name='student-id' id='student-id' value='#{randomIdForSubject}' />
+          <input type='text' name='student-id' id='student-id' />
+          <div id='student-id-message'></div>
+          <button style='display:block' type='button'>Create New ID</button>
         </div>
         <div data-role='fieldcontain'>
           <label for='year'>Year:</label>
@@ -423,26 +399,20 @@ class ResultsPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @content = Handlebars.compile "
-      <div class='resultsMessage'>
-      </div>
-      <div data-role='collapsible' data-collapsed='true' class='results'>
-        <h3>Results</h3>
-        <pre>
-        </pre>
-      </div>
       <div class='message'>
         You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.
       </div>
-      <div data-inline='true'>
-        <!-- TODO insert username/password into GET string so we don't have to retype -->
-        <!--
-        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=#{}&password=#{}'>Begin Another Assessment</a>
-        -->
-        <a data-inline='true' data-role='button' rel='external' href='#{document.location.pathname + document.location.search}'>Begin Another Assessment</a>
-        <!--
-        <a data-inline='true' data-role='button' rel='external' href='#{$.couchDBDatabasePath}/_all_docs'>Summary</a>
-        -->
+      <div data-role='collapsible' data-collapsed='true' class='results'>
+        You have finished:
+        <h3>Results</h3>
+        <div>
+        </div>
+        <label for='comment'>Comments (if any):</label>
+        <textarea style='width:80%' id='comment' name='resultComment'></textarea>
       </div>
+      <div class='resultsMessage'>
+      </div>
+      <button type='button'>Save Results</button>
     "
 
   load: (data) ->
@@ -453,13 +423,21 @@ class ResultsPage extends AssessmentPage
 
       $("div##{@pageId} div span[class='randomIdForSubject']").html $("#current-student-id")
 
-      # Hide the back and next buttons
-      $("div##{@pageId} div[data-role='header'] a").hide()
-      $("div##{@pageId} div[data-role='footer'] div").hide()
+      $("button:contains(Next)").hide()
 
-      $.assessment.saveResults (results) =>
-        $("div##{@pageId} div[data-role='content'] div.resultsMessage").html("Results Saved")
-        $("div##{@pageId} div[data-role='content'] div.results pre").html( JSON.stringify(results,null,2) )
+
+      resultView = new ResultView()
+      resultView.model = new Result($.assessment.results())
+      $("div##{@pageId} div[data-role='content'] div.results div").html resultView.render()
+      $('.sparkline').sparkline 'html',
+        type:'pie'
+        sliceColors:['#F7C942','orangered']
+
+      $('button:contains(Save Results)').live "click", ->
+        $.assessment.saveResults (results) =>
+          $("div.resultsMessage").html("Results Saved")
+          $("button:contains(Save Results)").hide()
+
 
 class TextPage extends AssessmentPage
   propertiesForSerialization: ->
@@ -574,7 +552,7 @@ class PhonemePage extends AssessmentPage
     @footerMessage = footerMessage
     phonemeIndex = 1
     @content = "<form id='#{@subtestId}'>" + (for item,index in @words
-      wordName = @subtestId + "-number-sound-" + (index+1)
+      wordName = "#{@subtestId}.#{item.word}.identified-number"
       "
       <div data-role='fieldcontain'>
           <fieldset data-role='controlgroup' data-type='horizontal'>
@@ -594,13 +572,12 @@ class PhonemePage extends AssessmentPage
           <legend>Phonemes identified</legend>
       " +
       (for phoneme in item["phonemes"]
-        phonemeName = @subtestId + "-phoneme-sound-" + phonemeIndex++
+        phonemeName = "#{@subtestId}.#{item.word}.phoneme-#{phoneme}"
         "
             <label for='#{phonemeName}'>#{phoneme}</label>
-            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' />
+            <input type='checkbox' name='#{phonemeName}' id='#{phonemeName}' value='Correct'/>
         "
-      ).join("") +
-      "
+      ).join("") +  "
             </fieldset>
           </fieldset>
       </div>
@@ -617,16 +594,15 @@ class PhonemePage extends AssessmentPage
       return @lastResult
 
     @lastResult = null
-    @lastResult = super()
-    for input in $("form##{@subtestId} input:checkbox")
-      # checked means they got it wrong, so set to false
-      @lastResult["#{input.name}"] = (input.value != "on")
+    @lastResult = $("form##{@subtestId}").toObject({skipEmpty:false})
+
     return @lastResult
 
   validate: ->
+    return true
     results = @results()
     for item,index in @words
-      unless results[@subtestId + "-number-sound-" + (index+1)]?
+      unless results[@subtestId + "-number-phonemes" + (index+1)]?
         return "You must select Correct or Incorrect for item ##{index+1}: <b>#{item["word"]}</b>"
     return true
 
@@ -728,13 +704,13 @@ class ToggleGridWithTimer extends AssessmentPage
 
     @lastResult.time_remain = @timer.seconds
     return @lastResult unless @timer.hasStartedAndStopped() #optimization
-    @lastResult.letters = new Array()
+    @lastResult.items = new Array()
     # Initialize to all wrong
-    @lastResult.letters[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+    @lastResult.items[index] = false for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
     @lastResult.attempted = null
     for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
       gridItem = $(gridItem)
-      @lastResult.letters[index] = true unless gridItem.hasClass("selected")
+      @lastResult.items[index] = true unless gridItem.hasClass("selected")
       if gridItem.hasClass("last-attempted")
         @lastResult.attempted = index + 1
         if @autostop

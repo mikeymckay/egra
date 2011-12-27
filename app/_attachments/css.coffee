@@ -37,18 +37,16 @@ $("head").append "
       font-size:50%;
       margin:10px;
     }
-    #assessments li{
+    #assessments td{
       list-style: none;
-      background:#eee;
       text-decoration:none;
-      color:#333;
       font-family:Arial, sans-serif;
       font-weight:bold;
+      font-size: 200%;
       padding:3px 5px;
       border:1px solid #aaa;
       border-radius:3px;
       cursor:pointer;
-      width: 50%;
     }
 
     legend{

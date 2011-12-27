@@ -1,0 +1,8 @@
+[
+  {
+    "_comment" : "This isn't really working or useful, probably not worth it until vhosts are setup",
+    "from": "",
+    "to": "index.html"
+  }
+]
+

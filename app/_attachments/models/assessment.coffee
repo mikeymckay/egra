@@ -5,16 +5,36 @@ class Assessment extends Backbone.Model
 
   url: '/assessment'
 
+  fetch: (options) =>
+    # Whenever we fetch data we need to take the result and setup the assessment object before doing the callback
+    superOptions = options
+    superOptions = 
+      success: =>
+        @changeName(@get("name"))
+        pages = []
+        for urlPath in @get("urlPathsForPages")
+          url = "/#{Tangerine.config.db_name}/#{urlPath}"
+          JQueryMobilePage.loadFromHTTP {url: url, async: false}, (page) =>
+            page.assessment = this
+            pages.push page
+        @setPages(pages)
+        options?.success()
+
+    super(superOptions)
+
   changeName: (newName) ->
     @name = newName
     @urlPath = "Assessment.#{@name}"
-    @targetDatabase = @name.toLowerCase().dasherize()
     @urlPathsForPages = []
     if @pages?
       for page in @pages
         page.urlPath = @urlPath + "." + page.pageId
         @urlPathsForPages.push(page.urlPath)
 
+  targetDatabase: ->
+    name = @name || @get("name")
+    name.toLowerCase().dasherize()
+  
   setPages: (pages) ->
     @pages = pages
     @urlPathsForPages = []
@@ -60,60 +80,14 @@ class Assessment extends Backbone.Model
     results.enumerator = $('#enumerator').html()
     return results
 
-  saveResults: (callback, stopOnError = false ) ->
+  saveResults: (callback) ->
     results = @results()
-    console.log results
-    $.couch.db(@targetDatabase).saveDoc results,
+    $.couch.db(@targetDatabase()).saveDoc results,
       success: ->
         callback(results) if callback?
       error: =>
-        if stopOnError
-          throw "Could not create document in #{@targetDatabase}"
-          alert "Results NOT saved - do you have permission to save?"
-        else
-          targetDatabaseWithUserPassword = "#{Tangerine.config.user_with_database_create_permission}:#{Tangerine.config.password_with_database_create_permission}@#{@targetDatabase}"
-          $.couch.db(targetDatabaseWithUserPassword).create
-            success: =>
-              # Now that database has been created try and save again
-              @saveResults(callback, true)
-              # Create the view needed to aggregate data in the database
-              $.couch.db(@targetDatabase).saveDoc
-                "_id":"_design/aggregate",
-                "language":"javascript",
-                "views":
-                  "fields":
-                    "map":'''
-(function(doc, req) {
-  var concatNodes, fields;
-  fields = [];
-  concatNodes = function(parent, o) {
-    var index, key, value, _len, _results, _results2;
-    if (o instanceof Array) {
-      _results = [];
-      for (index = 0, _len = o.length; index < _len; index++) {
-        value = o[index];
-        _results.push(typeof o !== "string" ? concatNodes(parent + "." + index, value) : void 0);
-      }
-      return _results;
-    } else {
-      if (typeof o === "string") {
-        return fields.push("" + parent + ",\\"" + o + "\\"\\n");
-      } else {
-        _results2 = [];
-        for (key in o) {
-          value = o[key];
-          _results2.push(concatNodes(parent + "." + key, value));
-        }
-        return _results2;
-      }
-    }
-  };
-  concatNodes("", doc);
-  return emit(null, fields);
-});
-'''
-            error: =>
-              throw "Could not create database #{databaseName}"
+        alert "Results NOT saved - do you have permission to save?"
+        throw "Could not create document in #{@targetDatabase()}"
 
   resetURL: ->
     #document.location.origin + document.location.pathname + document.location.search
@@ -201,20 +175,3 @@ class Assessment extends Backbone.Model
       unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         $.mobile.changePage("DateTime") unless ($.assessment.currentPage.pageId == "DateTime" or $.assessment.currentPage.pageId == "Login")
         document.location = document.location.href
-
-
-Assessment.load = (id, callback) ->
-  assessment = new Assessment {_id:id}
-  assessment.fetch
-    success: ->
-      assessment.changeName(assessment.get("name"))
-      pages = []
-      for urlPath in assessment.get("urlPathsForPages")
-        url = "/#{Tangerine.config.db_name}/#{urlPath}"
-        JQueryMobilePage.loadFromHTTP {url: url, async: false}, (page) =>
-          page.assessment = assessment
-          pages.push page
-      assessment.setPages(pages)
-      callback(assessment) if callback?
-    error: ->
-      throw "Failed to load: #{url}"

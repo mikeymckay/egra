@@ -1,4 +1,4 @@
-var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryLogin, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage;
+var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryMobilePage, PhonemePage, ResultsPage, SchoolPage, StudentInformationPage, TextPage, ToggleGridWithTimer, UntimedSubtest, UntimedSubtestLinked, footerMessage;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -25,10 +25,10 @@ JQueryMobilePage = (function() {
     }, this));
   };
   JQueryMobilePage.prototype.renderNextPage = function() {
-    var validationMessageElement;
-    if (this.validate() !== true) {
-      validationMessageElement = $("#" + this.pageId + " div.validation-message");
-      validationMessageElement.html("").show().html(validationResult).fadeOut(5000);
+    var validationResult;
+    validationResult = this.validate();
+    if (validationResult !== true) {
+      $("#" + this.pageId + " div.validation-message").html("").show().html(validationResult).fadeOut(5000);
       return;
     }
     this.results();
@@ -256,31 +256,6 @@ $('div.ui-footer button').live('click', function(event, ui) {
     return $.mobile.changePage("#_infoPage");
   }
 });
-JQueryLogin = (function() {
-  __extends(JQueryLogin, AssessmentPage);
-  function JQueryLogin() {
-    JQueryLogin.__super__.constructor.call(this);
-    this.randomIdForSubject = ("" + Math.random()).substring(2, 8);
-    this.randomIdForSubject = this.randomIdForSubject.substr(0, 3) + "-" + this.randomIdForSubject.substr(3);
-    this.content = "<form>  <div data-role='fieldcontain'>    <label for='username'>Username:</label>    <input type='text' name='username' id='username' value='' />    <label for='password'>Password:</label>    <input type='password' name='password' id='password' value='' />  </div></form>";
-  }
-  JQueryLogin.prototype.user = function() {
-    return this.results().username;
-  };
-  JQueryLogin.prototype.password = function() {
-    return this.results().password;
-  };
-  JQueryLogin.prototype.results = function() {
-    if (this.assessment.currentPage.pageId !== this.pageId) {
-      return this.lastResult;
-    }
-    this.lastResult = null;
-    this.lastResult = JQueryLogin.__super__.results.call(this);
-    this.lastResult["randomIdForSubject"] = this.randomIdForSubject;
-    return this.lastResult;
-  };
-  return JQueryLogin;
-})();
 StudentInformationPage = (function() {
   __extends(StudentInformationPage, AssessmentPage);
   function StudentInformationPage(options) {
@@ -424,7 +399,7 @@ DateTimePage = (function() {
     DateTimePage.__super__.constructor.apply(this, arguments);
   }
   DateTimePage.prototype.load = function(data) {
-    var dateTime, day, minutes, month, randomIdForSubject, time, year;
+    var dateTime, day, minutes, month, time, year;
     dateTime = new Date();
     year = dateTime.getFullYear();
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dateTime.getMonth()];
@@ -434,9 +409,18 @@ DateTimePage = (function() {
       minutes = "0" + minutes;
     }
     time = dateTime.getHours() + ":" + minutes;
-    randomIdForSubject = ("" + Math.random()).substring(2, 8);
-    randomIdForSubject = randomIdForSubject.substr(0, 3) + "-" + randomIdForSubject.substr(3);
-    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='student-id'>Student Identifier:</label>          <input type='text' name='student-id' id='student-id' value='" + randomIdForSubject + "' />        </div>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
+    $('input#student-id').live("change", function() {
+      $("#student-id-message").html("");
+      $('input#student-id').val($('input#student-id').val().toUpperCase());
+      if (!Checkdigit.isValidIdentifier($('input#student-id').val())) {
+        return $("#student-id-message").html("Invalid Student Identifier");
+      }
+    });
+    $('button:contains(Create New ID)').live("click", function() {
+      $("#student-id-message").html("");
+      return $('#student-id').val(Checkdigit.randomIdentifier());
+    });
+    return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='student-id'>Student Identifier:</label>          <input type='text' name='student-id' id='student-id' />          <div id='student-id-message'></div>          <button style='display:block' type='button'>Create New ID</button>        </div>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
   };
   DateTimePage.prototype.validate = function() {
     $("#current-student-id").html($("#student-id").val());
@@ -448,18 +432,27 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage(options) {
     ResultsPage.__super__.constructor.call(this, options);
-    this.content = Handlebars.compile("      <div class='resultsMessage'>      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        <h3>Results</h3>        <pre>        </pre>      </div>      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-inline='true'>        <!-- TODO insert username/password into GET string so we don't have to retype -->        <!--        <a data-inline='true' data-role='button' rel='external' href='#DateTime?username=" + "&password=" + "'>Begin Another Assessment</a>        -->        <a data-inline='true' data-role='button' rel='external' href='" + (document.location.pathname + document.location.search) + "'>Begin Another Assessment</a>        <!--        <a data-inline='true' data-role='button' rel='external' href='" + $.couchDBDatabasePath + "/_all_docs'>Summary</a>        -->      </div>    ");
+    this.content = Handlebars.compile("      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        You have finished:        <h3>Results</h3>        <div>        </div>        <label for='comment'>Comments (if any):</label>        <textarea style='width:80%' id='comment' name='resultComment'></textarea>      </div>      <div class='resultsMessage'>      </div>      <button type='button'>Save Results</button>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", __bind(function() {
+      var resultView;
       $("div#" + this.pageId + " div span[class='randomIdForSubject']").html($("#current-student-id"));
-      $("div#" + this.pageId + " div[data-role='header'] a").hide();
-      $("div#" + this.pageId + " div[data-role='footer'] div").hide();
-      return $.assessment.saveResults(__bind(function(results) {
-        $("div#" + this.pageId + " div[data-role='content'] div.resultsMessage").html("Results Saved");
-        return $("div#" + this.pageId + " div[data-role='content'] div.results pre").html(JSON.stringify(results, null, 2));
-      }, this));
+      $("button:contains(Next)").hide();
+      resultView = new ResultView();
+      resultView.model = new Result($.assessment.results());
+      $("div#" + this.pageId + " div[data-role='content'] div.results div").html(resultView.render());
+      $('.sparkline').sparkline('html', {
+        type: 'pie',
+        sliceColors: ['#F7C942', 'orangered']
+      });
+      return $('button:contains(Save Results)').live("click", function() {
+        return $.assessment.saveResults(__bind(function(results) {
+          $("div.resultsMessage").html("Results Saved");
+          return $("button:contains(Save Results)").hide();
+        }, this));
+      });
     }, this));
   };
   return ResultsPage;
@@ -612,7 +605,7 @@ PhonemePage = (function() {
       _results = [];
       for (index = 0, _len = _ref.length; index < _len; index++) {
         item = _ref[index];
-        wordName = this.subtestId + "-number-sound-" + (index + 1);
+        wordName = "" + this.subtestId + "." + item.word + ".identified-number";
         _results.push(("      <div data-role='fieldcontain'>          <fieldset data-role='controlgroup' data-type='horizontal'>            <legend>" + item["word"] + "</legend>            <fieldset data-role='controlgroup' data-type='horizontal'>              <legend>Number of phonemes: " + item["number-of-sounds"] + "</legend>      ") + ((function() {
           var _i, _len2, _ref2, _results2;
           _ref2 = ["Correct", "Incorrect"];
@@ -628,8 +621,8 @@ PhonemePage = (function() {
           _results2 = [];
           for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
             phoneme = _ref2[_i];
-            phonemeName = this.subtestId + "-phoneme-sound-" + phonemeIndex++;
-            _results2.push("            <label for='" + phonemeName + "'>" + phoneme + "</label>            <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' />        ");
+            phonemeName = "" + this.subtestId + "." + item.word + ".phoneme-" + phoneme;
+            _results2.push("            <label for='" + phonemeName + "'>" + phoneme + "</label>            <input type='checkbox' name='" + phonemeName + "' id='" + phonemeName + "' value='Correct'/>        ");
           }
           return _results2;
         }).call(this)).join("") + "            </fieldset>          </fieldset>      </div>      ");
@@ -644,26 +637,23 @@ PhonemePage = (function() {
     return properties;
   };
   PhonemePage.prototype.results = function() {
-    var input, _i, _len, _ref;
     if (this.assessment.currentPage.pageId !== this.pageId) {
       return this.lastResult;
     }
     this.lastResult = null;
-    this.lastResult = PhonemePage.__super__.results.call(this);
-    _ref = $("form#" + this.subtestId + " input:checkbox");
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      input = _ref[_i];
-      this.lastResult["" + input.name] = input.value !== "on";
-    }
+    this.lastResult = $("form#" + this.subtestId).toObject({
+      skipEmpty: false
+    });
     return this.lastResult;
   };
   PhonemePage.prototype.validate = function() {
     var index, item, results, _len, _ref;
+    return true;
     results = this.results();
     _ref = this.words;
     for (index = 0, _len = _ref.length; index < _len; index++) {
       item = _ref[index];
-      if (results[this.subtestId + "-number-sound-" + (index + 1)] == null) {
+      if (results[this.subtestId + "-number-phonemes" + (index + 1)] == null) {
         return "You must select Correct or Incorrect for item #" + (index + 1) + ": <b>" + item["word"] + "</b>";
       }
     }
@@ -767,11 +757,11 @@ ToggleGridWithTimer = (function() {
     if (!this.timer.hasStartedAndStopped()) {
       return this.lastResult;
     }
-    this.lastResult.letters = new Array();
+    this.lastResult.items = new Array();
     _ref = $("#" + this.pageId + " .grid:not(.toggle-row)");
     for (index = 0, _len = _ref.length; index < _len; index++) {
       gridItem = _ref[index];
-      this.lastResult.letters[index] = false;
+      this.lastResult.items[index] = false;
     }
     this.lastResult.attempted = null;
     _ref2 = $("#" + this.pageId + " .grid:not(.toggle-row)");
@@ -779,7 +769,7 @@ ToggleGridWithTimer = (function() {
       gridItem = _ref2[index];
       gridItem = $(gridItem);
       if (!gridItem.hasClass("selected")) {
-        this.lastResult.letters[index] = true;
+        this.lastResult.items[index] = true;
       }
       if (gridItem.hasClass("last-attempted")) {
         this.lastResult.attempted = index + 1;
