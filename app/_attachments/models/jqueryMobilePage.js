@@ -410,10 +410,12 @@ DateTimePage = (function() {
     }
     time = dateTime.getHours() + ":" + minutes;
     $('input#student-id').live("change", function() {
+      var isValid;
       $("#student-id-message").html("");
       $('input#student-id').val($('input#student-id').val().toUpperCase());
-      if (!Checkdigit.isValidIdentifier($('input#student-id').val())) {
-        return $("#student-id-message").html("Invalid Student Identifier");
+      isValid = Checkdigit.isValidIdentifier($('input#student-id').val());
+      if (isValid !== true) {
+        return $("#student-id-message").html(isValid);
       }
     });
     $('button:contains(Create New ID)').live("click", function() {
@@ -423,7 +425,11 @@ DateTimePage = (function() {
     return this.content = "      <form>        <div data-role='fieldcontain'>          <label for='student-id'>Student Identifier:</label>          <input type='text' name='student-id' id='student-id' />          <div id='student-id-message'></div>          <button style='display:block' type='button'>Create New ID</button>        </div>        <div data-role='fieldcontain'>          <label for='year'>Year:</label>          <input type='number' name='year' id='year' value='" + year + "' />        </div>        <div data-role='fieldcontain'>          <label for='month'>Month:</label>          <input type='text' name='month' id='month' value='" + month + "'/>        </div>        <div data-role='fieldcontain'>          <label for='day'>Day:</label>          <input type='number' name='day' id='day' value='" + day + "' />        </div>        <div data-role='fieldcontain'>          <label for='time'>Time:</label>          <input type='text' name='time' id='time' value='" + time + "' />        </div>      </form>      ";
   };
   DateTimePage.prototype.validate = function() {
-    $("#current-student-id").html($("#student-id").val());
+    var isValid;
+    isValid = Checkdigit.isValidIdentifier($('input#student-id').val());
+    if (isValid !== true) {
+      return isValid;
+    }
     return DateTimePage.__super__.validate.call(this);
   };
   return DateTimePage;

@@ -358,8 +358,11 @@ class DateTimePage extends AssessmentPage
     $('input#student-id').live "change", ->
       $("#student-id-message").html ""
       $('input#student-id').val $('input#student-id').val().toUpperCase()
-      $("#student-id-message").html("Invalid Student Identifier") unless Checkdigit.isValidIdentifier($('input#student-id').val())
+
+      isValid = Checkdigit.isValidIdentifier($('input#student-id').val())
+      $("#student-id-message").html(isValid) unless isValid == true
     $('button:contains(Create New ID)').live "click", ->
+
       $("#student-id-message").html ""
       $('#student-id').val Checkdigit.randomIdentifier()
 
@@ -391,7 +394,8 @@ class DateTimePage extends AssessmentPage
       "
 
   validate: ->
-    $("#current-student-id").html $("#student-id").val()
+    isValid = Checkdigit.isValidIdentifier($('input#student-id').val())
+    return isValid unless isValid == true
     super()
 
 
