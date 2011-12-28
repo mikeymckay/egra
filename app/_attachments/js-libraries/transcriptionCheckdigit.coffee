@@ -42,7 +42,7 @@ Checkdigit.toBase10 = (string) ->
   _.map string.split(""), (character) ->
     for allowedChar, index in Checkdigit.allowedChars
       return index if character == allowedChar
-    throw "#{character} is not part of #{Checkdigit.allowedChars}"
+    throw "#{character} is not valid, must be part of #{Checkdigit.allowedChars}"
 
 Checkdigit.generate = (identifier) ->
   checkdigit = ""
@@ -54,7 +54,14 @@ Checkdigit.generate = (identifier) ->
   return Checkdigit.allowedChars[checkdigitBase10]
 
 Checkdigit.isValidIdentifier = (identifier) ->
-  return identifier.slice(-1) == Checkdigit.generate(identifier.slice(0,-1))
+  try
+    if identifier.slice(-1) == Checkdigit.generate(identifier.slice(0,-1))
+      return true
+    else
+      return "Invalid student identifier"
+  catch error
+    console.log "ERROR!"
+    return error
 
 Checkdigit.randomIdentifier = ->
   returnValue = ""
