@@ -1,4 +1,4 @@
-var Router;
+var Router, assessmentCollection;
 var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -206,5 +206,29 @@ Router = (function() {
   };
   return Router;
 })();
+$.couch.config({
+  success: function(result) {
+    if (_.keys(result).length === 0) {
+      return $.couch.config({}, "admins", Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission);
+    }
+  },
+  error: function() {}
+}, "admins");
+assessmentCollection = new AssessmentCollection();
+assessmentCollection.fetch({
+  success: __bind(function() {
+    return assessmentCollection.each(__bind(function(assessment) {
+      return $.couch.db(assessment.targetDatabase()).info({
+        error: __bind(function(a, b, errorType) {
+          if (errorType === "no_db_file") {
+            return Utils.createResultsDatabase(assessment.targetDatabase(), __bind(function() {
+              return $.couch.logout();
+            }, this));
+          }
+        }, this)
+      });
+    }, this));
+  }, this)
+});
 Tangerine.router = new Router();
 Backbone.history.start();

@@ -193,5 +193,30 @@ class Router extends Backbone.Router
         $('.grid').each (index) ->
           $(this).nextAll().andSelf().slice(0,10).wrapAll('<div class="grid-row"></div>') if( index % 10 == 0 )
 
+# Initialization/Detection
+
+$.couch.config(
+  {
+    success: (result) ->
+      if _.keys(result).length == 0 # admin party mode
+        # Create admin user
+        $.couch.config({},"admins",Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission)
+    error: ->
+      # Do nothing - we can't access this because we are not admins
+  }
+  "admins"
+)
+
+# Check that all result databases exist
+assessmentCollection = new AssessmentCollection()
+assessmentCollection.fetch
+  success: =>
+    assessmentCollection.each (assessment) =>
+      $.couch.db(assessment.targetDatabase()).info
+        error: (a,b,errorType) =>
+          if errorType == "no_db_file"
+            Utils.createResultsDatabase assessment.targetDatabase(), =>
+              $.couch.logout()
+
 Tangerine.router = new Router()
 Backbone.history.start()

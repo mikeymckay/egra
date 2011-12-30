@@ -36,14 +36,6 @@ AssessmentListView = (function() {
                 database_name: assessment.targetDatabase()
               }));
               return $("#assessments").trigger("update").trigger("sorton", [1, 0]);
-            }, this),
-            error: __bind(function(a, b, errorType) {
-              if (errorType === "no_db_file") {
-                return Utils.createResultsDatabase(assessment.targetDatabase(), __bind(function() {
-                  $.couch.logout();
-                  return this.render();
-                }, this));
-              }
             }, this)
           });
         }, this));

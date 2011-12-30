@@ -43,12 +43,6 @@ class AssessmentListView extends Backbone.View
                 id: assessment.get("_id")
                 database_name: assessment.targetDatabase()
               $("#assessments").trigger("update").trigger("sorton",[1,0])
-            error: (a,b,errorType) =>
-              if errorType == "no_db_file"
-                Utils.createResultsDatabase assessment.targetDatabase(), =>
-                  $.couch.logout()
-                  @render()
-                  
 
   events:
     "click button.assessment-name": "loadAssessment"
