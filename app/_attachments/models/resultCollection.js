@@ -35,11 +35,15 @@ ResultCollection = (function() {
       success: function(result) {
         var latestTimestamp;
         latestTimestamp = _.max(_.pluck(result.rows, "key"));
-        return _.each(result.rows, function(row) {
-          if (row.key === latestTimestamp) {
-            return options.success(row.value);
-          }
-        });
+        if (latestTimestamp != null) {
+          return _.each(result.rows, function(row) {
+            if (row.key === latestTimestamp) {
+              return options.success(row.value);
+            }
+          });
+        } else {
+          return options.error();
+        }
       }
     });
   };

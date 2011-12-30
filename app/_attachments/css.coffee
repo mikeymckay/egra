@@ -160,6 +160,10 @@ $("head").append "
     div.ui-footer .ui-btn{
       font-size: 20px;
     }
+
+    .disabled{
+      color:gray
+    }
     
 
   </style>

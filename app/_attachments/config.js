@@ -12,6 +12,8 @@ Tangerine.cloud = {
   password: "tangytangerine"
 };
 Tangerine.cloud.url = "http://" + Tangerine.cloud.username + ":" + Tangerine.cloud.password + "@" + Tangerine.cloud.target;
+Tangerine.subnet = "http://192.168.2.x";
+Tangerine.port = "5984";
 Backbone.couch_connector.config.db_name = Tangerine.config.db_name;
 Backbone.couch_connector.config.ddoc_name = Tangerine.config.design_doc_name;
 Backbone.couch_connector.config.global_changes = false;

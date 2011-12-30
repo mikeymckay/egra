@@ -20,8 +20,8 @@ class ManageView extends Backbone.View
           assessmentResultDatabaseName = assessmentName.toLowerCase().dasherize()
           assessmentElement = "<li>#{assessmentName}"
           assessmentElement += "<button href='#{assessmentResultDatabaseName}'>Initialize Database</button>" unless _.include(databases,assessmentResultDatabaseName)
-          assessmentElement += "<button style='color:gray'>Edit</button>
-                                <button style='color:gray'>Delete Database</button>
+          assessmentElement += "<button class='disabled'>Edit</button>
+                                <button class='disabled'>Delete Database</button>
                                 <button href='#{assessmentResultDatabaseName}'>Results</button>
                               </li>"
           $("#manage-assessments").append(assessmentElement)

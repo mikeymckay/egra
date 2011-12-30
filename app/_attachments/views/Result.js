@@ -23,7 +23,6 @@ ResultView = (function() {
   };
   ResultView.prototype.tableRows = function(resultCollection) {
     var chart, key, rows, value;
-    console.log(resultCollection);
     rows = (function() {
       var _results;
       _results = [];

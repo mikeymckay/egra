@@ -120,6 +120,11 @@ Result = (function() {
         PupilContextInterview: _.keys(result).length
       };
     },
+    Results: function(result) {
+      return {
+        Comments: result.resultComment
+      };
+    },
     timestamp: function(result) {
       return {
         FinishTime: new Date(result)

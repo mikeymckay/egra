@@ -19,6 +19,10 @@ class ResultCollection extends Backbone.Collection
     $.couch.db(@databaseName).view "reports/replicationLog",
       success: (result) ->
         latestTimestamp = _.max(_.pluck(result.rows, "key"))
-        _.each result.rows, (row) ->
-          if row.key == latestTimestamp
-            options.success(row.value)
+        if latestTimestamp?
+          _.each result.rows, (row) ->
+            if row.key == latestTimestamp
+              options.success(row.value)
+        else
+          options.error()
+

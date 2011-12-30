@@ -58,8 +58,10 @@ class Result extends Backbone.Model
       ListeningComprehension: Result.CountCorrectIncorrect(result)
     PupilContextInterview: (result) ->
       PupilContextInterview: _.keys(result).length
+    Results: (result) ->
+      Comments: result.resultComment
     timestamp: (result) ->
-      return FinishTime: new Date(result)
+      FinishTime: new Date(result)
     enumerator: (result) ->
       Enumerator: result
     default: (result) ->

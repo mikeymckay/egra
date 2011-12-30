@@ -25,7 +25,6 @@ class ResultView extends Backbone.View
       tbody: @tableRows(@model.subtestResults())
 
   tableRows: (resultCollection) ->
-    console.log resultCollection
     rows = for key,value of resultCollection
       chart = ""
       chart = '♂' if value == 'Male'

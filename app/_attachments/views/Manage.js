@@ -27,7 +27,7 @@ ManageView = (function() {
           if (!_.include(databases, assessmentResultDatabaseName)) {
             assessmentElement += "<button href='" + assessmentResultDatabaseName + "'>Initialize Database</button>";
           }
-          assessmentElement += "<button style='color:gray'>Edit</button>                                <button style='color:gray'>Delete Database</button>                                <button href='" + assessmentResultDatabaseName + "'>Results</button>                              </li>";
+          assessmentElement += "<button class='disabled'>Edit</button>                                <button class='disabled'>Delete Database</button>                                <button href='" + assessmentResultDatabaseName + "'>Results</button>                              </li>";
           return $("#manage-assessments").append(assessmentElement);
         });
       }
