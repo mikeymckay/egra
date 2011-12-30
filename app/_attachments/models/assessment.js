@@ -121,9 +121,7 @@ Assessment = (function() {
     _ref = this.pages;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       page = _ref[_i];
-      if (page.pageType !== "ResultsPage") {
-        results[page.pageId] = page.results();
-      }
+      results[page.pageId] = page.results();
     }
     results.timestamp = new Date().valueOf();
     results.enumerator = $('#enumerator').html();

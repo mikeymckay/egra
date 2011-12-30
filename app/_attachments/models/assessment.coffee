@@ -74,8 +74,7 @@ class Assessment extends Backbone.Model
   results: ->
     results = {}
     for page in @pages
-      unless page.pageType == "ResultsPage"
-        results[page.pageId] = page.results()
+      results[page.pageId] = page.results()
     results.timestamp = new Date().valueOf()
     results.enumerator = $('#enumerator').html()
     return results

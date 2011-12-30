@@ -9,13 +9,15 @@ $("div.timer button").live 'click', (eventData) ->
 class Timer
   constructor: (options)->
     @page = options.page
+    @startTime = options.startTime
     @elementLocation = null
 
   start: ->
-    @showGridItems()
     return if @running
     @started = true
     @running = true
+    @showGridItems()
+    @renderSeconds()
     @tick_value = 1
     decrement = =>
       @seconds -= @tick_value
@@ -23,6 +25,7 @@ class Timer
         @stop()
         $.assessment.flash()
       @renderSeconds()
+    decrement() # Need to call this now because setInterval waits for the timeout to call
     @intervalId = setInterval(decrement,@tick_value*1000)
 
   stop: ->
@@ -30,10 +33,10 @@ class Timer
     clearInterval(@intervalId)
 
   hasStartedAndStopped: ->
-    return (@seconds != 60) and (@running == false)
+    return (@seconds != @startTime) and (@running == false)
 
   reset: ->
-    @seconds = 60
+    @seconds = @startTime
     @renderSeconds()
 
   renderSeconds: ->
@@ -41,7 +44,7 @@ class Timer
 
   render: ->
     @id = "timer"
-    @seconds = 60
+    @seconds = @startTime
     "<span class='timer-seconds'></span>"
 
   hideGridItems: ->

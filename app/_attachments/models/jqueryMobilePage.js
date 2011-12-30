@@ -191,9 +191,10 @@ AssessmentPage = (function() {
   function AssessmentPage() {
     AssessmentPage.__super__.constructor.apply(this, arguments);
   }
-  AssessmentPage.prototype.addTimer = function() {
+  AssessmentPage.prototype.addTimer = function(startTime) {
     this.timer = new Timer({
-      page: this
+      page: this,
+      startTime: startTime
     });
     return this.controls = "      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>        <div class='timer'>          " + (this.timer.render()) + "        </div>        <br/>        <br/>        <div class='message'>        </div>      </div>";
   };
@@ -438,7 +439,7 @@ ResultsPage = (function() {
   __extends(ResultsPage, AssessmentPage);
   function ResultsPage(options) {
     ResultsPage.__super__.constructor.call(this, options);
-    this.content = Handlebars.compile("      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        You have finished:        <h3>Results</h3>        <div>        </div>        <label for='comment'>Comments (if any):</label>        <textarea style='width:80%' id='comment' name='resultComment'></textarea>      </div>      <div class='resultsMessage'>      </div>      <button type='button'>Save Results</button>    ");
+    this.content = Handlebars.compile("      <div class='message'>        You have finished assessment <span class='randomIdForSubject'></span>. Thank the child with a small gift. Please write <span class='randomIdForSubject'></span> on the writing sample.      </div>      <div data-role='collapsible' data-collapsed='true' class='results'>        You have finished:        <h3>Results</h3>        <div>        </div>        <form>          <label for='comment'>Comments (if any):</label>          <textarea style='width:80%' id='comment' name='resultComment'></textarea>        </form>      </div>      <div class='resultsMessage'>      </div>      <button type='button'>Save Results</button>    ");
   }
   ResultsPage.prototype.load = function(data) {
     ResultsPage.__super__.load.call(this, data);
@@ -681,7 +682,7 @@ ToggleGridWithTimer = (function() {
     this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 10;
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
-    this.addTimer();
+    this.addTimer((options != null ? options.seconds : void 0) || 60);
     result = "<table><tr>";
     _ref = this.letters;
     for (index = 0, _len = _ref.length; index < _len; index++) {
@@ -711,14 +712,32 @@ ToggleGridWithTimer = (function() {
     }, this));
     selectEvent = 'ontouchstart' in document.documentElement ? "touchstart" : "click";
     $("#" + this.pageId + " .grid").live(selectEvent, __bind(function(eventData) {
+      var gridItem, index, lastAttemptedIndex, lastSelectedIndex, target, _len2, _ref2;
       if (!this.timer.started) {
         return;
       }
+      target = $(eventData.currentTarget);
       if ($.assessment.currentPage.timer.hasStartedAndStopped()) {
+        if (target.hasClass("toggle-row")) {
+          return;
+        }
+        _ref2 = $("#" + this.pageId + " .grid:not(.toggle-row)");
+        for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
+          gridItem = _ref2[index];
+          if ($(gridItem).hasClass("selected")) {
+            lastSelectedIndex = index;
+          }
+          if (gridItem === eventData.currentTarget) {
+            lastAttemptedIndex = index;
+          }
+        }
+        if (lastAttemptedIndex < lastSelectedIndex) {
+          return;
+        }
         $("#" + this.pageId + " .grid").removeClass('last-attempted');
-        return $(eventData.currentTarget).toggleClass('last-attempted');
+        return target.toggleClass('last-attempted');
       } else {
-        return $(eventData.currentTarget).toggleClass("selected");
+        return target.toggleClass("selected");
       }
     }, this));
     $("#" + this.pageId + " .grid.toggle-row").live(selectEvent, __bind(function(eventData) {

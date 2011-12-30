@@ -160,8 +160,10 @@ JQueryMobilePage.template = Handlebars.compile "
 "
 
 class AssessmentPage extends JQueryMobilePage
-  addTimer: ->
-    @timer = new Timer({page: this})
+  addTimer: (startTime) ->
+    @timer = new Timer
+      page: this
+      startTime: startTime
 
     @controls = "
       <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>
@@ -411,8 +413,10 @@ class ResultsPage extends AssessmentPage
         <h3>Results</h3>
         <div>
         </div>
-        <label for='comment'>Comments (if any):</label>
-        <textarea style='width:80%' id='comment' name='resultComment'></textarea>
+        <form>
+          <label for='comment'>Comments (if any):</label>
+          <textarea style='width:80%' id='comment' name='resultComment'></textarea>
+        </form>
       </div>
       <div class='resultsMessage'>
       </div>
@@ -624,7 +628,7 @@ class ToggleGridWithTimer extends AssessmentPage
     @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
-    @addTimer()
+    @addTimer(options?.seconds || 60)
 
     result = "<table><tr>"
     for letter,index in @letters
@@ -666,11 +670,18 @@ class ToggleGridWithTimer extends AssessmentPage
 
     $("##{@pageId} .grid").live selectEvent, (eventData) =>
       return unless @timer.started
+      target = $(eventData.currentTarget)
       if $.assessment.currentPage.timer.hasStartedAndStopped()
+        return if target.hasClass("toggle-row")
+        for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+          lastSelectedIndex = index if $(gridItem).hasClass("selected")
+          if gridItem == eventData.currentTarget
+            lastAttemptedIndex = index
+        return if lastAttemptedIndex < lastSelectedIndex
         $("##{@pageId} .grid").removeClass('last-attempted')
-        $(eventData.currentTarget).toggleClass('last-attempted')
+        target.toggleClass('last-attempted')
       else
-        $(eventData.currentTarget).toggleClass("selected")
+        target.toggleClass("selected")
 
     $("##{@pageId} .grid.toggle-row").live selectEvent, (eventData) =>
       toggleRow = $(eventData.currentTarget)

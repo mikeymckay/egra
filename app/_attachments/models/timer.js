@@ -11,16 +11,18 @@ $("div.timer button").live('click', function(eventData) {
 Timer = (function() {
   function Timer(options) {
     this.page = options.page;
+    this.startTime = options.startTime;
     this.elementLocation = null;
   }
   Timer.prototype.start = function() {
     var decrement;
-    this.showGridItems();
     if (this.running) {
       return;
     }
     this.started = true;
     this.running = true;
+    this.showGridItems();
+    this.renderSeconds();
     this.tick_value = 1;
     decrement = __bind(function() {
       this.seconds -= this.tick_value;
@@ -30,6 +32,7 @@ Timer = (function() {
       }
       return this.renderSeconds();
     }, this);
+    decrement();
     return this.intervalId = setInterval(decrement, this.tick_value * 1000);
   };
   Timer.prototype.stop = function() {
@@ -37,10 +40,10 @@ Timer = (function() {
     return clearInterval(this.intervalId);
   };
   Timer.prototype.hasStartedAndStopped = function() {
-    return (this.seconds !== 60) && (this.running === false);
+    return (this.seconds !== this.startTime) && (this.running === false);
   };
   Timer.prototype.reset = function() {
-    this.seconds = 60;
+    this.seconds = this.startTime;
     return this.renderSeconds();
   };
   Timer.prototype.renderSeconds = function() {
@@ -48,7 +51,7 @@ Timer = (function() {
   };
   Timer.prototype.render = function() {
     this.id = "timer";
-    this.seconds = 60;
+    this.seconds = this.startTime;
     return "<span class='timer-seconds'></span>";
   };
   Timer.prototype.hideGridItems = function() {
