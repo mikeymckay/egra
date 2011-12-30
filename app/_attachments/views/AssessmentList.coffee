@@ -33,10 +33,6 @@ class AssessmentListView extends Backbone.View
     assessmentCollection.fetch
       success: =>
         assessmentCollection.each (assessment) =>
-          $.ass = assessment
-          console.log assessment
-          console.log assessment.targetDatabase()
-      
           $.couch.db(assessment.targetDatabase()).view "reports/countByEnumerator",
             group: true
             key: $.enumerator
@@ -47,6 +43,12 @@ class AssessmentListView extends Backbone.View
                 id: assessment.get("_id")
                 database_name: assessment.targetDatabase()
               $("#assessments").trigger("update").trigger("sorton",[1,0])
+            error: (a,b,errorType) =>
+              if errorType == "no_db_file"
+                Utils.createResultsDatabase assessment.targetDatabase(), =>
+                  $.couch.logout()
+                  @render()
+                  
 
   events:
     "click button.assessment-name": "loadAssessment"

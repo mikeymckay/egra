@@ -4,28 +4,29 @@ Utils.createResultsDatabase = (databaseName, callback) ->
   $.couch.login
     name: Tangerine.config.user_with_database_create_permission
     password: Tangerine.config.password_with_database_create_permission
-  $.couch.db(databaseName).create
-    success: =>
-      # Create the view needed to aggregate data in the database
-      $.couch.db(databaseName).saveDoc
-        "_id":"_design/reports",
-        "language":"javascript",
-        "views":
-          # Calling toString on a function gets the function definition as a string
-          "fields":
-            "map": MapReduce.mapFields.toString()
-          "byEnumerator":
-            "map": MapReduce.mapByEnumerator.toString()
-          "countByEnumerator":
-            "map": MapReduce.mapCountByEnumerator.toString()
-            "reduce": MapReduce.reduceCountByEnumerator.toString()
-          "byTimestamp":
-            "map": MapReduce.mapByTimestamp.toString()
-          "replicationLog":
-            "map": MapReduce.mapReplicationLog.toString()
-      callback() if callback?
-    complete: ->
-      $.couch.logout()
+    success: ->
+      $.couch.db(databaseName).create
+        success: =>
+          # Create the view needed to aggregate data in the database
+          $.couch.db(databaseName).saveDoc
+            "_id":"_design/reports",
+            "language":"javascript",
+            "views":
+              # Calling toString on a function gets the function definition as a string
+              "fields":
+                "map": MapReduce.mapFields.toString()
+              "byEnumerator":
+                "map": MapReduce.mapByEnumerator.toString()
+              "countByEnumerator":
+                "map": MapReduce.mapCountByEnumerator.toString()
+                "reduce": MapReduce.reduceCountByEnumerator.toString()
+              "byTimestamp":
+                "map": MapReduce.mapByTimestamp.toString()
+              "replicationLog":
+                "map": MapReduce.mapReplicationLog.toString()
+          callback() if callback?
+        complete: ->
+          $.couch.logout()
 
 class MapReduce
 MapReduce.mapFields = (doc, req) ->

@@ -116,7 +116,7 @@ class Router extends Backbone.Router
     $.couch.logout
       success: ->
         $.enumerator = null
-        $('#current-name').html("Not logged in")
+        $('#enumerator').html("Not logged in")
         Tangerine.router.navigate("login", true)
 
   assessment: (id) ->

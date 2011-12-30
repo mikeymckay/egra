@@ -150,7 +150,7 @@ Router = (function() {
     return $.couch.logout({
       success: function() {
         $.enumerator = null;
-        $('#current-name').html("Not logged in");
+        $('#enumerator').html("Not logged in");
         return Tangerine.router.navigate("login", true);
       }
     });

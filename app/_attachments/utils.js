@@ -5,40 +5,42 @@ Utils = (function() {
   return Utils;
 })();
 Utils.createResultsDatabase = function(databaseName, callback) {
-  $.couch.login({
+  return $.couch.login({
     name: Tangerine.config.user_with_database_create_permission,
-    password: Tangerine.config.password_with_database_create_permission
-  });
-  return $.couch.db(databaseName).create({
-    success: __bind(function() {
-      $.couch.db(databaseName).saveDoc({
-        "_id": "_design/reports",
-        "language": "javascript",
-        "views": {
-          "fields": {
-            "map": MapReduce.mapFields.toString()
-          },
-          "byEnumerator": {
-            "map": MapReduce.mapByEnumerator.toString()
-          },
-          "countByEnumerator": {
-            "map": MapReduce.mapCountByEnumerator.toString(),
-            "reduce": MapReduce.reduceCountByEnumerator.toString()
-          },
-          "byTimestamp": {
-            "map": MapReduce.mapByTimestamp.toString()
-          },
-          "replicationLog": {
-            "map": MapReduce.mapReplicationLog.toString()
+    password: Tangerine.config.password_with_database_create_permission,
+    success: function() {
+      return $.couch.db(databaseName).create({
+        success: __bind(function() {
+          $.couch.db(databaseName).saveDoc({
+            "_id": "_design/reports",
+            "language": "javascript",
+            "views": {
+              "fields": {
+                "map": MapReduce.mapFields.toString()
+              },
+              "byEnumerator": {
+                "map": MapReduce.mapByEnumerator.toString()
+              },
+              "countByEnumerator": {
+                "map": MapReduce.mapCountByEnumerator.toString(),
+                "reduce": MapReduce.reduceCountByEnumerator.toString()
+              },
+              "byTimestamp": {
+                "map": MapReduce.mapByTimestamp.toString()
+              },
+              "replicationLog": {
+                "map": MapReduce.mapReplicationLog.toString()
+              }
+            }
+          });
+          if (callback != null) {
+            return callback();
           }
+        }, this),
+        complete: function() {
+          return $.couch.logout();
         }
       });
-      if (callback != null) {
-        return callback();
-      }
-    }, this),
-    complete: function() {
-      return $.couch.logout();
     }
   });
 };
