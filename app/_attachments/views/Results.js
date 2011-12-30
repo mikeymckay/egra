@@ -41,8 +41,8 @@ ResultsView = (function() {
     });
   };
   ResultsView.prototype.events = {
-    "click button:contains(Sync to Cloud)": "syncCloud",
-    "click button:contains(Sync to Local Tangerine User)": "syncSubnet",
+    "click button:contains(Cloud Sync)": "sync",
+    "click button:contains(Local Sync)": "sync",
     "click button:contains(CSV/Excel)": "csv",
     "click button:contains(Detect sync options)": "detect"
   };
@@ -56,49 +56,49 @@ ResultsView = (function() {
       }
     });
   };
-  ResultsView.prototype.syncCloud = function() {
-    return this.replicate(Tangerine.cloud.url);
-  };
-  ResultsView.prototype.syncSubnet = function(event) {
-    console.log(event);
-    return alert("Todo");
+  ResultsView.prototype.sync = function(event) {
+    return this.replicate($(event.target).attr("syncTarget"));
   };
   ResultsView.prototype.detect = function() {
-    $("#syncOptions").html("<span id='syncMessage'>Detecting.</span>");
+    $("#syncOptions").html("<span id='syncMessage'>Detecting</span>");
     this.detectCloud();
     return this.detectSubnet();
   };
   ResultsView.prototype.detectCloud = function() {
-    return $.ajax({
-      dataType: "jsonp",
+    return this.detectIP({
       url: Tangerine.cloud.url,
-      success: function() {
-        $("#syncMessage").html("");
-        return $("#syncOptions").append("<button type='button' class='sync'>Sync to Cloud</button>");
-      }
+      successButton: "<button type='button' class='sync' syncTarget='" + Tangerine.cloud.url + "'>Cloud Sync</button>"
     });
   };
   ResultsView.prototype.detectSubnet = function() {
-    var subnetIP, url, _results;
+    var buttonText, subnetIP, url, _results;
     _results = [];
     for (subnetIP = 1; subnetIP <= 255; subnetIP++) {
       url = Tangerine.subnet.replace(/x/, subnetIP) + ":" + Tangerine.port;
-      _results.push($.ajax({
-        dataType: "jsonp",
+      buttonText = "Local Sync <span style='font-size:50%'>" + (url.substring(7, url.lastIndexOf(":"))) + "</span>";
+      _results.push(this.detectIP({
         url: url,
-        success: function() {
-          $("#syncMessage").html("");
-          return $("#syncOptions").append("<button type='button' class='sync'>Sync to " + url + "</button>");
-        },
-        error: function(a, b, c) {
-          if (b === 'parsererror') {
-            $("#syncMessage").html("");
-            return $("#syncOptions").append("<button type='button' class='sync'>Sync to " + (this.url.substring(0, this.url.indexOf("?"))) + "</button>");
-          }
-        }
+        successButton: "<button type='button' class='sync' syncTarget='" + url + "'>" + buttonText
       }));
     }
     return _results;
+  };
+  ResultsView.prototype.detectIP = function(options) {
+    console.log("Called");
+    return $.ajax({
+      dataType: "jsonp",
+      url: options.url,
+      success: function() {
+        $("#syncMessage").html("");
+        return $("#syncOptions").append(options.successButton);
+      },
+      error: function(a, b, c) {
+        if (b === 'parsererror') {
+          $("#syncMessage").html("");
+          return $("#syncOptions").append(options.successButton);
+        }
+      }
+    });
   };
   ResultsView.prototype.replicate = function(target) {
     return this.results.replicate(target, function() {

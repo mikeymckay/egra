@@ -41,8 +41,8 @@ class ResultsView extends Backbone.View
         sliceColors:['#F7C942','orangered']
 
   events:
-    "click button:contains(Sync to Cloud)" : "syncCloud"
-    "click button:contains(Sync to Local Tangerine User)" : "syncSubnet"
+    "click button:contains(Cloud Sync)" : "sync"
+    "click button:contains(Local Sync)" : "sync"
     "click button:contains(CSV/Excel)" : "csv"
     "click button:contains(Detect sync options)" : "detect"
 
@@ -53,42 +53,40 @@ class ResultsView extends Backbone.View
       error: ->
         $("#lastCloudReplicationTime").html "Unknown"
 
-  syncCloud: ->
-    @replicate(Tangerine.cloud.url)
-
-  syncSubnet: (event) ->
-    console.log event
-    alert "Todo"
+  sync: (event)->
+    @replicate $(event.target).attr("syncTarget")
 
   detect: ->
-    $("#syncOptions").html "<span id='syncMessage'>Detecting.</span>"
+    $("#syncOptions").html "<span id='syncMessage'>Detecting</span>"
     @detectCloud()
     @detectSubnet()
 
   detectCloud: ->
-    $.ajax
-      dataType: "jsonp"
+    @detectIP
       url: Tangerine.cloud.url
-      success: ->
-        $("#syncMessage").html ""
-        $("#syncOptions").append "<button type='button' class='sync'>Sync to Cloud</button>"
-
+      successButton: "<button type='button' class='sync' syncTarget='#{Tangerine.cloud.url}'>Cloud Sync</button>"
 
   detectSubnet: ->
     for subnetIP in [1..255]
       url = Tangerine.subnet.replace(/x/,subnetIP) + ":" + Tangerine.port
-      $.ajax
-        dataType: "jsonp"
+      buttonText = "Local Sync <span style='font-size:50%'>#{url.substring(7,url.lastIndexOf(":"))}</span>"
+      @detectIP
         url: url
-        success: ->
+        successButton: "<button type='button' class='sync' syncTarget='#{url}'>#{buttonText}"
+
+  detectIP: (options) ->
+    console.log "Called"
+    $.ajax
+      dataType: "jsonp"
+      url: options.url
+      success: ->
+        $("#syncMessage").html ""
+        $("#syncOptions").append options.successButton
+      error: (a,b,c) ->
+        # old versions of couchdb don't return proper json content type
+        if b == 'parsererror'
           $("#syncMessage").html ""
-          $("#syncOptions").append "<button type='button' class='sync'>Sync to #{url}</button>"
-        error: (a,b,c) ->
-          # old versions of couchdb don't return proper json content type
-          if b == 'parsererror'
-            $("#syncMessage").html ""
-# can't use url variable because it will change by time success called
-            $("#syncOptions").append "<button type='button' class='sync'>Sync to #{this.url.substring(0,this.url.indexOf("?"))}</button>"
+          $("#syncOptions").append options.successButton
 
 
   replicate: (target) ->
