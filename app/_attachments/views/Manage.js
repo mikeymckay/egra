@@ -48,7 +48,8 @@ ManageView = (function() {
     $("#content").prepend("<span id='message'>Updating from: " + source + "</span>");
     return $.couch.replicate("http://mikeymckay.iriscouch.com/" + Tangerine.config.db_name, Tangerine.config.db_name, {
       success: function() {
-        return $("#message").html("Finished");
+        $("#message").html("Finished");
+        return Tangerine.router.navigate("logout", true);
       }
     });
   };

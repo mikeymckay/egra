@@ -2,10 +2,6 @@
   "name": "Test",
   "_id": "Assessment.Test",
   "urlPathsForPages": [
-    "Assessment.The Gambia EGRA May 2011.InventedWords",
-    "Assessment.The Gambia EGRA May 2011.Results"
-  ],
-  "oldUrlPathsForPages": [
     "Assessment.The Gambia EGRA May 2011.DateTime",
     "Assessment.Test.StudentInformation",
     "Assessment.The Gambia EGRA May 2011.InventedWords",

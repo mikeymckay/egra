@@ -42,6 +42,7 @@ class ManageView extends Backbone.View
     $.couch.replicate "http://mikeymckay.iriscouch.com/#{Tangerine.config.db_name}", Tangerine.config.db_name,
       success: ->
         $("#message").html "Finished"
+        Tangerine.router.navigate "logout", true
 
   initializeDatabase: (event) ->
     databaseName = $(event.target).attr("href")

@@ -203,6 +203,8 @@ $.couch.config(
         $.couch.config({},"admins",Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission)
     error: ->
       # Do nothing - we can't access this because we are not admins
+    complete: ->
+      console.log "YO"
   }
   "admins"
 )
