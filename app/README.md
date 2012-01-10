@@ -1,48 +1,18 @@
-A tablet/phone application for testing students in reading skills.
+Tangerine
+---------
+A tablet/phone application for assessing students
 
-Current version uses localStorage and google spreadsheets for loading and configuration of the app.
+Copyright (C) 2012  Michael McKay
 
-___
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The rest of this README is about couchapps:
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-___
-
-CouchApps are web applications which can be served directly from [CouchDB](http://couchdb.apache.org). This gives them the nice property of replicating just like any other data stored in CouchDB. They are also simple to write as they can use the built-in jQuery libraries and plugins that ship with CouchDB.
-
-[More info about CouchApps here.](http://couchapp.org)
-
-## Deploying this app
-
-Assuming you just cloned this app from git, and you have changed into the app directory in your terminal, you want to push it to your CouchDB with the CouchApp command line tool, like this:
-
-    couchapp push . http://name:password@hostname:5984/mydatabase
-
-If you don't have a password on your CouchDB (admin party) you can do it like this (but it's a bad, idea, set a password):
-
-    couchapp push . http://hostname:5984/mydatabase
-
-If you get sick of typing the URL, you should setup a `.couchapprc` file in the root of your directory. Remember not to check this into version control as it will have passwords in it.
-
-The `.couchapprc` file should have contents like this:
-
-    {
-      "env" : {
-        "public" : {
-          "db" : "http://name:pass@mycouch.couchone.com/mydatabase"
-        },
-        "default" : {
-          "db" : "http://name:pass@localhost:5984/mydatabase"
-        }
-      }
-    }
-
-Now that you have the `.couchapprc` file set up, you can push your app to the CouchDB as simply as:
-
-    couchapp push
-
-This pushes to the `default` as specified. To push to the `public` you'd run:
-
-    couchapp push public
-
-Of course you can continue to add more deployment targets as you see fit, and give them whatever names you like.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
