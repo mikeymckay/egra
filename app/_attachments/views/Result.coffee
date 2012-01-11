@@ -33,8 +33,8 @@ class ResultView extends Backbone.View
       key = key.underscore().replace(/_/g, " ")
 
       if value.itemsCorrect? and value.attempted?
-        chart = "<span class='sparkline'>#{value.attempted - value.itemsCorrect},#{value.itemsCorrect}</span>"
-        value = "#{value.itemsCorrect}/#{value.attempted} (#{(100*value.itemsCorrect/value.attempted).toFixed(0)}%)"
+        chart = "<span class='sparkline'>#{value.total-value.attempted},#{value.attempted - value.itemsCorrect},#{value.itemsCorrect}</span>"
+        value = "#{value.itemsCorrect}/#{value.attempted}"
       else
         value = moment(value).format("Do MMM HH:mm") if value.getMonth
         value = JSON.stringify(value) if typeof value == "object"

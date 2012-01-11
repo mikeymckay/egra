@@ -12,14 +12,8 @@ class Router extends Backbone.Router
     "": "assessments"
 
   results: (database_name) ->
-    $.couch.session
-      success: (session) ->
-        $.enumerator = session.userCtx.name
-        Tangerine.router.targetroute = document.location.hash
-        unless session.userCtx.name
-          Tangerine.router.navigate("login", true)
-          return
-
+    @verify_logged_in
+      success: ->
         $.couch.db(database_name).view "reports/byEnumerator",
           key: $.enumerator
           success: (result) =>
@@ -29,14 +23,8 @@ class Router extends Backbone.Router
             resultsView.render()
 
   result: (database_name,id) ->
-    $.couch.session
-      success: (session) ->
-        $.enumerator = session.userCtx.name
-        Tangerine.router.targetroute = document.location.hash
-        unless session.userCtx.name
-          Tangerine.router.navigate("login", true)
-          return
-
+    @verify_logged_in
+      success: ->
         $.couch.db(database_name).openDoc id,
           success: (doc) =>
             resultView = new ResultView()
@@ -44,14 +32,8 @@ class Router extends Backbone.Router
             $("#content").html resultView.render()
 
   manage: ->
-    $.couch.session
-      success: (session) ->
-        $.enumerator = session.userCtx.name
-        Tangerine.router.targetroute = document.location.hash
-        unless session.userCtx.name
-          Tangerine.router.navigate("login", true)
-          return
-
+    @verify_logged_in
+      success: ->
         assessmentCollection = new AssessmentCollection()
         assessmentCollection.fetch
           success: ->
@@ -59,15 +41,8 @@ class Router extends Backbone.Router
             manageView.render(assessmentCollection)
 
   assessments: ->
-    $.couch.session
-      success: (session) ->
-        $.enumerator = session.userCtx.name
-        Tangerine.router.targetroute = document.location.hash
-        $("#message").html session.userCtx.name
-        unless session.userCtx.name
-          Tangerine.router.navigate("login", true)
-          return
-
+    @verify_logged_in
+      success: ->
         $('#current-student-id').html ""
         $('#enumerator').html $.enumerator
 
@@ -75,42 +50,7 @@ class Router extends Backbone.Router
         assessmentListView.render()
 
   login: ->
-    $("#content").html "
-      <form id='login-form'>
-        <label for='name'>Enumerator Name</label>
-        <input id='name' name='name'></input>
-        <label for='password'>Password</label>
-        <input id='password' type='password' name='password'></input>
-        <div id='message'></div>
-        <button type='button'>Login</button>
-      </form>
-    "
-    new MBP.fastButton _.last($("button:contains(Login)")), ->
-      name = $('#name').val()
-      password = $('#password').val()
-      $.couch.login
-        name: name
-        password: password
-        success: ->
-          $('#enumerator').html(name)
-          $.enumerator = name
-          Tangerine.router.navigate(Tangerine.router.targetroute, true)
-        error: (status, error, reason) ->
-          $("#message").html "Creating new user"
-          $.couch.signup( {name: name}, password,
-            success: ->
-              $.couch.login
-                name: name
-                password: password
-                success: ->
-                  $('#current-name').html(name)
-                  Tangerine.router.navigate(Tangerine.router.targetroute, true)
-            error: (status, error, reason) ->
-              if error == "conflict"
-                $("#message").html "Either you have the wrong password or '#{$('#name').val()}' has already been used as a valid name. Please try again."
-              else
-                $("#message").html "#{error}: #{reason}"
-          )
+    Tangerine.login.render()
 
   logout: ->
     $.couch.logout
@@ -120,6 +60,16 @@ class Router extends Backbone.Router
         Tangerine.router.navigate("login", true)
 
   assessment: (id) ->
+    @verify_logged_in
+      success: ->
+        $('#enumerator').html($.enumerator)
+
+        assessment = new Assessment {_id:id}
+        assessment.fetch
+          success: ->
+            assessment.render()
+
+  verify_logged_in: (options) ->
     $.couch.session
       success: (session) ->
         $.enumerator = session.userCtx.name
@@ -127,12 +77,7 @@ class Router extends Backbone.Router
         unless session.userCtx.name
           Tangerine.router.navigate("login", true)
           return
-        $('#enumerator').html($.enumerator)
-
-        assessment = new Assessment {_id:id}
-        assessment.fetch
-          success: ->
-            assessment.render()
+        options.success()
 
   print: (id) ->
     Assessment.load id, (assessment) ->
@@ -195,16 +140,18 @@ class Router extends Backbone.Router
 
 # Initialization/Detection
 
+startApp = ->
+  Tangerine.router = new Router()
+  Tangerine.login = new LoginView()
+  Backbone.history.start()
+
 $.couch.config(
   {
     success: (result) ->
       if _.keys(result).length == 0 # admin party mode
-        # Create admin user
         $.couch.config({},"admins",Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission)
     error: ->
       # Do nothing - we can't access this because we are not admins
-    complete: ->
-      console.log "YO"
   }
   "admins"
 )
@@ -219,6 +166,7 @@ assessmentCollection.fetch
           if errorType == "no_db_file"
             Utils.createResultsDatabase assessment.targetDatabase(), =>
               $.couch.logout()
+    # This isn't ideal - should be started only after the info requests complete
+    @startApp()
 
-Tangerine.router = new Router()
-Backbone.history.start()
+

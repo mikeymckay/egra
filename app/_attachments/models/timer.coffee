@@ -10,7 +10,9 @@ class Timer
   constructor: (options)->
     @page = options.page
     @startTime = options.startTime
+    @seconds = @startTime
     @elementLocation = null
+    @onStop = options.onStop
 
   start: ->
     return if @running
@@ -21,9 +23,7 @@ class Timer
     @tick_value = 1
     decrement = =>
       @seconds -= @tick_value
-      if @seconds == 0
-        @stop()
-        $.assessment.flash()
+      @stop() if @seconds == 0
       @renderSeconds()
     decrement() # Need to call this now because setInterval waits for the timeout to call
     @intervalId = setInterval(decrement,@tick_value*1000)
@@ -31,6 +31,7 @@ class Timer
   stop: ->
     @running = false
     clearInterval(@intervalId)
+    @onStop()
 
   hasStartedAndStopped: ->
     return (@seconds != @startTime) and (@running == false)
@@ -44,7 +45,6 @@ class Timer
 
   render: ->
     @id = "timer"
-    @seconds = @startTime
     "<span class='timer-seconds'></span>"
 
   hideGridItems: ->

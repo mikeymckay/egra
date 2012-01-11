@@ -1,0 +1,70 @@
+{
+  "_id":"Kenya.Primer.Baseline.English.EGRA.Jan.2012.StudentInformation",
+  "pageType": "StudentInformationPage",
+  "pageId": "StudentInformation",
+  "enumeratorHelp" : "Woohoo",
+  "questions": [
+    {
+      "label": "School Shift",
+      "orientation": "horizontal",
+      "options": [
+        "Full day",
+        "Morning",
+        "Afternoon"
+      ]
+    },
+    {
+      "label": "Multigrade class",
+      "orientation": "horizontal",
+      "options": [
+        "No",
+        "Yes"
+      ]
+    },
+    {
+      "label": "Order of assessment",
+      "orientation": "horizontal",
+      "options": [
+        "1st",
+        "2nd",
+        "3rd"
+      ]
+    },
+    {
+      "label": "Class",
+      "orientation": "horizontal",
+      "options": [
+        "One",
+        "Two"
+      ]
+    },
+    {
+      "label": "Stream Name",
+      "type": "text"
+    },
+    {
+      "label": "Age",
+      "orientation": "horizontal",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "Other"
+      ]
+    },
+    {
+      "label": "Gender",
+      "orientation": "horizontal",
+      "options": [
+        "Female",
+        "Male"
+      ]
+    }
+  ],
+  "couchapp": {
+  }
+}

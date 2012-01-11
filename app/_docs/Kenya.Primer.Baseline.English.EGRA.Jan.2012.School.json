@@ -1,7 +1,7 @@
 {
+  "_id": "Kenya.Primer.Baseline.English.EGRA.Jan.2012.School",
   "pageType": "SchoolPage",
   "pageId": "School",
-  "_rev": "2-e23e53b923659f5bc150514372d76c3d",
   "schools": [
     {
       "name": "Lilongwe",
@@ -76,13 +76,10 @@
       "province": "California"
     }
   ],
-  "_id": "Assessment.The Gambia EGRA May 2011.School",
   "nameText": "Name",
   "schoolIdText": "ID",
-  "urlPath": "Assessment.The Gambia EGRA May 2011.School",
-  "urlScheme": "http",
   "districtText": "District",
-  "provinceText": "Province",
+  "provinceText": "Zone",
   "couchapp": {
   }
 }

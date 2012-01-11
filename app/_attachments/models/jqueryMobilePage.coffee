@@ -15,10 +15,16 @@ class JQueryMobilePage
       new MBP.fastButton button, =>
         @renderNextPage()
 
+    $(".enumerator-help").wrapInner("<div/>")
+    $(".enumerator-help").prepend("<div class='enumerator-help-header'>Help</div>")
+    $(".enumerator-help").accordion
+      collapsible: true
+      active: false
+
   renderNextPage: ->
     validationResult = @validate()
     unless validationResult is true
-      $("##{@pageId} div.validation-message").html("").show().html(validationResult).fadeOut(5000)
+      $("##{@pageId} div.validation-message").html("").stop(true,true).show().html(validationResult).fadeOut(5000)
       return
     @results() # Saves the current result to @lastResult
     @nextPage.render()
@@ -152,29 +158,19 @@ JQueryMobilePage.template = Handlebars.compile "
     {{{content}}}
   </div><!-- /content -->
   <div data-role='footer'>
+    <div class='validation-message'></div>
     {{footerMessage}}
     <button href='\#{{nextPage}}'>Next</button>
-    <div class='validation-message'></div>
   </div><!-- /footer -->
 </div><!-- /page -->
 "
 
 class AssessmentPage extends JQueryMobilePage
-  addTimer: (startTime) ->
+  addTimer: (options) ->
     @timer = new Timer
       page: this
-      startTime: startTime
-
-    @controls = "
-      <div class='controls' style='width: 100px;position:fixed;top:100px;right:5px;z-index:10'>
-        <div class='timer'>
-          #{@timer.render()}
-        </div>
-        <br/>
-        <br/>
-        <div class='message'>
-        </div>
-      </div>"
+      startTime: options.seconds
+      onStop: options.onStop
 
 ##
 # By default we expect all input fields to be filled
@@ -233,35 +229,43 @@ $('div.ui-footer button').live 'click', (event,ui) ->
 class StudentInformationPage extends AssessmentPage
   constructor: (options) ->
     super(options)
-    @radioButtons = options.radioButtons
+    @questions = options.questions ? options.radioButtons
     # Create some id friendly attributes
-    for radioButton in @radioButtons
-      radioButton.name = radioButton.label.toLowerCase().dasherize()
-      radioButton.options = for option in radioButton.options
-        {
-          id : radioButton.name + "-"+ option.toLowerCase().dasherize()
-          label: option
-        }
+    for question in @questions
+      question.name = question.label.toLowerCase().dasherize()
+      if question.options?
+        question.options = for option in question.options
+          {
+            id : question.name + "-"+ option.toLowerCase().dasherize()
+            label: option
+          }
     @content = StudentInformationPage.template(this)
 
   validate: ->
     names = ($(inputElement).html().toLowerCase().dasherize() for inputElement in $("div##{@pageId} form legend"))
     for name in names
-      unless $("input[name=#{name}]").is(":checked")
+      question = $("input[name=#{name}]")
+      continue if question.attr("type") == 'text' and question.val() != ""
+      unless question.is(":checked")
         return $("input[name=#{name}]").first().parent().find("legend").html() + " is not complete"
     return true
 
 StudentInformationPage.template = Handlebars.compile "
+  <div class='enumerator-help'>{{enumeratorHelp}}</div>
   <form>
-    {{#radioButtons}}
-      <fieldset data-type='{{type}}' data-role='controlgroup'>
+    {{#questions}}
+      <fieldset data-type='{{orientation}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
-        {{#options}}
-          <label for='{{id}}'>{{label}}</label>
-          <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>
-        {{/options}}
+        {{#if options}}
+          {{#options}}
+            <label for='{{id}}'>{{label}}</label>
+            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>
+          {{/options}}
+        {{else}}
+          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>
+        {{/if}}
       </fieldset>
-    {{/radioButtons}}
+    {{/questions}}
   </form>
 "
 
@@ -271,7 +275,8 @@ class SchoolPage extends AssessmentPage
     @schools = options.schools
     @selectNameText = options.selectNameText
 
-    properties = ["name","province","district","schoolId"]
+    #TODO change these to be generic eg level1, level2 or something
+    properties = ["name","district","province","schoolId"]
   
     # Load from the object
     for property in properties
@@ -433,13 +438,12 @@ class ResultsPage extends AssessmentPage
 
       $("button:contains(Next)").hide()
 
-
       resultView = new ResultView()
       resultView.model = new Result($.assessment.results())
       $("div##{@pageId} div[data-role='content'] div.results div").html resultView.render()
       $('.sparkline').sparkline 'html',
         type:'pie'
-        sliceColors:['#F7C942','orangered']
+        sliceColors:['black','#F7C942','orangered']
 
       $('button:contains(Save Results)').live "click", ->
         $.assessment.saveResults (results) =>
@@ -476,24 +480,27 @@ class UntimedSubtest extends AssessmentPage
     @questions = options.questions
     super(options)
     @footerMessage = footerMessage
-    @content = "<form>" + (for question,index in @questions
-      questionName = @pageId + "-question-" + index
-      "
-      <div data-role='fieldcontain'>
-          <fieldset data-role='controlgroup' data-type='horizontal'>
-            <legend>#{question}</legend>
-      " +
-      (for answer in ["Correct", "Incorrect", "No response"]
+    @content = "
+      <div class='enumerator-help'>#{options.enumeratorHelp}</div>
+      <div class='student-dialog'>#{options.studentDialog}</div>
+      <form>" + (for question,index in @questions
+        questionName = @pageId + "-question-" + index
         "
-        <label for='#{questionName}-#{answer}'>#{answer}</label>
-        <input type='radio' name='#{questionName}' id='#{questionName}-#{answer}' value='#{answer}' />
+        <div data-role='fieldcontain'>
+            <fieldset data-role='controlgroup' data-type='horizontal'>
+              <legend>#{question}</legend>
+        " +
+        (for answer in ["Correct", "Incorrect", "No response"]
+          "
+          <label for='#{questionName}-#{answer}'>#{answer}</label>
+          <input type='radio' name='#{questionName}' id='#{questionName}-#{answer}' value='#{answer}' />
+          "
+        ).join("") +
         "
-      ).join("") +
-      "
-          </fieldset>
-      </div>
-      "
-    ).join("") + "</form>"
+            </fieldset>
+        </div>
+        "
+      ).join("") + "</form>"
 
   propertiesForSerialization: ->
     properties = super()
@@ -522,7 +529,8 @@ class UntimedSubtestLinked extends UntimedSubtest
     @content += "<div id='#{@pageId}-not-enough-progress-message' style='display:hidden'>Not enough progress was made on #{linkedPageName} to show questions from #{@name()}. Continue by pressing Next.</div>"
 
     $("##{@pageId}").live 'pageshow', (eventData) =>
-      attemptedOnLinkedPage = $.assessment.getPage(@linkedToPageId).results().attempted
+      attemptedOnLinkedPage = $.assessment.result(@linkedToPageId).attempted
+      console.log attemptedOnLinkedPage
       @numberInputFieldsShown = 0
       for inputElement in $("##{@pageId} input[type='radio']")
         if attemptedOnLinkedPage < @questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-")+1)]
@@ -624,11 +632,16 @@ PhonemePage.deserialize = (pageObject) ->
 
 class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
+    # TODO switch to use items instead of letters
     @letters = options.letters
     @numberOfColumns = options?.numberOfColumns || 10
     @footerMessage = footerMessage
     super(options)
-    @addTimer(options?.seconds || 60)
+    @addTimer
+      seconds: options?.seconds || 60
+      onStop: ->
+        $('input[name=mode][value=last-item]').prop('checked', true)
+        $.assessment.flash()
 
     result = "<table><tr>"
     for letter,index in @letters
@@ -638,8 +651,10 @@ class ToggleGridWithTimer extends AssessmentPage
     result += "</tr></table>"
 
     @content =  "
+      <div class='enumerator-help'>#{options.enumeratorHelp}</div>
+      <div class='student-dialog'>#{options.studentDialog}</div>
       <div class='timer'>
-        <button>start</button>
+        <button>start</button>#{@timer.render()}
       </div>
       <div class='toggle-grid-with-timer' data-role='content'>	
         <form>
@@ -648,10 +663,20 @@ class ToggleGridWithTimer extends AssessmentPage
           </div>
         </form>
       </div>
+      <small>
+      <fieldset data-type='horizontal'>
+        <legend>Mode</legend>
+        <label for='correctIncorrectMode'>Correct/Incorrect</label><input id='correctIncorrectMode' name='mode' type='radio' value='correct-incorrect' checked='true'>
+        <label for='lastItemMode'>Last Item</label><input id='lastItemMode' name='mode' type='radio' value='last-item'>
+      </fieldset>
+      </small>
       <div class='timer'>
-        <button>stop</button>
+        <button>stop</button>#{@timer.render()}
       </div>
+      <button>reset</button>
+      <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>
       "
+    
     
     $("##{@pageId}").live "pageshow", (eventData) =>
       # Start with first grid, downsize each grid until it fits. Then set all to new size
@@ -668,19 +693,35 @@ class ToggleGridWithTimer extends AssessmentPage
     # Use the right event type for touchscreens vs mouse
     selectEvent = if ('ontouchstart' of document.documentElement) then "touchstart" else "click"
 
+    $("##{@pageId} button:contains(reset)").live selectEvent, (eventData) =>
+      $("#confirm-reset").stop(true,true).show().fadeOut(5000)
+
+    $("##{@pageId} button:contains(No)").live selectEvent, (eventData) =>
+      $("#confirm-reset").hide()
+
+    $("##{@pageId} button:contains(Yes, reset)").live selectEvent, (eventData) =>
+      $('input[name=mode][value=correct-incorrect]').prop('checked', true)
+      @wasReset = true
+      @timer.stop()
+      @timer.reset()
+      $("#confirm-reset").hide()
+
     $("##{@pageId} .grid").live selectEvent, (eventData) =>
       return unless @timer.started
       target = $(eventData.currentTarget)
-      if $.assessment.currentPage.timer.hasStartedAndStopped()
+      if $('input[name=mode]:checked').val() == "last-item"
         return if target.hasClass("toggle-row")
         for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
           lastSelectedIndex = index if $(gridItem).hasClass("selected")
-          if gridItem == eventData.currentTarget
-            lastAttemptedIndex = index
+          lastAttemptedIndex = index if gridItem == eventData.currentTarget
         return if lastAttemptedIndex < lastSelectedIndex
         $("##{@pageId} .grid").removeClass('last-attempted')
         target.toggleClass('last-attempted')
       else
+        for gridItem,index in $("##{@pageId} .grid:not(.toggle-row)")
+          lastAttemptedIndex = index if $(gridItem).hasClass("last-attempted")
+          lastSelectedIndex = index if gridItem == eventData.currentTarget
+        return if lastAttemptedIndex < lastSelectedIndex
         target.toggleClass("selected")
 
     $("##{@pageId} .grid.toggle-row").live selectEvent, (eventData) =>
@@ -717,6 +758,7 @@ class ToggleGridWithTimer extends AssessmentPage
     else
       @autostop = false
 
+    @lastResult.was_reset = true if @wasReset?
     @lastResult.time_remain = @timer.seconds
     return @lastResult unless @timer.hasStartedAndStopped() #optimization
     @lastResult.items = new Array()
@@ -729,12 +771,12 @@ class ToggleGridWithTimer extends AssessmentPage
       if gridItem.hasClass("last-attempted")
         @lastResult.attempted = index + 1
         if @autostop
-          $("##{@pageId} .controls .message").html("First #{tenPercentOfItems} incorrect - autostop.")
+          $(".validation-message").html("First #{tenPercentOfItems} incorrect - autostop.")
         else
-          $("##{@pageId} .controls .message").html("")
+          $(".validation-message ").html("")
         return @lastResult
       else
-        $("##{@pageId} .controls .message").html("Select last item attempted")
+        $(".validation-message ").html("Select last item attempted")
 
     return @lastResult
 
@@ -819,32 +861,23 @@ class Interview extends AssessmentPage
   constructor: (options) ->
     @questions = options.questions
     super(options)
+    for question in @questions
+      question.options = _.map(question.options, (option) ->
+        text: option
+        id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/,"")).toLowerCase()
+      )
     @content = Interview.template(this)
-
-  propertiesForSerialization: ->
-    properties = super()
-    properties.push("questions")
-    return properties
-
-  validate: ->
-    return true
 
 Interview.template = Handlebars.compile "
   <form>
     {{#questions}}
       <fieldset data-type='{{type}}' data-role='controlgroup'>
-      <legend>{{label}}</legend>
+        <legend>{{label}}</legend>
         {{#options}}
-          <label for='{{.}}'>{{.}}</label>
-          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{.}}' id='{{.}}'></input>
+          <label for='{{id}}'>{{text}}</label>
+          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{text}}' id='{{id}}'></input>
         {{/options}}
       </fieldset>
     {{/questions}}
   </form>
 "
-
-Interview.deserialize = (pageObject) ->
-  interview = new Interview(pageObject)
-  interview.load(pageObject)
-  interview.content = Interview.template(interview)
-  return interview

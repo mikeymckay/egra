@@ -1,32 +1,40 @@
 class Utils
 
 Utils.createResultsDatabase = (databaseName, callback) ->
+  $('#message').append("<br/>Logging in as administrator")
   $.couch.login
     name: Tangerine.config.user_with_database_create_permission
     password: Tangerine.config.password_with_database_create_permission
     success: ->
+      $('#message').append("<br/>Creating database [#{databaseName}]")
       $.couch.db(databaseName).create
         success: =>
-          # Create the view needed to aggregate data in the database
-          $.couch.db(databaseName).saveDoc
-            "_id":"_design/reports",
-            "language":"javascript",
-            "views":
-              # Calling toString on a function gets the function definition as a string
-              "fields":
-                "map": MapReduce.mapFields.toString()
-              "byEnumerator":
-                "map": MapReduce.mapByEnumerator.toString()
-              "countByEnumerator":
-                "map": MapReduce.mapCountByEnumerator.toString()
-                "reduce": MapReduce.reduceCountByEnumerator.toString()
-              "byTimestamp":
-                "map": MapReduce.mapByTimestamp.toString()
-              "replicationLog":
-                "map": MapReduce.mapReplicationLog.toString()
-          callback() if callback?
+          Utils.createViews(databaseName, callback)
         complete: ->
           $.couch.logout()
+
+Utils.createViews = (databaseName, callback) ->
+  $('#message').append("<br/>Creating views for [#{databaseName}]")
+  # Create the view needed to aggregate data in the database
+  $.couch.db(databaseName).saveDoc
+    "_id":"_design/reports",
+    "language":"javascript",
+    "views":
+      # Calling toString on a function gets the function definition as a string
+      "fields":
+        "map": MapReduce.mapFields.toString()
+      "byEnumerator":
+        "map": MapReduce.mapByEnumerator.toString()
+      "countByEnumerator":
+        "map": MapReduce.mapCountByEnumerator.toString()
+        "reduce": MapReduce.reduceCountByEnumerator.toString()
+      "byTimestamp":
+        "map": MapReduce.mapByTimestamp.toString()
+      "replicationLog":
+        "map": MapReduce.mapReplicationLog.toString()
+  ,
+    success: callback
+
 
 class MapReduce
 MapReduce.mapFields = (doc, req) ->

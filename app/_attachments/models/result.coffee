@@ -1,6 +1,4 @@
 class Result extends Backbone.Model
-
-
   fetch: (options = {}) =>
     $.couch.db(@get("database_name")).openDoc @get("id"),
       success: (doc) =>
@@ -8,64 +6,48 @@ class Result extends Backbone.Model
         options?.success()
 
   subtestResults: ->
-    itemsToSkip = [
-      "database_name"
-      "_id"
-      "_rev"
-      "EnumeratorReminders"
-      "EnumeratorIntroduction"
-      "StudentConsent"
+    subtestTypesToSkip = [
+      "ConsentPage"
     ]
-    for subtestType of @toJSON()
-      itemsToSkip.push subtestType if subtestType.match(/Instructions/)
     resultCollection = {}
-    _.each @toJSON(),  (result, subtestType) =>
-      return if _.contains(itemsToSkip, subtestType)
-      if subtestType? and @summaryData[subtestType]?
-        resultCollection = _.extend(resultCollection, @summaryData[subtestType](result))
-      else
-        resultCollection = _.extend(resultCollection, @summaryData["default"](result))
+    _.each @toJSON(),  (result, subtestName) =>
+      return if _.contains(subtestTypesToSkip, subtestName)
+      resultCollection = _.extend(resultCollection, @summaryData(subtestName,result))
     return resultCollection
 
-  summaryData:
-    id: (result) ->
-      id: result.substr(0,3) + "..." + result.substr(-3)
-    DateTime: (result) ->
-      Student: result["student-id"]
-      StartTime: new Date("#{result.month} #{result.day}, #{result.year} #{result.time}")
-    Dictation: (result) ->
-      DictationScore: _.values(result).reduce((sum,n) -> (sum+=n))
-    School: (result) ->
-      School: result.name
-    StudentInformation:(result) ->
-      Gender: result.gender
-    Letters: (result) ->
-      Letters: Result.GridTemplate(result)
-    Multiplication: (result) ->
-      Multiplication: Result.GridTemplate(result)
-    Phonemes: (result) ->
-      Phonemes: _.keys(result).length
-    Grid: (result) ->
-    FamiliarWords: (result) ->
-      FamiliarWords: Result.GridTemplate(result)
-    InventedWords: (result) ->
-      InventedWords: Result.GridTemplate(result)
-    OralPassageReading: (result) ->
-      OralPassageReading: Result.GridTemplate(result)
-    ReadingComprehension: (result) ->
-      ReadingComprehension: Result.CountCorrectIncorrect(result)
-    ListeningComprehension: (result) ->
-      ListeningComprehension: Result.CountCorrectIncorrect(result)
-    PupilContextInterview: (result) ->
-      PupilContextInterview: _.keys(result).length
-    Results: (result) ->
-      Comments: result.resultComment
-    timestamp: (result) ->
-      FinishTime: new Date(result)
-    enumerator: (result) ->
-      Enumerator: result
-    default: (result) ->
-      JSON.stringify(result)
+  summaryData: (subtestName,result) ->
+    unless result.subtestType?
+      return switch subtestName
+        when "timestamp"
+          FinishTime: new Date(result)
+        when "enumerator"
+          Enumerator: result
+        else
+          JSON.stringify(result)
+    return switch result.subtestType
+      when "DateTimePage"
+        Student: result["student-id"]
+        StartTime: new Date("#{result.month} #{result.day}, #{result.year} #{result.time}")
+      when "Dictation"
+        DictationScore: _.values(result).reduce((sum,n) -> (sum+=n))
+      when "SchoolPage"
+        School: result.name
+      when "StudentInformationPage"
+        Gender: result.gender
+      when "ToggleGridWithTimer"
+        returnValue = {}
+        returnValue[subtestName] = Result.GridTemplate(result)
+        returnValue
+      when "Phonemes"
+        Phonemes: _.keys(result).length
+      when "UntimedSubtest","UntimedSubtestLinked"
+        returnValue = {}
+        returnValue[subtestName] = Result.CountCorrectIncorrect(result)
+        returnValue
+      when "PupilContextInterview"
+        PupilContextInterview: _.keys(result).length
+      when "ResultsPage"
+        Comments: result.resultComment
 
 Result.CountCorrectIncorrect = (result) ->
   return _.values(result).reduce( (memo,result) ->
@@ -82,4 +64,5 @@ Result.GridTemplate = (result) ->
   return {
     itemsCorrect: itemsCorrect
     attempted: result.attempted
+    total: result.items.length
   }

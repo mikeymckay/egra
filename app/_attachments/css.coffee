@@ -33,6 +33,9 @@ $("head").append "
       top: 10px;
       right: 10px;
     }
+    #content{
+      padding: 5px;
+    }
     #manage-assessments button{
       font-size:50%;
       margin:10px;
@@ -77,9 +80,6 @@ $("head").append "
     }
 
     span.timer-seconds{
-      float:right;
-      margin-right:10px;
-      margin-top:5px;
       font-size: large;
     }
 
@@ -90,6 +90,10 @@ $("head").append "
 
     .flash {
       color: #{red};
+    }
+
+    .toggle-grid-with-timer td.flash {
+      border-color: #{red};
     }
 
     #InitialSound .ui-controlgroup-label{
@@ -162,9 +166,32 @@ $("head").append "
     }
 
     .disabled{
-      color:gray
+      color:gray;
     }
-    
+
+    .student-dialog{
+      background-color: #C2C2C2;
+      font-weight:bold;
+      border: 1px;
+      border-style: solid;
+    }
+
+    .student-dialog-nonverbal{
+      font-weight: normal;
+      font-style: italic;
+    }
+
+    .ui-icon-triangle-1-e{
+      margin-left: 10px;
+      padding: 0px 0px 0px 20px;
+      background: url(images/spindown-closed.gif) no-repeat left;
+    }
+
+    .ui-icon-triangle-1-s{
+      margin-left: 10px;
+      padding: 0px 0px 0px 20px;
+      background: url(images/spindown-open.gif) no-repeat left;
+    }
 
   </style>
   "

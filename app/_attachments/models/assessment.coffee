@@ -71,10 +71,15 @@ class Assessment extends Backbone.Model
     loginResults = @loginPage().results()
     return loginResults.username != "" and loginResults.password != ""
 
+  result: (pageId) ->
+    for page in @pages
+      return page.results() if page.pageId = pageId
+
   results: ->
     results = {}
     for page in @pages
       results[page.pageId] = page.results()
+      results[page.pageId]["subtestType"] = page.pageType
     results.timestamp = new Date().valueOf()
     results.enumerator = $('#enumerator').html()
     return results
@@ -136,13 +141,15 @@ class Assessment extends Backbone.Model
 
   flash: ->
     $('.controls').addClass("flash")
+    $('.toggle-grid-with-timer td').addClass("flash")
     $("div[data-role=header]").toggleClass("flash")
     $("div[data-role=footer]").toggleClass("flash")
     setTimeout(->
       $('.controls').removeClass("flash")
+      $('.toggle-grid-with-timer td').removeClass("flash")
       $("div[data-role=header]").removeClass("flash")
       $("div[data-role=footer]").removeClass("flash")
-    ,3000)
+    ,2000)
 
   toPaper: (callback) ->
     @onReady =>

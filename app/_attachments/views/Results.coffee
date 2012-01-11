@@ -38,7 +38,7 @@ class ResultsView extends Backbone.View
       return if ui.newContent.find("canvas").length > 0
       $('.sparkline').sparkline 'html',
         type:'pie'
-        sliceColors:['#F7C942','orangered']
+        sliceColors:['black','#F7C942','orangered']
 
   events:
     "click button:contains(Cloud Sync)" : "sync"
@@ -67,7 +67,7 @@ class ResultsView extends Backbone.View
       successButton: "<button type='button' class='sync' syncTarget='#{Tangerine.cloud.url}'>Cloud Sync</button>"
 
   detectSubnet: ->
-    for subnetIP in [1..255]
+    for subnetIP in [Tangerine.subnet.start..Tangerine.subnet.finish]
       url = Tangerine.subnet.replace(/x/,subnetIP) + ":" + Tangerine.port
       buttonText = "Local Sync <span style='font-size:50%'>#{url.substring(7,url.lastIndexOf(":"))}</span>"
       @detectIP
@@ -75,7 +75,6 @@ class ResultsView extends Backbone.View
         successButton: "<button type='button' class='sync' syncTarget='#{url}'>#{buttonText}"
 
   detectIP: (options) ->
-    console.log "Called"
     $.ajax
       dataType: "jsonp"
       url: options.url

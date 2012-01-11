@@ -1,42 +1,25 @@
 var MapReduce, Utils;
-var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
 Utils = (function() {
+
   function Utils() {}
+
   return Utils;
+
 })();
+
 Utils.createResultsDatabase = function(databaseName, callback) {
+  $('#message').append("<br/>Logging in as administrator");
   return $.couch.login({
     name: Tangerine.config.user_with_database_create_permission,
     password: Tangerine.config.password_with_database_create_permission,
     success: function() {
+      var _this = this;
+      $('#message').append("<br/>Creating database [" + databaseName + "]");
       return $.couch.db(databaseName).create({
-        success: __bind(function() {
-          $.couch.db(databaseName).saveDoc({
-            "_id": "_design/reports",
-            "language": "javascript",
-            "views": {
-              "fields": {
-                "map": MapReduce.mapFields.toString()
-              },
-              "byEnumerator": {
-                "map": MapReduce.mapByEnumerator.toString()
-              },
-              "countByEnumerator": {
-                "map": MapReduce.mapCountByEnumerator.toString(),
-                "reduce": MapReduce.reduceCountByEnumerator.toString()
-              },
-              "byTimestamp": {
-                "map": MapReduce.mapByTimestamp.toString()
-              },
-              "replicationLog": {
-                "map": MapReduce.mapReplicationLog.toString()
-              }
-            }
-          });
-          if (callback != null) {
-            return callback();
-          }
-        }, this),
+        success: function() {
+          return Utils.createViews(databaseName, callback);
+        },
         complete: function() {
           return $.couch.logout();
         }
@@ -44,10 +27,43 @@ Utils.createResultsDatabase = function(databaseName, callback) {
     }
   });
 };
+
+Utils.createViews = function(databaseName, callback) {
+  $('#message').append("<br/>Creating views for [" + databaseName + "]");
+  return $.couch.db(databaseName).saveDoc({
+    "_id": "_design/reports",
+    "language": "javascript",
+    "views": {
+      "fields": {
+        "map": MapReduce.mapFields.toString()
+      },
+      "byEnumerator": {
+        "map": MapReduce.mapByEnumerator.toString()
+      },
+      "countByEnumerator": {
+        "map": MapReduce.mapCountByEnumerator.toString(),
+        "reduce": MapReduce.reduceCountByEnumerator.toString()
+      },
+      "byTimestamp": {
+        "map": MapReduce.mapByTimestamp.toString()
+      },
+      "replicationLog": {
+        "map": MapReduce.mapReplicationLog.toString()
+      }
+    }
+  }, {
+    success: callback
+  });
+};
+
 MapReduce = (function() {
+
   function MapReduce() {}
+
   return MapReduce;
+
 })();
+
 MapReduce.mapFields = function(doc, req) {
   var concatNodes;
   concatNodes = function(parent, o) {
@@ -56,7 +72,11 @@ MapReduce.mapFields = function(doc, req) {
       _results = [];
       for (index = 0, _len = o.length; index < _len; index++) {
         value = o[index];
-        _results.push(typeof o !== "string" ? concatNodes(parent + "." + index, value) : void 0);
+        if (typeof o !== "string") {
+          _results.push(concatNodes(parent + "." + index, value));
+        } else {
+          _results.push(void 0);
+        }
       }
       return _results;
     } else {
@@ -78,26 +98,29 @@ MapReduce.mapFields = function(doc, req) {
   };
   return concatNodes("", doc);
 };
+
 MapReduce.mapByEnumerator = function(doc, req) {
   if ((doc.enumerator != null) && (doc.timestamp != null)) {
     return emit(doc.enumerator, doc);
   }
 };
+
 MapReduce.mapCountByEnumerator = function(doc, req) {
   if ((doc.enumerator != null) && (doc.timestamp != null)) {
     return emit(doc.enumerator, 1);
   }
 };
+
 MapReduce.reduceCountByEnumerator = function(keys, values, rereduce) {
   return sum(values);
 };
+
 MapReduce.mapByTimestamp = function(doc, req) {
   if ((doc.enumerator != null) && (doc.timestamp != null)) {
     return emit(doc.timestamp, doc);
   }
 };
+
 MapReduce.mapReplicationLog = function(doc, req) {
-  if (doc.type === "replicationLog") {
-    return emit(doc.timestamp, doc);
-  }
+  if (doc.type === "replicationLog") return emit(doc.timestamp, doc);
 };

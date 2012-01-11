@@ -1,17 +1,16 @@
-var Router, assessmentCollection;
-var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
-  function ctor() { this.constructor = child; }
-  ctor.prototype = parent.prototype;
-  child.prototype = new ctor;
-  child.__super__ = parent.prototype;
-  return child;
-}, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-Router = (function() {
-  __extends(Router, Backbone.Router);
+var Router, assessmentCollection, startApp,
+  __hasProp = Object.prototype.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; },
+  _this = this;
+
+Router = (function(_super) {
+
+  __extends(Router, _super);
+
   function Router() {
     Router.__super__.constructor.apply(this, arguments);
   }
+
   Router.prototype.routes = {
     "assessment/:id": "assessment",
     "result/:database_name/:id": "result",
@@ -24,58 +23,45 @@ Router = (function() {
     "assessments": "assessments",
     "": "assessments"
   };
+
   Router.prototype.results = function(database_name) {
-    return $.couch.session({
-      success: function(session) {
-        $.enumerator = session.userCtx.name;
-        Tangerine.router.targetroute = document.location.hash;
-        if (!session.userCtx.name) {
-          Tangerine.router.navigate("login", true);
-          return;
-        }
+    return this.verify_logged_in({
+      success: function() {
+        var _this = this;
         return $.couch.db(database_name).view("reports/byEnumerator", {
           key: $.enumerator,
-          success: __bind(function(result) {
+          success: function(result) {
             var resultsView;
             resultsView = new ResultsView;
             resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
             resultsView.results.databaseName = database_name;
             return resultsView.render();
-          }, this)
+          }
         });
       }
     });
   };
+
   Router.prototype.result = function(database_name, id) {
-    return $.couch.session({
-      success: function(session) {
-        $.enumerator = session.userCtx.name;
-        Tangerine.router.targetroute = document.location.hash;
-        if (!session.userCtx.name) {
-          Tangerine.router.navigate("login", true);
-          return;
-        }
+    return this.verify_logged_in({
+      success: function() {
+        var _this = this;
         return $.couch.db(database_name).openDoc(id, {
-          success: __bind(function(doc) {
+          success: function(doc) {
             var resultView;
             resultView = new ResultView();
             resultView.model = new Result(doc);
             return $("#content").html(resultView.render());
-          }, this)
+          }
         });
       }
     });
   };
+
   Router.prototype.manage = function() {
-    return $.couch.session({
-      success: function(session) {
+    return this.verify_logged_in({
+      success: function() {
         var assessmentCollection;
-        $.enumerator = session.userCtx.name;
-        Tangerine.router.targetroute = document.location.hash;
-        if (!session.userCtx.name) {
-          Tangerine.router.navigate("login", true);
-          return;
-        }
         assessmentCollection = new AssessmentCollection();
         return assessmentCollection.fetch({
           success: function() {
@@ -87,17 +73,11 @@ Router = (function() {
       }
     });
   };
+
   Router.prototype.assessments = function() {
-    return $.couch.session({
-      success: function(session) {
+    return this.verify_logged_in({
+      success: function() {
         var assessmentListView;
-        $.enumerator = session.userCtx.name;
-        Tangerine.router.targetroute = document.location.hash;
-        $("#message").html(session.userCtx.name);
-        if (!session.userCtx.name) {
-          Tangerine.router.navigate("login", true);
-          return;
-        }
         $('#current-student-id').html("");
         $('#enumerator').html($.enumerator);
         assessmentListView = new AssessmentListView();
@@ -105,47 +85,11 @@ Router = (function() {
       }
     });
   };
+
   Router.prototype.login = function() {
-    $("#content").html("      <form id='login-form'>        <label for='name'>Enumerator Name</label>        <input id='name' name='name'></input>        <label for='password'>Password</label>        <input id='password' type='password' name='password'></input>        <div id='message'></div>        <button type='button'>Login</button>      </form>    ");
-    return new MBP.fastButton(_.last($("button:contains(Login)")), function() {
-      var name, password;
-      name = $('#name').val();
-      password = $('#password').val();
-      return $.couch.login({
-        name: name,
-        password: password,
-        success: function() {
-          $('#enumerator').html(name);
-          $.enumerator = name;
-          return Tangerine.router.navigate(Tangerine.router.targetroute, true);
-        },
-        error: function(status, error, reason) {
-          $("#message").html("Creating new user");
-          return $.couch.signup({
-            name: name
-          }, password, {
-            success: function() {
-              return $.couch.login({
-                name: name,
-                password: password,
-                success: function() {
-                  $('#current-name').html(name);
-                  return Tangerine.router.navigate(Tangerine.router.targetroute, true);
-                }
-              });
-            },
-            error: function(status, error, reason) {
-              if (error === "conflict") {
-                return $("#message").html("Either you have the wrong password or '" + ($('#name').val()) + "' has already been used as a valid name. Please try again.");
-              } else {
-                return $("#message").html("" + error + ": " + reason);
-              }
-            }
-          });
-        }
-      });
-    });
+    return Tangerine.login.render();
   };
+
   Router.prototype.logout = function() {
     return $.couch.logout({
       success: function() {
@@ -155,16 +99,11 @@ Router = (function() {
       }
     });
   };
+
   Router.prototype.assessment = function(id) {
-    return $.couch.session({
-      success: function(session) {
+    return this.verify_logged_in({
+      success: function() {
         var assessment;
-        $.enumerator = session.userCtx.name;
-        Tangerine.router.targetroute = document.location.hash;
-        if (!session.userCtx.name) {
-          Tangerine.router.navigate("login", true);
-          return;
-        }
         $('#enumerator').html($.enumerator);
         assessment = new Assessment({
           _id: id
@@ -177,6 +116,21 @@ Router = (function() {
       }
     });
   };
+
+  Router.prototype.verify_logged_in = function(options) {
+    return $.couch.session({
+      success: function(session) {
+        $.enumerator = session.userCtx.name;
+        Tangerine.router.targetroute = document.location.hash;
+        if (!session.userCtx.name) {
+          Tangerine.router.navigate("login", true);
+          return;
+        }
+        return options.success();
+      }
+    });
+  };
+
   Router.prototype.print = function(id) {
     return Assessment.load(id, function(assessment) {
       return assessment.toPaper(function(result) {
@@ -187,6 +141,7 @@ Router = (function() {
       });
     });
   };
+
   Router.prototype.student_printout = function(id) {
     return Assessment.load(id, function(assessment) {
       return assessment.toPaper(function(result) {
@@ -204,8 +159,17 @@ Router = (function() {
       });
     });
   };
+
   return Router;
-})();
+
+})(Backbone.Router);
+
+startApp = function() {
+  Tangerine.router = new Router();
+  Tangerine.login = new LoginView();
+  return Backbone.history.start();
+};
+
 $.couch.config({
   success: function(result) {
     if (_.keys(result).length === 0) {
@@ -214,21 +178,22 @@ $.couch.config({
   },
   error: function() {}
 }, "admins");
+
 assessmentCollection = new AssessmentCollection();
+
 assessmentCollection.fetch({
-  success: __bind(function() {
-    return assessmentCollection.each(__bind(function(assessment) {
+  success: function() {
+    assessmentCollection.each(function(assessment) {
       return $.couch.db(assessment.targetDatabase()).info({
-        error: __bind(function(a, b, errorType) {
+        error: function(a, b, errorType) {
           if (errorType === "no_db_file") {
-            return Utils.createResultsDatabase(assessment.targetDatabase(), __bind(function() {
+            return Utils.createResultsDatabase(assessment.targetDatabase(), function() {
               return $.couch.logout();
-            }, this));
+            });
           }
-        }, this)
+        }
       });
-    }, this));
-  }, this)
+    });
+    return _this.startApp();
+  }
 });
-Tangerine.router = new Router();
-Backbone.history.start();

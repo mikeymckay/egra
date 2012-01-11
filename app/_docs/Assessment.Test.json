@@ -1,12 +1,8 @@
 {
   "name": "Test",
-  "_id": "Assessment.Test",
   "urlPathsForPages": [
-    "Assessment.The Gambia EGRA May 2011.DateTime",
-    "Assessment.Test.StudentInformation",
-    "Assessment.The Gambia EGRA May 2011.InventedWords",
-    "Assessment.Test.Multiplication",
-    "Assessment.The Gambia EGRA May 2011.Results"
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.PupilContextInterview",
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.Results"
   ],
   "collection" : "assessment",
   "couchapp": {

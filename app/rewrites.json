@@ -1,8 +1,51 @@
 [
   {
-    "_comment" : "This isn't really working or useful, probably not worth it until vhosts are setup",
     "from": "",
     "to": "index.html"
+  }
+  ,{
+    "from": "images/*",
+    "to": "images/*"
+  }
+  ,{
+    "from": "images/*",
+    "to": "images/*"
+  }
+  ,{
+    "from": "css/*",
+    "to": "css/*"
+  }
+  ,{
+    "from": "js-libraries/*",
+    "to": "js-libraries/*"
+  }
+  ,{
+    "from": "models/*",
+    "to": "models/*"
+  }
+  ,{
+    "from": "views/*",
+    "to": "views/*"
+  }
+  ,{
+    "from": "css.js",
+    "to": "css.js"
+  }
+  ,{
+    "from": "config.js",
+    "to": "config.js"
+  }
+  ,{
+    "from": "utils.js",
+    "to": "utils.js"
+  }
+  ,{
+    "from": "version",
+    "to": "version"
+  }
+  ,{
+    "from": "tangerine.js",
+    "to": "tangerine.js"
   }
 ]
 
