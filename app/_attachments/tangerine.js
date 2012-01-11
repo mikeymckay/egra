@@ -187,9 +187,11 @@ assessmentCollection.fetch({
       return $.couch.db(assessment.targetDatabase()).info({
         error: function(a, b, errorType) {
           if (errorType === "no_db_file") {
-            return Utils.createResultsDatabase(assessment.targetDatabase(), function() {
-              return $.couch.logout();
-            });
+            Utils.createResultsDatabase(assessment.targetDatabase());
+            return setTimeout(function() {
+              $.couch.logout();
+              return location.reload(true);
+            }, 1500);
           }
         }
       });

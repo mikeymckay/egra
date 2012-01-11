@@ -1,6 +1,6 @@
 class Utils
 
-Utils.createResultsDatabase = (databaseName, callback) ->
+Utils.createResultsDatabase = (databaseName) ->
   $('#message').append("<br/>Logging in as administrator")
   $.couch.login
     name: Tangerine.config.user_with_database_create_permission
@@ -9,11 +9,9 @@ Utils.createResultsDatabase = (databaseName, callback) ->
       $('#message').append("<br/>Creating database [#{databaseName}]")
       $.couch.db(databaseName).create
         success: =>
-          Utils.createViews(databaseName, callback)
-        complete: ->
-          $.couch.logout()
+          Utils.createViews(databaseName)
 
-Utils.createViews = (databaseName, callback) ->
+Utils.createViews = (databaseName) ->
   $('#message').append("<br/>Creating views for [#{databaseName}]")
   # Create the view needed to aggregate data in the database
   $.couch.db(databaseName).saveDoc
@@ -32,9 +30,6 @@ Utils.createViews = (databaseName, callback) ->
         "map": MapReduce.mapByTimestamp.toString()
       "replicationLog":
         "map": MapReduce.mapReplicationLog.toString()
-  ,
-    success: callback
-
 
 class MapReduce
 MapReduce.mapFields = (doc, req) ->

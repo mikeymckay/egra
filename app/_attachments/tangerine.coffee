@@ -164,9 +164,12 @@ assessmentCollection.fetch
       $.couch.db(assessment.targetDatabase()).info
         error: (a,b,errorType) =>
           if errorType == "no_db_file"
-            Utils.createResultsDatabase assessment.targetDatabase(), =>
+            Utils.createResultsDatabase assessment.targetDatabase()
+# Wait 1.5 seconds for everything to get created, then logout and reload
+            setTimeout ->
               $.couch.logout()
-    # This isn't ideal - should be started only after the info requests complete
+              location.reload(true)
+            , 1500
     @startApp()
 
 

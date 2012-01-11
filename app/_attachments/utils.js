@@ -8,7 +8,7 @@ Utils = (function() {
 
 })();
 
-Utils.createResultsDatabase = function(databaseName, callback) {
+Utils.createResultsDatabase = function(databaseName) {
   $('#message').append("<br/>Logging in as administrator");
   return $.couch.login({
     name: Tangerine.config.user_with_database_create_permission,
@@ -18,17 +18,14 @@ Utils.createResultsDatabase = function(databaseName, callback) {
       $('#message').append("<br/>Creating database [" + databaseName + "]");
       return $.couch.db(databaseName).create({
         success: function() {
-          return Utils.createViews(databaseName, callback);
-        },
-        complete: function() {
-          return $.couch.logout();
+          return Utils.createViews(databaseName);
         }
       });
     }
   });
 };
 
-Utils.createViews = function(databaseName, callback) {
+Utils.createViews = function(databaseName) {
   $('#message').append("<br/>Creating views for [" + databaseName + "]");
   return $.couch.db(databaseName).saveDoc({
     "_id": "_design/reports",
@@ -51,8 +48,6 @@ Utils.createViews = function(databaseName, callback) {
         "map": MapReduce.mapReplicationLog.toString()
       }
     }
-  }, {
-    success: callback
   });
 };
 
