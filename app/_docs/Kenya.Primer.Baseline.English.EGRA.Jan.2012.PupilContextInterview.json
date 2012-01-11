@@ -14,7 +14,7 @@
         "Do not know/No response",
         "Not applicable"
       ],
-      "onChange" : "$('input[name={{name}}][value=Not applicable]').prop('checked', true);  $('legend:contains({{label}})').parent().hide()"
+      "comment" : "if $('input[name={{name}}][value=Not applicable]').prop('checked', true);  $('legend:contains({{label}})').parent().hide()"
       
     },
     {
@@ -27,8 +27,10 @@
         "English",
         "Mother tongue",
         "Mandinka",
+        "Other",
         "Do not know/No response"
-      ]
+      ],
+      "onChange" : "if($('input[name={{name}}][value=Other]').prop('checked', true)){console.log('foo')}"
     },
     {
       "label": "2. Where you live is there a ...? Radio?",

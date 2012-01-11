@@ -1049,12 +1049,18 @@ Interview = (function(_super) {
           id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/, "")).toLowerCase()
         };
       });
+      if (question.onChange != null) {
+        console.log(question.onChange);
+        question.onChange = Handlebars.compile(question.onChange)(question);
+        console.log(question.onChange);
+      }
     }
     this.content = Interview.template(this);
+    console.log(this.content);
   }
 
   return Interview;
 
 })(AssessmentPage);
 
-Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{text}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{text}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");
+Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{text}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{text}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");

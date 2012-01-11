@@ -866,13 +866,18 @@ class Interview extends AssessmentPage
         text: option
         id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/,"")).toLowerCase()
       )
+      if question.onChange?
+        console.log question.onChange
+        question.onChange = Handlebars.compile(question.onChange)(question)
+        console.log question.onChange
     @content = Interview.template(this)
+    console.log @content
 
 #TODO add support for onchange
 Interview.template = Handlebars.compile "
   <form>
     {{#questions}}
-      <fieldset data-type='{{type}}' data-role='controlgroup'>
+      <fieldset {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
         {{#options}}
           <label for='{{id}}'>{{text}}</label>

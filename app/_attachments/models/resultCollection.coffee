@@ -10,10 +10,25 @@ class ResultCollection extends Backbone.Collection
       timestamp: new Date().getTime()
       source: @databaseName
       target: target
-    $.couch.replicate @databaseName, target, =>
+
+    $.couch.login
+      name: Tangerine.config.user_with_database_create_permission
+      password: Tangerine.config.password_with_database_create_permission
       success: ->
-        options.success()
-        # TODO update replicationLog with a success property
+        $.couch.replicate @databaseName, target, =>
+          success: ->
+            options.success()
+            $.couch.logout()
+            Tangerine.router.navigate("login", true)
+            window.location.reload(true)
+          error: (res) ->
+            $("#message").html "Error: #{res}"
+            $.couch.logout()
+            Tangerine.router.navigate("login", true)
+            window.location.reload(true)
+            
+
+
 
   lastCloudReplication: (options) ->
     $.couch.db(@databaseName).view "reports/replicationLog",
@@ -25,4 +40,3 @@ class ResultCollection extends Backbone.Collection
               options.success(row.value)
         else
           options.error()
-
