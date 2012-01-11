@@ -5,7 +5,7 @@
   "enumeratorHelp" : "Woohoo",
   "questions": [
     {
-      "label": "School Shift",
+      "label": "F. School Shift",
       "orientation": "horizontal",
       "options": [
         "Full day",
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "label": "Multigrade class",
+      "label": "G. Multigrade class",
       "orientation": "horizontal",
       "options": [
         "No",
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "label": "Order of assessment",
+      "label": "H. Order of assessment",
       "orientation": "horizontal",
       "options": [
         "1st",
@@ -31,7 +31,7 @@
       ]
     },
     {
-      "label": "Class",
+      "label": "I. Class",
       "orientation": "horizontal",
       "options": [
         "One",
@@ -39,11 +39,11 @@
       ]
     },
     {
-      "label": "Stream Name",
+      "label": "J. Stream Name",
       "type": "text"
     },
     {
-      "label": "Age",
+      "label": "L. Age",
       "orientation": "horizontal",
       "options": [
         "5",
@@ -57,7 +57,7 @@
       ]
     },
     {
-      "label": "Gender",
+      "label": "M. Gender",
       "orientation": "horizontal",
       "options": [
         "Female",

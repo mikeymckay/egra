@@ -232,7 +232,7 @@ class StudentInformationPage extends AssessmentPage
     @questions = options.questions ? options.radioButtons
     # Create some id friendly attributes
     for question in @questions
-      question.name = question.label.toLowerCase().dasherize()
+      question.name = question.label.replace(/[^a-zA-Z0-9]/," ").toLowerCase().dasherize()
       if question.options?
         question.options = for option in question.options
           {
@@ -242,7 +242,7 @@ class StudentInformationPage extends AssessmentPage
     @content = StudentInformationPage.template(this)
 
   validate: ->
-    names = ($(inputElement).html().toLowerCase().dasherize() for inputElement in $("div##{@pageId} form legend"))
+    names = ($(fieldset).attr("data-name") for fieldset in $("div##{@pageId} form fieldset"))
     for name in names
       question = $("input[name=#{name}]")
       continue if question.attr("type") == 'text' and question.val() != ""
@@ -254,7 +254,7 @@ StudentInformationPage.template = Handlebars.compile "
   <div class='enumerator-help'>{{enumeratorHelp}}</div>
   <form>
     {{#questions}}
-      <fieldset data-type='{{orientation}}' data-role='controlgroup'>
+      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
         {{#if options}}
           {{#options}}

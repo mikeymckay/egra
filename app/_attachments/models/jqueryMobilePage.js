@@ -296,7 +296,7 @@ StudentInformationPage = (function(_super) {
     _ref2 = this.questions;
     for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
       question = _ref2[_i];
-      question.name = question.label.toLowerCase().dasherize();
+      question.name = question.label.replace(/[^a-zA-Z0-9]/, " ").toLowerCase().dasherize();
       if (question.options != null) {
         question.options = (function() {
           var _j, _len2, _ref3, _results;
@@ -317,14 +317,14 @@ StudentInformationPage = (function(_super) {
   }
 
   StudentInformationPage.prototype.validate = function() {
-    var inputElement, name, names, question, _i, _len;
+    var fieldset, name, names, question, _i, _len;
     names = (function() {
       var _i, _len, _ref, _results;
-      _ref = $("div#" + this.pageId + " form legend");
+      _ref = $("div#" + this.pageId + " form fieldset");
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        inputElement = _ref[_i];
-        _results.push($(inputElement).html().toLowerCase().dasherize());
+        fieldset = _ref[_i];
+        _results.push($(fieldset).attr("data-name"));
       }
       return _results;
     }).call(this);
@@ -343,7 +343,7 @@ StudentInformationPage = (function(_super) {
 
 })(AssessmentPage);
 
-StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <form>    {{#questions}}      <fieldset data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
+StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <form>    {{#questions}}      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
 
 SchoolPage = (function(_super) {
 
