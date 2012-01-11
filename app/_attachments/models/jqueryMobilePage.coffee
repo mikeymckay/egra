@@ -868,6 +868,7 @@ class Interview extends AssessmentPage
       )
     @content = Interview.template(this)
 
+#TODO add support for onchange
 Interview.template = Handlebars.compile "
   <form>
     {{#questions}}
