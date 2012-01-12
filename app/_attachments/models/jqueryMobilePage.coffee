@@ -438,9 +438,9 @@ class ResultsPage extends AssessmentPage
 
       $("button:contains(Next)").hide()
 
-      resultView = new ResultView()
-      resultView.model = new Result($.assessment.results())
-      $("div##{@pageId} div[data-role='content'] div.results div").html resultView.render()
+      Tangerine.resultView ?= new ResultView()
+      Tangerine.resultView.model = new Result($.assessment.results())
+      $("div##{@pageId} div[data-role='content'] div.results div").html Tangerine.resultView.render()
       $('.sparkline').sparkline 'html',
         type:'pie'
         sliceColors:['black','#F7C942','orangered']
@@ -867,11 +867,8 @@ class Interview extends AssessmentPage
         id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/,"")).toLowerCase()
       )
       if question.onChange?
-        console.log question.onChange
         question.onChange = Handlebars.compile(question.onChange)(question)
-        console.log question.onChange
     @content = Interview.template(this)
-    console.log @content
 
 #TODO add support for onchange
 Interview.template = Handlebars.compile "

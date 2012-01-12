@@ -17,19 +17,19 @@ class Router extends Backbone.Router
         $.couch.db(database_name).view "reports/byEnumerator",
           key: $.enumerator
           success: (result) =>
-            resultsView = new ResultsView
-            resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
-            resultsView.results.databaseName = database_name
-            resultsView.render()
+            Tangerine.resultsView ?= new ResultsView()
+            Tangerine.resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
+            Tangerine.resultsView.results.databaseName = database_name
+            Tangerine.resultsView.render()
 
   result: (database_name,id) ->
     @verify_logged_in
       success: ->
         $.couch.db(database_name).openDoc id,
           success: (doc) =>
-            resultView = new ResultView()
-            resultView.model = new Result(doc)
-            $("#content").html resultView.render()
+            Tangerine.resultView ?= new ResultView()
+            Tangerine.resultView.model = new Result(doc)
+            $("#content").html Tangerine.resultView.render()
 
   manage: ->
     @verify_logged_in
@@ -37,8 +37,8 @@ class Router extends Backbone.Router
         assessmentCollection = new AssessmentCollection()
         assessmentCollection.fetch
           success: ->
-            manageView = new ManageView()
-            manageView.render(assessmentCollection)
+            Tangerine.manageView ?= new ManageView()
+            Tangerine.manageView.render(assessmentCollection)
 
   assessments: ->
     @verify_logged_in
@@ -46,11 +46,12 @@ class Router extends Backbone.Router
         $('#current-student-id').html ""
         $('#enumerator').html $.enumerator
 
-        assessmentListView = new AssessmentListView()
-        assessmentListView.render()
+        Tangerine.assessmentListView ?= new AssessmentListView()
+        Tangerine.assessmentListView.render()
 
   login: ->
-    Tangerine.login.render()
+    Tangerine.loginView ?= new LoginView()
+    Tangerine.loginView.render()
 
   logout: ->
     $.couch.logout
@@ -64,10 +65,15 @@ class Router extends Backbone.Router
       success: ->
         $('#enumerator').html($.enumerator)
 
-        assessment = new Assessment {_id:id}
-        assessment.fetch
+        # This is terrible but it fixes my problem
+        # Currently live click handlers get duplicated over and over again
+        # Need to convert everything to backbone style views
+        if Tangerine.assessment?
+          location.reload()
+        Tangerine.assessment = new Assessment {_id:id}
+        Tangerine.assessment.fetch
           success: ->
-            assessment.render()
+            Tangerine.assessment.render()
 
   verify_logged_in: (options) ->
     $.couch.session
@@ -142,7 +148,14 @@ class Router extends Backbone.Router
 
 startApp = ->
   Tangerine.router = new Router()
-  Tangerine.login = new LoginView()
+  # Reuse the view objects to stop events from being duplicated (and to save memory)
+  Tangerine.loginView
+  Tangerine.manageView
+  Tangerine.assessmentListView
+  Tangerine.resultView
+  Tangerine.resultsView
+# This one is a hack. ugh
+  Tangerine.assessment
   Backbone.history.start()
 
 $.couch.config(

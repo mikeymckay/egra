@@ -31,11 +31,12 @@ Router = (function(_super) {
         return $.couch.db(database_name).view("reports/byEnumerator", {
           key: $.enumerator,
           success: function(result) {
-            var resultsView;
-            resultsView = new ResultsView;
-            resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
-            resultsView.results.databaseName = database_name;
-            return resultsView.render();
+            if (Tangerine.resultsView == null) {
+              Tangerine.resultsView = new ResultsView();
+            }
+            Tangerine.resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
+            Tangerine.resultsView.results.databaseName = database_name;
+            return Tangerine.resultsView.render();
           }
         });
       }
@@ -48,10 +49,11 @@ Router = (function(_super) {
         var _this = this;
         return $.couch.db(database_name).openDoc(id, {
           success: function(doc) {
-            var resultView;
-            resultView = new ResultView();
-            resultView.model = new Result(doc);
-            return $("#content").html(resultView.render());
+            if (Tangerine.resultView == null) {
+              Tangerine.resultView = new ResultView();
+            }
+            Tangerine.resultView.model = new Result(doc);
+            return $("#content").html(Tangerine.resultView.render());
           }
         });
       }
@@ -65,9 +67,10 @@ Router = (function(_super) {
         assessmentCollection = new AssessmentCollection();
         return assessmentCollection.fetch({
           success: function() {
-            var manageView;
-            manageView = new ManageView();
-            return manageView.render(assessmentCollection);
+            if (Tangerine.manageView == null) {
+              Tangerine.manageView = new ManageView();
+            }
+            return Tangerine.manageView.render(assessmentCollection);
           }
         });
       }
@@ -77,17 +80,19 @@ Router = (function(_super) {
   Router.prototype.assessments = function() {
     return this.verify_logged_in({
       success: function() {
-        var assessmentListView;
         $('#current-student-id').html("");
         $('#enumerator').html($.enumerator);
-        assessmentListView = new AssessmentListView();
-        return assessmentListView.render();
+        if (Tangerine.assessmentListView == null) {
+          Tangerine.assessmentListView = new AssessmentListView();
+        }
+        return Tangerine.assessmentListView.render();
       }
     });
   };
 
   Router.prototype.login = function() {
-    return Tangerine.login.render();
+    if (Tangerine.loginView == null) Tangerine.loginView = new LoginView();
+    return Tangerine.loginView.render();
   };
 
   Router.prototype.logout = function() {
@@ -103,14 +108,14 @@ Router = (function(_super) {
   Router.prototype.assessment = function(id) {
     return this.verify_logged_in({
       success: function() {
-        var assessment;
         $('#enumerator').html($.enumerator);
-        assessment = new Assessment({
+        if (Tangerine.assessment != null) location.reload();
+        Tangerine.assessment = new Assessment({
           _id: id
         });
-        return assessment.fetch({
+        return Tangerine.assessment.fetch({
           success: function() {
-            return assessment.render();
+            return Tangerine.assessment.render();
           }
         });
       }
@@ -166,7 +171,12 @@ Router = (function(_super) {
 
 startApp = function() {
   Tangerine.router = new Router();
-  Tangerine.login = new LoginView();
+  Tangerine.loginView;
+  Tangerine.manageView;
+  Tangerine.assessmentListView;
+  Tangerine.resultView;
+  Tangerine.resultsView;
+  Tangerine.assessment;
   return Backbone.history.start();
 };
 

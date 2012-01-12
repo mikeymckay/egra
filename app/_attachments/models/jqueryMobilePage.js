@@ -501,12 +501,11 @@ ResultsPage = (function(_super) {
     var _this = this;
     ResultsPage.__super__.load.call(this, data);
     return $("div#" + this.pageId).live("pageshow", function() {
-      var resultView;
       $("div#" + _this.pageId + " div span[class='randomIdForSubject']").html($("#current-student-id"));
       $("button:contains(Next)").hide();
-      resultView = new ResultView();
-      resultView.model = new Result($.assessment.results());
-      $("div#" + _this.pageId + " div[data-role='content'] div.results div").html(resultView.render());
+      if (Tangerine.resultView == null) Tangerine.resultView = new ResultView();
+      Tangerine.resultView.model = new Result($.assessment.results());
+      $("div#" + _this.pageId + " div[data-role='content'] div.results div").html(Tangerine.resultView.render());
       $('.sparkline').sparkline('html', {
         type: 'pie',
         sliceColors: ['black', '#F7C942', 'orangered']
@@ -1050,13 +1049,10 @@ Interview = (function(_super) {
         };
       });
       if (question.onChange != null) {
-        console.log(question.onChange);
         question.onChange = Handlebars.compile(question.onChange)(question);
-        console.log(question.onChange);
       }
     }
     this.content = Interview.template(this);
-    console.log(this.content);
   }
 
   return Interview;
