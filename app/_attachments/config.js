@@ -23,7 +23,7 @@ Tangerine.subnet.start = 100;
 
 Tangerine.subnet.finish = 200;
 
-Tangerine.port = "5984";
+Tangerine.port = "5985";
 
 Backbone.couch_connector.config.db_name = Tangerine.config.db_name;
 

@@ -13,7 +13,7 @@ Tangerine.cloud.url = "http://#{Tangerine.cloud.username}:#{Tangerine.cloud.pass
 Tangerine.subnet = "http://192.168.1.x"
 Tangerine.subnet.start = 100
 Tangerine.subnet.finish = 200
-Tangerine.port = "5984"
+Tangerine.port = "5985"
 
 Backbone.couch_connector.config.db_name = Tangerine.config.db_name
 Backbone.couch_connector.config.ddoc_name = Tangerine.config.design_doc_name

@@ -169,6 +169,13 @@ $.couch.config(
   "admins"
 )
 
+# Should remove later - always make sure the timeout is 28800 (8 hrs)
+$.ajax "/_config/couch_httpd_auth/timeout",
+  username: Tangerine.config.user_with_database_create_permission
+  password: Tangerine.config.password_with_database_create_permission
+  type: "put"
+  data: '"28800"'
+
 # Check that all result databases exist
 assessmentCollection = new AssessmentCollection()
 assessmentCollection.fetch

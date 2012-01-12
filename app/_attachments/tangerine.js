@@ -189,6 +189,13 @@ $.couch.config({
   error: function() {}
 }, "admins");
 
+$.ajax("/_config/couch_httpd_auth/timeout", {
+  username: Tangerine.config.user_with_database_create_permission,
+  password: Tangerine.config.password_with_database_create_permission,
+  type: "put",
+  data: '"28800"'
+});
+
 assessmentCollection = new AssessmentCollection();
 
 assessmentCollection.fetch({

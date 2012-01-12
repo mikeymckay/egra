@@ -4,76 +4,64 @@
   "pageId": "School",
   "schools": [
     {
-      "name": "Lilongwe",
-      "district": "Lilongwe",
-      "schoolId": "1142",
-      "province": "Central"
+      "name": "Excellent Care Centre Starehe Mathare",
+      "district": "Starehe",
+      "schoolId": "100101",
+      "province": "Mathare"
     },
     {
-      "name": "Blantyre",
-      "district": "Blantyre",
-      "schoolId": "2142",
-      "province": "Blantyre"
+      "name": "Genesis Joy Institute -Primary",
+      "district": "Starehe",
+      "schoolId": "100102",
+      "province": "Mathare"
     },
     {
-      "name": "Dedza",
-      "district": "Dedza",
-      "schoolId": "2742",
-      "province": "Central"
+      "name": "Maji Mazuri Headstart School",
+      "district": "Starehe",
+      "schoolId": "100103",
+      "province": "Mathare"
     },
     {
-      "name": "Mzuzu",
-      "district": "Mzuzu",
-      "schoolId": "9742",
-      "province": "North"
+      "name": "MCEDO Beijing",
+      "district": "Starehe",
+      "schoolId": "100104",
+      "province": "Mathare"
     },
     {
-      "name": "Anderson",
-      "district": "Washoe",
-      "schoolId": "2442",
-      "province": "Nevada"
+      "name": "MCO - Primary",
+      "district": "Starehe",
+      "schoolId": "100105",
+      "province": "Mathare"
     },
     {
-      "name": "Jessie Beck",
-      "district": "Washoe",
-      "schoolId": "2443",
-      "province": "Nevada"
+      "name": "MCO Joy",
+      "district": "Starehe",
+      "schoolId": "100106",
+      "province": "Mathare"
     },
     {
-      "name": "Swope",
-      "district": "Washoe",
-      "schoolId": "442",
-      "province": "Nevada"
+      "name": "Mercy Care Centre Primary",
+      "district": "Starehe",
+      "schoolId": "100107",
+      "province": "Mathare"
     },
     {
-      "name": "Pine",
-      "district": "Washoe",
-      "schoolId": "4412",
-      "province": "Nevada"
+      "name": "Naioth Education Center",
+      "district": "Starehe",
+      "schoolId": "100108",
+      "province": "Mathare"
     },
     {
-      "name": "Manogue",
-      "district": "Washoe",
-      "schoolId": "42",
-      "province": "Nevada"
+      "name": "NECI Education Center",
+      "district": "Starehe",
+      "schoolId": "100109",
+      "province": "Mathare"
     },
     {
-      "name": "Reno",
-      "district": "Carson",
-      "schoolId": "142",
-      "province": "Nevada"
-    },
-    {
-      "name": "Carson",
-      "district": "Carson",
-      "schoolId": "144",
-      "province": "Nevada"
-    },
-    {
-      "name": "Truckee",
-      "district": "Sierras",
-      "schoolId": "242",
-      "province": "California"
+      "name": "Valley View Academy",
+      "district": "Starehe",
+      "schoolId": "100110",
+      "province": "Mathare"
     }
   ],
   "nameText": "Name",
