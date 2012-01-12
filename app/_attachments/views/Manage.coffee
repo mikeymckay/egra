@@ -36,10 +36,11 @@ class ManageView extends Backbone.View
     document.location = $(event.target).attr("href")
 
   updateTangerine: (event) ->
-    source = "http://mikeymckay.iriscouch.com/#{Tangerine.config.db_name}"
+    source = "http://#{Tangerine.cloud.target}/#{Tangerine.config.db_name}"
+    target = "http://#{Tangerine.config.user_with_database_create_permission}:#{Tangerine.config.password_with_database_create_permission}@localhost:#{Tangerine.port}/#{Tangerine.config.db_name}"
     $("#content").prepend "<span id='message'>Updating from: #{source}</span>"
     
-    $.couch.replicate "http://mikeymckay.iriscouch.com/#{Tangerine.config.db_name}", Tangerine.config.db_name,
+    $.couch.replicate source, target,
       success: ->
         $("#message").html "Finished"
         Tangerine.router.navigate "logout", true

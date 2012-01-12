@@ -15,16 +15,15 @@ ResultsView = (function(_super) {
   ResultsView.prototype.el = $('#content');
 
   ResultsView.prototype.render = function() {
-    var results,
-      _this = this;
-    results = this.results.map(function(result) {
-      var finishTime, resultView;
-      resultView = new ResultView();
-      resultView.model = result;
+    var _this = this;
+    this.el.html("      <div id='message'></div>      <h2>" + this.results.databaseName + "</h2>      <div>Last save to cloud: <span id='lastCloudReplicationTime'></span></div>      <button>Detect save options</button>      <div id='saveOptions'>      </div>      <button>CSV/Excel</button>      <hr/>      Results saved by " + $.enumerator + ":      <div id='results'></div>    ");
+    this.results.each(function(result) {
+      var finishTime;
+      if (Tangerine.resultView == null) Tangerine.resultView = new ResultView();
+      Tangerine.resultView.model = result;
       finishTime = new moment(result.get("timestamp"));
-      return "        <div><button>" + (finishTime.format("D-MMM-YY")) + " (" + (finishTime.fromNow()) + ")</button></div>        <div class='result'>" + (resultView.render()) + "</div>      ";
-    }).join("");
-    this.el.html("      <div id='message'></div>      <h2>" + this.results.databaseName + "</h2>      <div>Last sync to cloud: <span id='lastCloudReplicationTime'></span></div>      <button>Detect sync options</button>      <div id='syncOptions'>      </div>      <button>CSV/Excel</button>      <hr/>      Results saved by " + $.enumerator + ":      <div id='results'>        " + results + "      </div>    ");
+      return $("#results").append("        <div><button>" + (finishTime.format("D-MMM-YY")) + " (" + (finishTime.fromNow()) + ")</button></div>        <div class='result'>" + (Tangerine.resultView.render()) + "</div>      ");
+    });
     this.updateLastCloudReplication();
     this.detectCloud();
     $("#results").accordion({
@@ -41,10 +40,10 @@ ResultsView = (function(_super) {
   };
 
   ResultsView.prototype.events = {
-    "click button:contains(Cloud Sync)": "sync",
-    "click button:contains(Local Sync)": "sync",
+    "click button:contains(Cloud save)": "save",
+    "click button:contains(Local save)": "save",
     "click button:contains(CSV/Excel)": "csv",
-    "click button:contains(Detect sync options)": "detect"
+    "click button:contains(Detect save options)": "detect"
   };
 
   ResultsView.prototype.updateLastCloudReplication = function() {
@@ -58,12 +57,12 @@ ResultsView = (function(_super) {
     });
   };
 
-  ResultsView.prototype.sync = function(event) {
-    return this.replicate($(event.target).attr("syncTarget"));
+  ResultsView.prototype.save = function(event) {
+    return this.replicate($(event.target).attr("saveTarget"));
   };
 
   ResultsView.prototype.detect = function() {
-    $("#syncOptions").html("<span id='syncMessage'>Detecting</span>");
+    $("#saveOptions").html("<span id='saveMessage'>Detecting</span>");
     this.detectCloud();
     return this.detectSubnet();
   };
@@ -71,7 +70,7 @@ ResultsView = (function(_super) {
   ResultsView.prototype.detectCloud = function() {
     return this.detectIP({
       url: Tangerine.cloud.url,
-      successButton: "<button type='button' class='sync' syncTarget='" + Tangerine.cloud.url + "'>Cloud Sync</button>"
+      successButton: "<button type='button' class='save' saveTarget='" + Tangerine.cloud.url + "'>Cloud save</button>"
     });
   };
 
@@ -80,10 +79,10 @@ ResultsView = (function(_super) {
     _results = [];
     for (subnetIP = _ref = Tangerine.subnet.start, _ref2 = Tangerine.subnet.finish; _ref <= _ref2 ? subnetIP <= _ref2 : subnetIP >= _ref2; _ref <= _ref2 ? subnetIP++ : subnetIP--) {
       url = Tangerine.subnet.replace(/x/, subnetIP) + ":" + Tangerine.port;
-      buttonText = "Local Sync <span style='font-size:50%'>" + (url.substring(7, url.lastIndexOf(":"))) + "</span>";
+      buttonText = "Local save <span style='font-size:50%'>" + (url.substring(7, url.lastIndexOf(":"))) + "</span>";
       _results.push(this.detectIP({
         url: url,
-        successButton: "<button type='button' class='sync' syncTarget='" + url + "'>" + buttonText
+        successButton: "<button type='button' class='save' saveTarget='" + url + "'>" + buttonText
       }));
     }
     return _results;
@@ -94,22 +93,24 @@ ResultsView = (function(_super) {
       dataType: "jsonp",
       url: options.url,
       success: function() {
-        $("#syncMessage").html("");
-        return $("#syncOptions").append(options.successButton);
+        $("#saveMessage").html("");
+        return $("#saveOptions").append(options.successButton);
       },
       error: function(a, b, c) {
         if (b === 'parsererror') {
-          $("#syncMessage").html("");
-          return $("#syncOptions").append(options.successButton);
+          $("#saveMessage").html("");
+          return $("#saveOptions").append(options.successButton);
         }
       }
     });
   };
 
   ResultsView.prototype.replicate = function(target) {
-    return this.results.replicate(target, function() {
-      $("#message").html("Sync successful");
-      return this.updateLastCloudReplication();
+    return this.results.replicate(target, {
+      success: function() {
+        $("#message").html("Save successful");
+        return this.updateLastCloudReplication();
+      }
     });
   };
 

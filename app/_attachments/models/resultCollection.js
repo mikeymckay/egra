@@ -21,27 +21,12 @@ ResultCollection = (function(_super) {
       source: this.databaseName,
       target: target
     });
-    return $.couch.login({
-      name: Tangerine.config.user_with_database_create_permission,
-      password: Tangerine.config.password_with_database_create_permission,
+    return $.couch.replicate(this.databaseName, target, {
       success: function() {
-        var _this = this;
-        return $.couch.replicate(this.databaseName, target, function() {
-          return {
-            success: function() {
-              options.success();
-              $.couch.logout();
-              Tangerine.router.navigate("login", true);
-              return window.location.reload(true);
-            },
-            error: function(res) {
-              $("#message").html("Error: " + res);
-              $.couch.logout();
-              Tangerine.router.navigate("login", true);
-              return window.location.reload(true);
-            }
-          };
-        });
+        return options.success();
+      },
+      error: function(res) {
+        return $("#message").html("Error: " + res);
       }
     });
   };

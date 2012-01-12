@@ -11,24 +11,11 @@ class ResultCollection extends Backbone.Collection
       source: @databaseName
       target: target
 
-    $.couch.login
-      name: Tangerine.config.user_with_database_create_permission
-      password: Tangerine.config.password_with_database_create_permission
+    $.couch.replicate @databaseName, target,
       success: ->
-        $.couch.replicate @databaseName, target, =>
-          success: ->
-            options.success()
-            $.couch.logout()
-            Tangerine.router.navigate("login", true)
-            window.location.reload(true)
-          error: (res) ->
-            $("#message").html "Error: #{res}"
-            $.couch.logout()
-            Tangerine.router.navigate("login", true)
-            window.location.reload(true)
-            
-
-
+        options.success()
+      error: (res) ->
+        $("#message").html "Error: #{res}"
 
   lastCloudReplication: (options) ->
     $.couch.db(@databaseName).view "reports/replicationLog",
