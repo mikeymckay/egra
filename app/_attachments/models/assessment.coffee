@@ -140,11 +140,13 @@ class Assessment extends Backbone.Model
       @pages[0].render()
 
   flash: ->
+    $('body').addClass("flash")
     $('.controls').addClass("flash")
     $('.toggle-grid-with-timer td').addClass("flash")
     $("div[data-role=header]").toggleClass("flash")
     $("div[data-role=footer]").toggleClass("flash")
     setTimeout(->
+      $('body').removeClass("flash")
       $('.controls').removeClass("flash")
       $('.toggle-grid-with-timer td').removeClass("flash")
       $("div[data-role=header]").removeClass("flash")

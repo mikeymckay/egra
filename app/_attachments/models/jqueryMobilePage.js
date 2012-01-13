@@ -315,6 +315,15 @@ StudentInformationPage = (function(_super) {
         })();
       }
     }
+    if (options.timer) {
+      this.includeTimer = true;
+      this.addTimer({
+        seconds: options.timer,
+        onStop: function() {
+          return $.assessment.flash();
+        }
+      });
+    }
     this.content = StudentInformationPage.template(this);
   }
 
@@ -345,7 +354,7 @@ StudentInformationPage = (function(_super) {
 
 })(AssessmentPage);
 
-StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <div class='student-dialog'>{{{studentDialog}}}</div>  <form>    {{#questions}}      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
+StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <div class='student-dialog'>{{{studentDialog}}}</div>  {{#if includeTimer}}    <div class='timer'>      <button>start</button>      <span style='font-size:200%' class='timer-seconds'></span>    </div>  {{/if}}  <form>    {{#questions}}      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
 
 SchoolPage = (function(_super) {
 
@@ -558,7 +567,6 @@ ConsentPage = (function(_super) {
   }
 
   ConsentPage.prototype.validate = function() {
-    console.log($("div#" + this.pageId + " input#consent-yes:checked"));
     if ($("div#" + this.pageId + " input#consent-yes:checked").length > 0) {
       return true;
     } else if ($("div#" + this.pageId + " input#consent-no:checked").length > 0) {

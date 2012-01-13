@@ -237,11 +237,13 @@ Assessment = (function(_super) {
   };
 
   Assessment.prototype.flash = function() {
+    $('body').addClass("flash");
     $('.controls').addClass("flash");
     $('.toggle-grid-with-timer td').addClass("flash");
     $("div[data-role=header]").toggleClass("flash");
     $("div[data-role=footer]").toggleClass("flash");
     return setTimeout(function() {
+      $('body').removeClass("flash");
       $('.controls').removeClass("flash");
       $('.toggle-grid-with-timer td').removeClass("flash");
       $("div[data-role=header]").removeClass("flash");

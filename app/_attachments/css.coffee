@@ -15,6 +15,10 @@ $("head").append "
       font-size: 150%;
     }
 
+    body.flash{
+      background-color:red;
+    }
+
     #navigation{
       margin-bottom: 20px;
       background-color: #{yellow};

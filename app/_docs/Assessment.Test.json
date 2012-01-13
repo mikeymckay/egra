@@ -1,8 +1,7 @@
 {
   "name": "Test",
   "urlPathsForPages": [
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.StudentConsent",
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.Results"
+    "Kenya.Primer.Baseline.EGMA.Jan.2012.RationalCounting"
   ],
   "collection" : "assessment",
   "couchapp": {

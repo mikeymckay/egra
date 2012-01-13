@@ -240,7 +240,15 @@ class StudentInformationPage extends AssessmentPage
             id : question.name + "-"+ option.toLowerCase().dasherize()
             label: option
           }
+    if options.timer
+      @includeTimer = true
+      @addTimer
+        seconds: options.timer
+        onStop: ->
+          $.assessment.flash()
     @content = StudentInformationPage.template(this)
+        
+
 
   validate: ->
     names = ($(fieldset).attr("data-name") for fieldset in $("div##{@pageId} form fieldset"))
@@ -254,6 +262,13 @@ class StudentInformationPage extends AssessmentPage
 StudentInformationPage.template = Handlebars.compile "
   <div class='enumerator-help'>{{enumeratorHelp}}</div>
   <div class='student-dialog'>{{{studentDialog}}}</div>
+  {{#if includeTimer}}
+    <div class='timer'>
+      <button>start</button>
+      <span style='font-size:200%' class='timer-seconds'></span>
+    </div>
+
+  {{/if}}
   <form>
     {{#questions}}
       <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>
@@ -467,7 +482,6 @@ class ConsentPage extends TextPage
       
 
   validate: ->
-    console.log $("div##{@pageId} input#consent-yes:checked")
     if $("div##{@pageId} input#consent-yes:checked").length > 0
       return true
     else if $("div##{@pageId} input#consent-no:checked").length > 0
