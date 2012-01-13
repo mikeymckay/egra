@@ -1,0 +1,22 @@
+{
+  "_id":"Kenya.Primer.Baseline.EGMA.Jan.2012.SubtractionLevel1Methods",
+  "pageType": "Interview",
+  "pageId": "SubtractionLevel1Methods",
+  "questions": [
+    {
+      "label": "To solve the problems, indicate the method the child used (tick all that apply):",
+      "name": "method-used-subtraction-level-1",
+      "type": "vertical",
+      "multiple": true,
+      "options": [
+        "a) Solved the problems in his/her head",
+        "b) Fingers",
+        "c) Counters",
+        "d) Tick marks on paper with a pencil",
+        "e) Other"
+      ]
+    }
+  ],
+  "couchapp": {
+  }
+}

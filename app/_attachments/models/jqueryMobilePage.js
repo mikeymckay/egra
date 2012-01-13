@@ -293,10 +293,12 @@ StudentInformationPage = (function(_super) {
     var option, question, _i, _len, _ref, _ref2;
     StudentInformationPage.__super__.constructor.call(this, options);
     this.questions = (_ref = options.questions) != null ? _ref : options.radioButtons;
+    this.enumeratorHelp = options.enumeratorHelp;
+    this.studentDialog = options.studentDialog;
     _ref2 = this.questions;
     for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
       question = _ref2[_i];
-      question.name = question.label.replace(/[^a-zA-Z0-9]/, " ").toLowerCase().dasherize();
+      question.name = question.label.replace(/[^a-zA-Z0-9]/g, " ").toLowerCase().dasherize();
       if (question.options != null) {
         question.options = (function() {
           var _j, _len2, _ref3, _results;
@@ -343,7 +345,7 @@ StudentInformationPage = (function(_super) {
 
 })(AssessmentPage);
 
-StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <form>    {{#questions}}      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
+StudentInformationPage.template = Handlebars.compile("  <div class='enumerator-help'>{{enumeratorHelp}}</div>  <div class='student-dialog'>{{{studentDialog}}}</div>  <form>    {{#questions}}      <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#if options}}          {{#options}}            <label for='{{id}}'>{{label}}</label>            <input type='radio' name='{{../name}}' value='{{label}}' id='{{id}}'></input>          {{/options}}        {{else}}          <input type='{{type}}' name='{{../name}}' id='{{id}}'></input>        {{/if}}      </fieldset>    {{/questions}}  </form>");
 
 SchoolPage = (function(_super) {
 
@@ -574,27 +576,29 @@ UntimedSubtest = (function(_super) {
   __extends(UntimedSubtest, _super);
 
   function UntimedSubtest(options) {
-    var answer, index, question, questionName;
+    var answer, answerSanitized, index, question, questionSanitized, _ref;
     this.questions = options.questions;
+    this.answerOptions = (_ref = options.answerOptions) != null ? _ref : ["Correct", "Incorrect", "No response"];
     UntimedSubtest.__super__.constructor.call(this, options);
     this.footerMessage = footerMessage;
     this.content = ("      <div class='enumerator-help'>" + options.enumeratorHelp + "</div>      <div class='student-dialog'>" + options.studentDialog + "</div>      <form>") + ((function() {
-      var _len, _ref, _results;
-      _ref = this.questions;
+      var _len, _ref2, _results;
+      _ref2 = this.questions;
       _results = [];
-      for (index = 0, _len = _ref.length; index < _len; index++) {
-        question = _ref[index];
-        questionName = this.pageId + "-question-" + index;
+      for (index = 0, _len = _ref2.length; index < _len; index++) {
+        question = _ref2[index];
+        questionSanitized = question.replace(/[^a-zA-Z0-9]/g, " ").toLowerCase().dasherize();
         _results.push(("        <div data-role='fieldcontain'>            <fieldset data-role='controlgroup' data-type='horizontal'>              <legend>" + question + "</legend>        ") + ((function() {
-          var _i, _len2, _ref2, _results2;
-          _ref2 = ["Correct", "Incorrect", "No response"];
+          var _i, _len2, _ref3, _results2;
+          _ref3 = this.answerOptions;
           _results2 = [];
-          for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
-            answer = _ref2[_i];
-            _results2.push("          <label for='" + questionName + "-" + answer + "'>" + answer + "</label>          <input type='radio' name='" + questionName + "' id='" + questionName + "-" + answer + "' value='" + answer + "' />          ");
+          for (_i = 0, _len2 = _ref3.length; _i < _len2; _i++) {
+            answer = _ref3[_i];
+            answerSanitized = answer.replace(/[^a-zA-Z0-9]/g, " ").toLowerCase().dasherize();
+            _results2.push("          <label for='" + questionSanitized + "-" + answerSanitized + "'>" + answer + "</label>          <input type='radio' data-question-index='" + index + "' name='" + questionSanitized + "' id='" + questionSanitized + "-" + answerSanitized + "' value='" + answer + "' />          ");
           }
           return _results2;
-        })()).join("") + "            </fieldset>        </div>        ");
+        }).call(this)).join("") + "            </fieldset>        </div>        ");
       }
       return _results;
     }).call(this)).join("") + "</form>";
@@ -640,14 +644,13 @@ UntimedSubtestLinked = (function(_super) {
     linkedPageName = this.linkedToPageId.underscore().titleize();
     this.content += "<div id='" + this.pageId + "-not-enough-progress-message' style='display:hidden'>Not enough progress was made on " + linkedPageName + " to show questions from " + (this.name()) + ". Continue by pressing Next.</div>";
     $("#" + this.pageId).live('pageshow', function(eventData) {
-      var attemptedOnLinkedPage, inputElement, _i, _len, _ref;
+      var attemptedOnLinkedPage, index, inputElement, _len, _ref;
       attemptedOnLinkedPage = $.assessment.result(_this.linkedToPageId).attempted;
-      console.log(attemptedOnLinkedPage);
       _this.numberInputFieldsShown = 0;
       _ref = $("#" + _this.pageId + " input[type='radio']");
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        inputElement = _ref[_i];
-        if (attemptedOnLinkedPage < _this.questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-") + 1)]) {
+      for (index = 0, _len = _ref.length; index < _len; index++) {
+        inputElement = _ref[index];
+        if (attemptedOnLinkedPage < _this.questionIndices[$(inputElement).attr("data-question-index")]) {
           $(inputElement).parents("div[data-role='fieldcontain']").hide();
         } else {
           $(inputElement).parents("div[data-role='fieldcontain']").show();
@@ -776,10 +779,18 @@ ToggleGridWithTimer = (function(_super) {
   __extends(ToggleGridWithTimer, _super);
 
   function ToggleGridWithTimer(options) {
-    var index, letter, result, selectEvent, _len, _ref,
+    var index, letter, result, selectEvent, _len, _ref, _ref2,
       _this = this;
-    this.letters = options.letters;
-    this.numberOfColumns = (options != null ? options.numberOfColumns : void 0) || 10;
+    this.letters = (_ref = options.items) != null ? _ref : options.letters;
+    if (options != null ? options.numberOfColumns : void 0) {
+      this.numberOfColumns = options.numberOfColumns;
+    } else {
+      if (this.letters.length > 80) {
+        this.numberOfColumns = 10;
+      } else {
+        this.numberOfColumns = 5;
+      }
+    }
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer({
@@ -790,28 +801,30 @@ ToggleGridWithTimer = (function(_super) {
       }
     });
     result = "<table><tr>";
-    _ref = this.letters;
-    for (index = 0, _len = _ref.length; index < _len; index++) {
-      letter = _ref[index];
-      result += "<td class='grid'><span class='grid-text' >" + letter + "</span></td>";
-      if ((index + 1) % 10 === 0) {
-        result += "<td class='toggle-row grid " + (!((index + 1) % 10 === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></td></tr><tr>";
+    _ref2 = this.letters;
+    for (index = 0, _len = _ref2.length; index < _len; index++) {
+      letter = _ref2[index];
+      result += "<td class='grid columns-" + this.numberOfColumns + "'><span class='grid-text' >" + letter + "</span></td>";
+      if ((index + 1) % this.numberOfColumns === 0) {
+        result += "<td class='toggle-row grid " + (!((index + 1) % this.numberOfColumns === 0) ? "toggle-row-portrait" : void 0) + "'><span class='grid-text '>*</span></td></tr><tr>";
       }
     }
     result += "</tr></table>";
     this.content = "      <div class='enumerator-help'>" + options.enumeratorHelp + "</div>      <div class='student-dialog'>" + options.studentDialog + "</div>      <div class='timer'>        <button>start</button>" + (this.timer.render()) + "      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <small>      <fieldset data-type='horizontal'>        <legend>Mode</legend>        <label for='correctIncorrectMode'>Correct/Incorrect</label><input id='correctIncorrectMode' name='mode' type='radio' value='correct-incorrect' checked='true'>        <label for='lastItemMode'>Last Item</label><input id='lastItemMode' name='mode' type='radio' value='last-item'>      </fieldset>      </small>      <div class='timer'>        <button>stop</button>" + (this.timer.render()) + "      </div>      <button>reset</button>      <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>      ";
     $("#" + this.pageId).live("pageshow", function(eventData) {
-      var fontSize, gridWidth, letterSpan, _i, _len2, _ref2;
+      var fontSize, gridWidth, letterSpan, safetyCounter, _i, _len2, _ref3;
       gridWidth = $("#" + _this.pageId + " .grid:first").width();
       fontSize = $("#" + _this.pageId + " .grid:first span").css('font-size');
       fontSize = fontSize.substr(0, fontSize.indexOf("px"));
-      _ref2 = $("#" + _this.pageId + " .grid span");
-      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
-        letterSpan = _ref2[_i];
+      _ref3 = $("#" + _this.pageId + " .grid span");
+      for (_i = 0, _len2 = _ref3.length; _i < _len2; _i++) {
+        letterSpan = _ref3[_i];
         letterSpan = $(letterSpan);
         letterSpan.css('font-size', "" + fontSize + "px");
-        while (letterSpan.width() > gridWidth) {
+        safetyCounter = 0;
+        while (letterSpan.width() > gridWidth && safetyCounter < 100) {
           letterSpan.css('font-size', "" + (fontSize--) + "px");
+          safetyCounter++;
         }
       }
       return $("#" + _this.pageId + " .grid span").css('font-size', "" + fontSize + "px");
@@ -831,14 +844,14 @@ ToggleGridWithTimer = (function(_super) {
       return $("#confirm-reset").hide();
     });
     $("#" + this.pageId + " .grid").live(selectEvent, function(eventData) {
-      var gridItem, index, lastAttemptedIndex, lastSelectedIndex, target, _len2, _len3, _ref2, _ref3;
+      var gridItem, index, lastAttemptedIndex, lastSelectedIndex, target, _len2, _len3, _ref3, _ref4;
       if (!_this.timer.started) return;
       target = $(eventData.currentTarget);
       if ($('input[name=mode]:checked').val() === "last-item") {
         if (target.hasClass("toggle-row")) return;
-        _ref2 = $("#" + _this.pageId + " .grid:not(.toggle-row)");
-        for (index = 0, _len2 = _ref2.length; index < _len2; index++) {
-          gridItem = _ref2[index];
+        _ref3 = $("#" + _this.pageId + " .grid:not(.toggle-row)");
+        for (index = 0, _len2 = _ref3.length; index < _len2; index++) {
+          gridItem = _ref3[index];
           if ($(gridItem).hasClass("selected")) lastSelectedIndex = index;
           if (gridItem === eventData.currentTarget) lastAttemptedIndex = index;
         }
@@ -846,9 +859,9 @@ ToggleGridWithTimer = (function(_super) {
         $("#" + _this.pageId + " .grid").removeClass('last-attempted');
         return target.toggleClass('last-attempted');
       } else {
-        _ref3 = $("#" + _this.pageId + " .grid:not(.toggle-row)");
-        for (index = 0, _len3 = _ref3.length; index < _len3; index++) {
-          gridItem = _ref3[index];
+        _ref4 = $("#" + _this.pageId + " .grid:not(.toggle-row)");
+        for (index = 0, _len3 = _ref4.length; index < _len3; index++) {
+          gridItem = _ref4[index];
           if ($(gridItem).hasClass("last-attempted")) lastAttemptedIndex = index;
           if (gridItem === eventData.currentTarget) lastSelectedIndex = index;
         }
@@ -857,12 +870,12 @@ ToggleGridWithTimer = (function(_super) {
       }
     });
     $("#" + this.pageId + " .grid.toggle-row").live(selectEvent, function(eventData) {
-      var gridItem, toggleRow, _i, _len2, _ref2, _results;
+      var gridItem, toggleRow, _i, _len2, _ref3, _results;
       toggleRow = $(eventData.currentTarget);
-      _ref2 = toggleRow.prevAll();
+      _ref3 = toggleRow.prevAll();
       _results = [];
-      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
-        gridItem = _ref2[_i];
+      for (_i = 0, _len2 = _ref3.length; _i < _len2; _i++) {
+        gridItem = _ref3[_i];
         gridItem = $(gridItem);
         if (gridItem.hasClass("toggle-row") && gridItem.css("display") !== "none") {
           break;

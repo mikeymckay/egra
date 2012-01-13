@@ -225,14 +225,15 @@ $('div.ui-footer button').live 'click', (event,ui) ->
     )
     $.mobile.changePage("#_infoPage")
 
-
 class StudentInformationPage extends AssessmentPage
   constructor: (options) ->
     super(options)
     @questions = options.questions ? options.radioButtons
+    @enumeratorHelp = options.enumeratorHelp
+    @studentDialog = options.studentDialog
     # Create some id friendly attributes
     for question in @questions
-      question.name = question.label.replace(/[^a-zA-Z0-9]/," ").toLowerCase().dasherize()
+      question.name = question.label.replace(/[^a-zA-Z0-9]/g," ").toLowerCase().dasherize()
       if question.options?
         question.options = for option in question.options
           {
@@ -252,6 +253,7 @@ class StudentInformationPage extends AssessmentPage
 
 StudentInformationPage.template = Handlebars.compile "
   <div class='enumerator-help'>{{enumeratorHelp}}</div>
+  <div class='student-dialog'>{{{studentDialog}}}</div>
   <form>
     {{#questions}}
       <fieldset data-name='{{name}}' data-type='{{orientation}}' data-role='controlgroup'>
@@ -268,7 +270,6 @@ StudentInformationPage.template = Handlebars.compile "
     {{/questions}}
   </form>
 "
-
 class SchoolPage extends AssessmentPage
   constructor: (options) ->
     super(options)
@@ -478,22 +479,24 @@ class ConsentPage extends TextPage
 class UntimedSubtest extends AssessmentPage
   constructor: (options) ->
     @questions = options.questions
+    @answerOptions = options.answerOptions ? ["Correct", "Incorrect", "No response"]
     super(options)
     @footerMessage = footerMessage
     @content = "
       <div class='enumerator-help'>#{options.enumeratorHelp}</div>
       <div class='student-dialog'>#{options.studentDialog}</div>
       <form>" + (for question,index in @questions
-        questionName = @pageId + "-question-" + index
+        questionSanitized = question.replace(/[^a-zA-Z0-9]/g," ").toLowerCase().dasherize()
         "
         <div data-role='fieldcontain'>
             <fieldset data-role='controlgroup' data-type='horizontal'>
               <legend>#{question}</legend>
         " +
-        (for answer in ["Correct", "Incorrect", "No response"]
+        (for answer in @answerOptions
+          answerSanitized = answer.replace(/[^a-zA-Z0-9]/g," ").toLowerCase().dasherize()
           "
-          <label for='#{questionName}-#{answer}'>#{answer}</label>
-          <input type='radio' name='#{questionName}' id='#{questionName}-#{answer}' value='#{answer}' />
+          <label for='#{questionSanitized}-#{answerSanitized}'>#{answer}</label>
+          <input type='radio' data-question-index='#{index}' name='#{questionSanitized}' id='#{questionSanitized}-#{answerSanitized}' value='#{answer}' />
           "
         ).join("") +
         "
@@ -530,10 +533,9 @@ class UntimedSubtestLinked extends UntimedSubtest
 
     $("##{@pageId}").live 'pageshow', (eventData) =>
       attemptedOnLinkedPage = $.assessment.result(@linkedToPageId).attempted
-      console.log attemptedOnLinkedPage
       @numberInputFieldsShown = 0
-      for inputElement in $("##{@pageId} input[type='radio']")
-        if attemptedOnLinkedPage < @questionIndices[inputElement.name.substr(inputElement.name.lastIndexOf("-")+1)]
+      for inputElement,index in $("##{@pageId} input[type='radio']")
+        if attemptedOnLinkedPage < @questionIndices[$(inputElement).attr("data-question-index")]
           $(inputElement).parents("div[data-role='fieldcontain']").hide()
         else
           $(inputElement).parents("div[data-role='fieldcontain']").show()
@@ -633,8 +635,15 @@ PhonemePage.deserialize = (pageObject) ->
 class ToggleGridWithTimer extends AssessmentPage
   constructor: (options) ->
     # TODO switch to use items instead of letters
-    @letters = options.letters
-    @numberOfColumns = options?.numberOfColumns || 10
+    @letters = options.items ? options.letters
+    if options?.numberOfColumns
+      @numberOfColumns = options.numberOfColumns
+    else
+      if @letters.length > 80
+        @numberOfColumns = 10
+      else
+        @numberOfColumns = 5
+
     @footerMessage = footerMessage
     super(options)
     @addTimer
@@ -645,9 +654,9 @@ class ToggleGridWithTimer extends AssessmentPage
 
     result = "<table><tr>"
     for letter,index in @letters
-      result += "<td class='grid'><span class='grid-text' >#{letter}</span></td>"
-      if ((index+1) % 10 == 0)
-        result += "<td class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % 10 == 0)}'><span class='grid-text '>*</span></td></tr><tr>"
+      result += "<td class='grid columns-#{@numberOfColumns}'><span class='grid-text' >#{letter}</span></td>"
+      if ((index+1) % @numberOfColumns == 0)
+        result += "<td class='toggle-row grid #{"toggle-row-portrait" unless ((index+1) % @numberOfColumns == 0)}'><span class='grid-text '>*</span></td></tr><tr>"
     result += "</tr></table>"
 
     @content =  "
@@ -686,8 +695,10 @@ class ToggleGridWithTimer extends AssessmentPage
       for letterSpan in $("##{@pageId} .grid span")
         letterSpan = $(letterSpan)
         letterSpan.css('font-size', "#{fontSize}px")
-        while letterSpan.width() > gridWidth
+        safetyCounter = 0
+        while letterSpan.width() > gridWidth and safetyCounter < 100
           letterSpan.css('font-size', "#{fontSize--}px")
+          safetyCounter++
       $("##{@pageId} .grid span").css('font-size', "#{fontSize}px")
 
     # Use the right event type for touchscreens vs mouse

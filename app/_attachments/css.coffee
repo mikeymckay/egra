@@ -107,9 +107,9 @@ $("head").append "
     .grid{
       float: left;
       text-align: center;
-      width: 50px;
-      height: 50px;
-      margin: 3px;
+      width: 70px;
+      height: 70px;
+      margin: 5px;
       border: 3px outset gray;
       background-color: lightgray;
       color: lightgray;
@@ -118,6 +118,10 @@ $("head").append "
       -moz-user-select: none;
       -o-user-select: none;
       user-select: none;
+    }
+
+    .grid.columns-5{
+      width: 150px;
     }
 
 

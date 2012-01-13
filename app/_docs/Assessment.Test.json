@@ -1,8 +1,10 @@
 {
   "name": "Test",
   "urlPathsForPages": [
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.LetterSoundKnowledge",
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.Results"
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.OralPassageReadingTimed",
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.ReadingComprehensionTimed",
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.OralPassageReadingUntimed",
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.ReadingComprehensionUntimed"
   ],
   "collection" : "assessment",
   "couchapp": {
