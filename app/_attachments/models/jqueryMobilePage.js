@@ -558,6 +558,7 @@ ConsentPage = (function(_super) {
   }
 
   ConsentPage.prototype.validate = function() {
+    console.log($("div#" + this.pageId + " input#consent-yes:checked"));
     if ($("div#" + this.pageId + " input#consent-yes:checked").length > 0) {
       return true;
     } else if ($("div#" + this.pageId + " input#consent-no:checked").length > 0) {
@@ -1068,8 +1069,31 @@ Interview = (function(_super) {
     this.content = Interview.template(this);
   }
 
+  Interview.prototype.validate = function() {
+    var fieldset, name, names, question, _i, _len;
+    names = (function() {
+      var _i, _len, _ref, _results;
+      _ref = $("div#" + this.pageId + " form fieldset");
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        fieldset = _ref[_i];
+        _results.push($(fieldset).attr("data-name"));
+      }
+      return _results;
+    }).call(this);
+    for (_i = 0, _len = names.length; _i < _len; _i++) {
+      name = names[_i];
+      question = $("input[name=" + name + "]");
+      if (question.attr("type") === 'text' && question.val() !== "") continue;
+      if (!question.is(":checked")) {
+        return $("input[name=" + name + "]").first().parent().find("legend").html() + " is not complete";
+      }
+    }
+    return true;
+  };
+
   return Interview;
 
 })(AssessmentPage);
 
-Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{text}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{text}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");
+Interview.template = Handlebars.compile("  <form>    {{#questions}}      <fieldset data-name='{{name}}' {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>        <legend>{{label}}</legend>        {{#options}}          <label for='{{id}}'>{{text}}</label>          <input type='{{#if ../multiple}}checkbox{{else}}radio{{/if}}' name='{{../name}}' value='{{text}}' id='{{id}}'></input>        {{/options}}      </fieldset>    {{/questions}}  </form>");

@@ -467,6 +467,7 @@ class ConsentPage extends TextPage
       
 
   validate: ->
+    console.log $("div##{@pageId} input#consent-yes:checked")
     if $("div##{@pageId} input#consent-yes:checked").length > 0
       return true
     else if $("div##{@pageId} input#consent-no:checked").length > 0
@@ -881,11 +882,20 @@ class Interview extends AssessmentPage
         question.onChange = Handlebars.compile(question.onChange)(question)
     @content = Interview.template(this)
 
+  validate: ->
+    names = ($(fieldset).attr("data-name") for fieldset in $("div##{@pageId} form fieldset"))
+    for name in names
+      question = $("input[name=#{name}]")
+      continue if question.attr("type") == 'text' and question.val() != ""
+      unless question.is(":checked")
+        return $("input[name=#{name}]").first().parent().find("legend").html() + " is not complete"
+    return true
+
 #TODO add support for onchange
 Interview.template = Handlebars.compile "
   <form>
     {{#questions}}
-      <fieldset {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>
+      <fieldset data-name='{{name}}' {{#if onChange}}onChange=\"{{{onChange}}}\"{{/if}}   data-type='{{type}}' data-role='controlgroup'>
         <legend>{{label}}</legend>
         {{#options}}
           <label for='{{id}}'>{{text}}</label>
