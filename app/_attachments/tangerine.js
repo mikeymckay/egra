@@ -62,8 +62,15 @@ Router = (function(_super) {
 
   Router.prototype.manage = function() {
     return this.verify_logged_in({
-      success: function() {
+      success: function(session) {
         var assessmentCollection;
+        console.log(session.userCtx.roles);
+        if (!_.include(session.userCtx.roles, "_admin")) {
+          if (!_.include(session.userCtx.roles, "admin")) {
+            Tangerine.router.navigate("assessments", true);
+          }
+          return;
+        }
         assessmentCollection = new AssessmentCollection();
         return assessmentCollection.fetch({
           success: function() {
@@ -131,7 +138,7 @@ Router = (function(_super) {
           Tangerine.router.navigate("login", true);
           return;
         }
-        return options.success();
+        return options.success(session);
       }
     });
   };

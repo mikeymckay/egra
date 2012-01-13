@@ -463,8 +463,11 @@ class ResultsPage extends AssessmentPage
 
       $('button:contains(Save Results)').live "click", ->
         $.assessment.saveResults (results) =>
-          $("div.resultsMessage").html("Results Saved")
+          $("div.resultsMessage").html("Results Saved<br/><button>Start another assessment</button>")
           $("button:contains(Save Results)").hide()
+
+      $('button:contains(Start another assessment)').live "click", ->
+        location.reload(true)
 
 
 class TextPage extends AssessmentPage
@@ -697,7 +700,7 @@ class ToggleGridWithTimer extends AssessmentPage
       <div class='timer'>
         <button>stop</button>#{@timer.render()}
       </div>
-      <button>reset</button>
+      <button>reset timer</button>
       <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>
       "
     
@@ -719,7 +722,7 @@ class ToggleGridWithTimer extends AssessmentPage
     # Use the right event type for touchscreens vs mouse
     selectEvent = if ('ontouchstart' of document.documentElement) then "touchstart" else "click"
 
-    $("##{@pageId} button:contains(reset)").live selectEvent, (eventData) =>
+    $("##{@pageId} button:contains(reset timer)").live selectEvent, (eventData) =>
       $("#confirm-reset").stop(true,true).show().fadeOut(5000)
 
     $("##{@pageId} button:contains(No)").live selectEvent, (eventData) =>

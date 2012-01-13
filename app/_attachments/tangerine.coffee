@@ -33,7 +33,11 @@ class Router extends Backbone.Router
 
   manage: ->
     @verify_logged_in
-      success: ->
+      success: (session) ->
+        console.log session.userCtx.roles
+        unless _.include(session.userCtx.roles, "_admin")
+          Tangerine.router.navigate("assessments", true) unless _.include(session.userCtx.roles, "admin")
+          return
         assessmentCollection = new AssessmentCollection()
         assessmentCollection.fetch
           success: ->
@@ -83,7 +87,7 @@ class Router extends Backbone.Router
         unless session.userCtx.name
           Tangerine.router.navigate("login", true)
           return
-        options.success()
+        options.success(session)
 
   print: (id) ->
     Assessment.load id, (assessment) ->

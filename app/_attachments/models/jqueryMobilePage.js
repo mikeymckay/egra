@@ -521,12 +521,15 @@ ResultsPage = (function(_super) {
         type: 'pie',
         sliceColors: ['black', '#F7C942', 'orangered']
       });
-      return $('button:contains(Save Results)').live("click", function() {
+      $('button:contains(Save Results)').live("click", function() {
         var _this = this;
         return $.assessment.saveResults(function(results) {
-          $("div.resultsMessage").html("Results Saved");
+          $("div.resultsMessage").html("Results Saved<br/><button>Start another assessment</button>");
           return $("button:contains(Save Results)").hide();
         });
+      });
+      return $('button:contains(Start another assessment)').live("click", function() {
+        return location.reload(true);
       });
     });
   };
@@ -819,7 +822,7 @@ ToggleGridWithTimer = (function(_super) {
       }
     }
     result += "</tr></table>";
-    this.content = "      <div class='enumerator-help'>" + options.enumeratorHelp + "</div>      <div class='student-dialog'>" + options.studentDialog + "</div>      <div class='timer'>        <button>start</button>" + (this.timer.render()) + "      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <small>      <fieldset data-type='horizontal'>        <legend>Mode</legend>        <label for='correctIncorrectMode'>Correct/Incorrect</label><input id='correctIncorrectMode' name='mode' type='radio' value='correct-incorrect' checked='true'>        <label for='lastItemMode'>Last Item</label><input id='lastItemMode' name='mode' type='radio' value='last-item'>      </fieldset>      </small>      <div class='timer'>        <button>stop</button>" + (this.timer.render()) + "      </div>      <button>reset</button>      <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>      ";
+    this.content = "      <div class='enumerator-help'>" + options.enumeratorHelp + "</div>      <div class='student-dialog'>" + options.studentDialog + "</div>      <div class='timer'>        <button>start</button>" + (this.timer.render()) + "      </div>      <div class='toggle-grid-with-timer' data-role='content'>	        <form>          <div class='grid-width'>            " + result + "          </div>        </form>      </div>      <small>      <fieldset data-type='horizontal'>        <legend>Mode</legend>        <label for='correctIncorrectMode'>Correct/Incorrect</label><input id='correctIncorrectMode' name='mode' type='radio' value='correct-incorrect' checked='true'>        <label for='lastItemMode'>Last Item</label><input id='lastItemMode' name='mode' type='radio' value='last-item'>      </fieldset>      </small>      <div class='timer'>        <button>stop</button>" + (this.timer.render()) + "      </div>      <button>reset timer</button>      <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>      ";
     $("#" + this.pageId).live("pageshow", function(eventData) {
       var fontSize, gridWidth, letterSpan, safetyCounter, _i, _len2, _ref3;
       gridWidth = $("#" + _this.pageId + " .grid:first").width();
@@ -839,7 +842,7 @@ ToggleGridWithTimer = (function(_super) {
       return $("#" + _this.pageId + " .grid span").css('font-size', "" + fontSize + "px");
     });
     selectEvent = 'ontouchstart' in document.documentElement ? "touchstart" : "click";
-    $("#" + this.pageId + " button:contains(reset)").live(selectEvent, function(eventData) {
+    $("#" + this.pageId + " button:contains(reset timer)").live(selectEvent, function(eventData) {
       return $("#confirm-reset").stop(true, true).show().fadeOut(5000);
     });
     $("#" + this.pageId + " button:contains(No)").live(selectEvent, function(eventData) {
