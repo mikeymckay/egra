@@ -7,12 +7,16 @@ class Result extends Backbone.Model
 
   subtestResults: ->
     subtestTypesToSkip = [
-      "ConsentPage"
+      "ConsentPage",
+      "TextPage"
     ]
     resultCollection = {}
     _.each @toJSON(),  (result, subtestName) =>
       return if _.contains(subtestTypesToSkip, subtestName)
+      console.log  result.subtestType
+      console.log  @summaryData(subtestName,result)
       resultCollection = _.extend(resultCollection, @summaryData(subtestName,result))
+    console.log resultCollection
     return resultCollection
 
   summaryData: (subtestName,result) ->
@@ -23,7 +27,7 @@ class Result extends Backbone.Model
         when "enumerator"
           Enumerator: result
         else
-          JSON.stringify(result)
+          {}
     return switch result.subtestType
       when "DateTimePage"
         Student: result["student-id"]
@@ -33,7 +37,7 @@ class Result extends Backbone.Model
       when "SchoolPage"
         School: result.name
       when "StudentInformationPage"
-        Gender: result.gender
+        Gender: result.gender ? result["m--gender"]
       when "ToggleGridWithTimer"
         returnValue = {}
         returnValue[subtestName] = Result.GridTemplate(result)

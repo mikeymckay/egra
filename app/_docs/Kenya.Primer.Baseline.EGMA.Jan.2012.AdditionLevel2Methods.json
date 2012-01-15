@@ -4,7 +4,7 @@
   "pageId": "AdditionLevel2Methods",
   "questions": [
     {
-      "label": "To solve the problems, indicate the method the child used (tick all that apply):",
+      "label": "Indicate the method the child used to solve the problems (tick all that apply):",
       "name": "method-used-addition-level-2",
       "type": "vertical",
       "multiple": true,

@@ -83,10 +83,6 @@ $("head").append "
       margin-right:20px;
     }
 
-    span.timer-seconds{
-      font-size: large;
-    }
-
     .controls.flash{
       color: black;
       background-color: #{red};
@@ -99,6 +95,16 @@ $("head").append "
     .toggle-grid-with-timer td.flash {
       border-color: #{red};
     }
+
+    button.timer-button{
+      height:100px;
+      width:100px;
+    }
+
+    .timer-seconds{
+      font-size:200%;
+    }
+
 
     #InitialSound .ui-controlgroup-label{
       font-size: x-large;
@@ -149,6 +155,9 @@ $("head").append "
       border-top-color: red;
       border-bottom-color: red;
       border-style: solid;
+    }
+    .grid-text{
+      white-space: nowrap;
     }
 
     @media screen and (orientation:landscape) {

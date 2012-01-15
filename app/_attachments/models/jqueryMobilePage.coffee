@@ -264,8 +264,9 @@ StudentInformationPage.template = Handlebars.compile "
   <div class='student-dialog'>{{{studentDialog}}}</div>
   {{#if includeTimer}}
     <div class='timer'>
-      <button>start</button>
-      <span style='font-size:200%' class='timer-seconds'></span>
+      <button class='timer-button'>start</button>
+      <button class='timer-button'>stop</button>
+      <span class='timer-seconds'></span>
     </div>
 
   {{/if}}
@@ -681,7 +682,7 @@ class ToggleGridWithTimer extends AssessmentPage
       <div class='enumerator-help'>#{options.enumeratorHelp}</div>
       <div class='student-dialog'>#{options.studentDialog}</div>
       <div class='timer'>
-        <button>start</button>#{@timer.render()}
+        <button class='timer-button'>start</button><span class='timer-seconds'></span>
       </div>
       <div class='toggle-grid-with-timer' data-role='content'>	
         <form>
@@ -698,7 +699,7 @@ class ToggleGridWithTimer extends AssessmentPage
       </fieldset>
       </small>
       <div class='timer'>
-        <button>stop</button>#{@timer.render()}
+        <button class='timer-button'>stop</button><span class='timer-seconds'></span>
       </div>
       <button>reset timer</button>
       <span id='confirm-reset' style='display:none;padding:5px;background-color:red;border:solid 1px'>Are you sure?<button>Yes, reset</button><button>No</button></span>

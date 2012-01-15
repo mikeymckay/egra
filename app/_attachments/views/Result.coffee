@@ -6,7 +6,7 @@ class ResultView extends Backbone.View
       <thead>
         <tr>
           <th></th>
-          <th>Subtest</th>
+          <th>Category</th>
           <th>Result</th>
         </tr>
       </thead>

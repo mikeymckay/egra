@@ -14,7 +14,7 @@ ResultView = (function(_super) {
 
   ResultView.prototype.initialize = function() {};
 
-  ResultView.prototype.template = Handlebars.compile("    <table class='tablesorter'>      <thead>        <tr>          <th></th>          <th>Subtest</th>          <th>Result</th>        </tr>      </thead>      <tbody>        {{{tbody}}}      </tbody>    </table>    <script>    </script>  ");
+  ResultView.prototype.template = Handlebars.compile("    <table class='tablesorter'>      <thead>        <tr>          <th></th>          <th>Category</th>          <th>Result</th>        </tr>      </thead>      <tbody>        {{{tbody}}}      </tbody>    </table>    <script>    </script>  ");
 
   ResultView.prototype.el = $('#content');
 

@@ -26,17 +26,20 @@ Result = (function(_super) {
   Result.prototype.subtestResults = function() {
     var resultCollection, subtestTypesToSkip,
       _this = this;
-    subtestTypesToSkip = ["ConsentPage"];
+    subtestTypesToSkip = ["ConsentPage", "TextPage"];
     resultCollection = {};
     _.each(this.toJSON(), function(result, subtestName) {
       if (_.contains(subtestTypesToSkip, subtestName)) return;
+      console.log(result.subtestType);
+      console.log(_this.summaryData(subtestName, result));
       return resultCollection = _.extend(resultCollection, _this.summaryData(subtestName, result));
     });
+    console.log(resultCollection);
     return resultCollection;
   };
 
   Result.prototype.summaryData = function(subtestName, result) {
-    var returnValue;
+    var returnValue, _ref;
     if (result.subtestType == null) {
       switch (subtestName) {
         case "timestamp":
@@ -48,7 +51,7 @@ Result = (function(_super) {
             Enumerator: result
           };
         default:
-          return JSON.stringify(result);
+          return {};
       }
     }
     switch (result.subtestType) {
@@ -69,7 +72,7 @@ Result = (function(_super) {
         };
       case "StudentInformationPage":
         return {
-          Gender: result.gender
+          Gender: (_ref = result.gender) != null ? _ref : result["m--gender"]
         };
       case "ToggleGridWithTimer":
         returnValue = {};
