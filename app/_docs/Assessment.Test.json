@@ -1,7 +1,7 @@
 {
   "name": "Test",
   "urlPathsForPages": [
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.LetterSoundKnowledge"
+  "Kenya.Primer.Baseline.EGMA.Jan.2012.NumberIdentification"
   ],
   "collection" : "assessment",
   "couchapp": {

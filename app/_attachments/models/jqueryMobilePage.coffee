@@ -667,7 +667,11 @@ class ToggleGridWithTimer extends AssessmentPage
       else
         @numberOfColumns = 5
 
-    @includeAutostop = options.includeAutostop || true
+    if options.includeAutostop?
+      @includeAutostop = options.includeAutostop
+    else
+      @includeAutostop = true
+
     @autostopAmount = options.autostopAmount || @letters.length/10
 
     @footerMessage = footerMessage
@@ -783,6 +787,7 @@ class ToggleGridWithTimer extends AssessmentPage
     # Check if the first 10% are all wrong, if so auto_stop
     items = $("##{@pageId} .grid:not(.toggle-row)")
     @autoStopItems = items[0..@autostopAmount-1]
+    console.log @includeAutostop
     if @includeAutostop and _.select(@autoStopItems, (item) -> $(item).hasClass("selected")).length == @autostopAmount
       @lastResult.auto_stop = true
       # Only set do this stuff the first time
