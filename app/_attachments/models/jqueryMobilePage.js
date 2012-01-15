@@ -4,6 +4,10 @@ var AssessmentPage, ConsentPage, DateTimePage, Dictation, Interview, JQueryMobil
 
 footerMessage = "Good effort, let's go onto the next page";
 
+$('form').live('submit', function(event, ui) {
+  return false;
+});
+
 JQueryMobilePage = (function() {
 
   function JQueryMobilePage(options) {

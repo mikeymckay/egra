@@ -1,5 +1,8 @@
 footerMessage = "Good effort, let's go onto the next page"
 
+# This disables the "Go" button from submitting the form on Android keyboards
+$('form').live 'submit', (event,ui) ->
+  return false
 
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
