@@ -926,7 +926,6 @@ ToggleGridWithTimer = (function(_super) {
     this.lastResult = {};
     items = $("#" + this.pageId + " .grid:not(.toggle-row)");
     this.autoStopItems = items.slice(0, (this.autostopAmount - 1) + 1 || 9e9);
-    console.log(this.includeAutostop);
     if (this.includeAutostop && _.select(this.autoStopItems, function(item) {
       return $(item).hasClass("selected");
     }).length === this.autostopAmount) {

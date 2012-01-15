@@ -127,7 +127,7 @@ Assessment = (function(_super) {
     _ref = this.pages;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       page = _ref[_i];
-      if (page.pageId = pageId) return page.results();
+      if (page.pageId === pageId) return page.results();
     }
   };
 

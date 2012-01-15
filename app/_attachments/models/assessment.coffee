@@ -73,7 +73,7 @@ class Assessment extends Backbone.Model
 
   result: (pageId) ->
     for page in @pages
-      return page.results() if page.pageId = pageId
+      return page.results() if page.pageId == pageId
 
   results: ->
     results = {}
