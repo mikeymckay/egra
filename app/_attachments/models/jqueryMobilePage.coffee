@@ -1,5 +1,6 @@
 footerMessage = "Good effort, let's go onto the next page"
 
+
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
   constructor: (options) ->
