@@ -667,6 +667,9 @@ class ToggleGridWithTimer extends AssessmentPage
       else
         @numberOfColumns = 5
 
+    @includeAutostop = options.includeAutostop || true
+    @autostopAmount = options.autostopAmount || @letters.length/10
+
     @footerMessage = footerMessage
     super(options)
     @addTimer
@@ -779,13 +782,12 @@ class ToggleGridWithTimer extends AssessmentPage
 
     # Check if the first 10% are all wrong, if so auto_stop
     items = $("##{@pageId} .grid:not(.toggle-row)")
-    tenPercentOfItems = items.length/10
-    firstTenPercent = items[0..tenPercentOfItems-1]
-    if _.select(firstTenPercent, (item) -> $(item).hasClass("selected")).length == tenPercentOfItems
+    @autoStopItems = items[0..@autostopAmount-1]
+    if @includeAutostop and _.select(@autoStopItems, (item) -> $(item).hasClass("selected")).length == @autostopAmount
       @lastResult.auto_stop = true
       # Only set do this stuff the first time
       unless @autostop
-        $(_.last(firstTenPercent)).toggleClass("last-attempted", true)
+        $(_.last(@autoStopItems)).toggleClass("last-attempted", true)
         @timer.stop()
         $.assessment.flash()
         @autostop = true
@@ -805,7 +807,7 @@ class ToggleGridWithTimer extends AssessmentPage
       if gridItem.hasClass("last-attempted")
         @lastResult.attempted = index + 1
         if @autostop
-          $(".validation-message").html("First #{tenPercentOfItems} incorrect - autostop.")
+          $(".validation-message").html("First #{@autostopAmount} incorrect - autostop.")
         else
           $(".validation-message ").html("")
         return @lastResult

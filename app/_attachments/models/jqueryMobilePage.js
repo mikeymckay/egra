@@ -807,6 +807,8 @@ ToggleGridWithTimer = (function(_super) {
         this.numberOfColumns = 5;
       }
     }
+    this.includeAutostop = options.includeAutostop || true;
+    this.autostopAmount = options.autostopAmount || this.letters.length / 10;
     this.footerMessage = footerMessage;
     ToggleGridWithTimer.__super__.constructor.call(this, options);
     this.addTimer({
@@ -915,18 +917,17 @@ ToggleGridWithTimer = (function(_super) {
   }
 
   ToggleGridWithTimer.prototype.results = function() {
-    var firstTenPercent, gridItem, index, items, tenPercentOfItems, _len, _len2, _ref, _ref2;
+    var gridItem, index, items, _len, _len2, _ref, _ref2;
     if (this.assessment.currentPage.pageId !== this.pageId) return this.lastResult;
     this.lastResult = {};
     items = $("#" + this.pageId + " .grid:not(.toggle-row)");
-    tenPercentOfItems = items.length / 10;
-    firstTenPercent = items.slice(0, (tenPercentOfItems - 1) + 1 || 9e9);
-    if (_.select(firstTenPercent, function(item) {
+    this.autoStopItems = items.slice(0, (this.autostopAmount - 1) + 1 || 9e9);
+    if (this.includeAutostop && _.select(this.autoStopItems, function(item) {
       return $(item).hasClass("selected");
-    }).length === tenPercentOfItems) {
+    }).length === this.autostopAmount) {
       this.lastResult.auto_stop = true;
       if (!this.autostop) {
-        $(_.last(firstTenPercent)).toggleClass("last-attempted", true);
+        $(_.last(this.autoStopItems)).toggleClass("last-attempted", true);
         this.timer.stop();
         $.assessment.flash();
         this.autostop = true;
@@ -952,7 +953,7 @@ ToggleGridWithTimer = (function(_super) {
       if (gridItem.hasClass("last-attempted")) {
         this.lastResult.attempted = index + 1;
         if (this.autostop) {
-          $(".validation-message").html("First " + tenPercentOfItems + " incorrect - autostop.");
+          $(".validation-message").html("First " + this.autostopAmount + " incorrect - autostop.");
         } else {
           $(".validation-message ").html("");
         }
