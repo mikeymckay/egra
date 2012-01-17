@@ -1,8 +1,8 @@
 {
   "name": "Test",
   "urlPathsForPages": [
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.OralPassageReadingTimed",
-    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.ReadingComprehensionTimed"
+    "Kenya.Primer.Baseline.English.EGRA.Jan.2012.OralPassageReadingTimed"
+    
   ],
   "collection" : "assessment",
   "couchapp": {
