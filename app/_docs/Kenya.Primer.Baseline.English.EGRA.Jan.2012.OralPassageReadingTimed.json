@@ -7,6 +7,8 @@
 
   "studentDialog": "Here is a short story. I want you to read it aloud, quickly but carefully. When you have finished, I will ask you some questions about what you have read. Do you understand what you are to do? When I say “begin,” read the story as best as you can.  I will keep quiet & listen to you, unless you need help. Ready? Begin.",
 
+  "autostopAmount" : 13,
+
   "letters": [
 "One","day,","Sara","lost","her","sweater.","She","was","worried.","It","was","very","cold.","She","looked","in","her","desk","and","on","her","seat.","The","sweater","was","not","there.","She","ran","to","the","playground.","She","looked","under","the","big","tree.","It","was","not","there.","She","told","her","teacher","she","had","lost","her","sweater.","The","teacher","pointed","to","Sara’s","neck.","Sara","laughed."
   ],
