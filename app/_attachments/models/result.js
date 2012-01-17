@@ -30,11 +30,8 @@ Result = (function(_super) {
     resultCollection = {};
     _.each(this.toJSON(), function(result, subtestName) {
       if (_.contains(subtestTypesToSkip, subtestName)) return;
-      console.log(result.subtestType);
-      console.log(_this.summaryData(subtestName, result));
       return resultCollection = _.extend(resultCollection, _this.summaryData(subtestName, result));
     });
-    console.log(resultCollection);
     return resultCollection;
   };
 
@@ -53,6 +50,11 @@ Result = (function(_super) {
         default:
           return {};
       }
+    }
+    if (result.skipped) {
+      returnValue = {};
+      returnValue[subtestName] = "Skipped";
+      return returnValue;
     }
     switch (result.subtestType) {
       case "DateTimePage":

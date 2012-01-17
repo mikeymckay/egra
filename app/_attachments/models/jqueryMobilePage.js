@@ -8,11 +8,21 @@ $('form').live('submit', function(event, ui) {
   return false;
 });
 
+$('button:contains(Skip assessment)').live('click', function(event, ui) {
+  var page;
+  page = $.assessment.currentPage;
+  page.nextPage.render();
+  return page.lastResult = {
+    skipped: true
+  };
+});
+
 JQueryMobilePage = (function() {
 
   function JQueryMobilePage(options) {
     this.pageId = (options != null ? options.pageId : void 0) || "";
     this.pageType = (options != null ? options.pageType : void 0) || this.constructor.toString().match(/function +(.*?)\(/)[1];
+    this.allowSkip = ((options != null ? options.allowSkip : void 0) != null) && options.allowSkip;
   }
 
   JQueryMobilePage.prototype.render = function() {
@@ -209,7 +219,7 @@ JQueryMobilePage.loadFromCouchDB = function(urlPath, callback) {
   }, callback);
 };
 
-JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <div class='validation-message'></div>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->");
+JQueryMobilePage.template = Handlebars.compile("<div data-role='page' id='{{{pageId}}'>  <div data-role='header'>    <h1>{{name}}</h1>  </div><!-- /header -->  <div data-role='content'>	    {{#if allowSkip}}      <button>Skip assessment</button>    {{/if}}    {{{controls}}}    {{{content}}}  </div><!-- /content -->  <div data-role='footer'>    <div class='validation-message'></div>    {{footerMessage}}    <button href='\#{{nextPage}}'>Next</button>  </div><!-- /footer --></div><!-- /page -->");
 
 AssessmentPage = (function(_super) {
 

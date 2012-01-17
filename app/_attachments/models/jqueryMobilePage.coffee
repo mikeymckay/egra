@@ -4,11 +4,17 @@ footerMessage = "Good effort, let's go onto the next page"
 $('form').live 'submit', (event,ui) ->
   return false
 
+$('button:contains(Skip assessment)').live 'click', (event,ui) ->
+  page = $.assessment.currentPage
+  page.nextPage.render()
+  page.lastResult = {skipped: true}
+
 class JQueryMobilePage
   # TODO convert all subclassed classes to use the options constructor, get rid of deserialize, load, etc.
   constructor: (options) ->
     @pageId = options?.pageId || ""
     @pageType = options?.pageType || this.constructor.toString().match(/function +(.*?)\(/)[1]
+    @allowSkip = options?.allowSkip? && options.allowSkip
 
   render: ->
     @assessment.currentPage = this
@@ -158,6 +164,9 @@ JQueryMobilePage.template = Handlebars.compile "
     <h1>{{name}}</h1>
   </div><!-- /header -->
   <div data-role='content'>	
+    {{#if allowSkip}}
+      <button>Skip assessment</button>
+    {{/if}}
     {{{controls}}}
     {{{content}}}
   </div><!-- /content -->

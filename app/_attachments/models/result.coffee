@@ -13,10 +13,7 @@ class Result extends Backbone.Model
     resultCollection = {}
     _.each @toJSON(),  (result, subtestName) =>
       return if _.contains(subtestTypesToSkip, subtestName)
-      console.log  result.subtestType
-      console.log  @summaryData(subtestName,result)
       resultCollection = _.extend(resultCollection, @summaryData(subtestName,result))
-    console.log resultCollection
     return resultCollection
 
   summaryData: (subtestName,result) ->
@@ -28,6 +25,10 @@ class Result extends Backbone.Model
           Enumerator: result
         else
           {}
+    if result.skipped
+      returnValue = {}
+      returnValue[subtestName] = "Skipped"
+      return returnValue
     return switch result.subtestType
       when "DateTimePage"
         Student: result["student-id"]
