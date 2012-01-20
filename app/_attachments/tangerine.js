@@ -14,6 +14,8 @@ Router = (function(_super) {
   Router.prototype.routes = {
     "assessment/:id": "assessment",
     "result/:database_name/:id": "result",
+    "results/tabular/:database_name": "tabular_results",
+    "results/tabular/:database_name/*options": "tabular_results",
     "results/:database_name": "results",
     "print/:id": "print",
     "student_printout/:id": "student_printout",
@@ -43,6 +45,39 @@ Router = (function(_super) {
     });
   };
 
+  Router.prototype.tabular_results = function(database_name) {
+    return this.verify_logged_in({
+      success: function() {
+        var limit, view;
+        view = "reports/fields";
+        limit = 10000000;
+        $("#content").html("Loading maximum of " + limit + " items from view: " + view + " from " + database_name);
+        return $.couch.db(database_name).view(view, {
+          reduce: true,
+          group: true,
+          success: function(result) {
+            var uniqueFields;
+            uniqueFields = _.pluck(result.rows, "key");
+            return $.couch.db(database_name).view(view, {
+              reduce: false,
+              limit: limit,
+              success: function(tableResults) {
+                var options;
+                if (Tangerine.resultsView == null) {
+                  Tangerine.resultsView = new ResultsView();
+                }
+                options = jQuery.deparam.querystring(jQuery.param.fragment());
+                Tangerine.resultsView.uniqueFields = uniqueFields;
+                Tangerine.resultsView.tableResults = tableResults;
+                return Tangerine.resultsView.renderTable(options);
+              }
+            });
+          }
+        });
+      }
+    });
+  };
+
   Router.prototype.result = function(database_name, id) {
     return this.verify_logged_in({
       success: function() {
@@ -64,7 +99,6 @@ Router = (function(_super) {
     return this.verify_logged_in({
       success: function(session) {
         var assessmentCollection;
-        console.log(session.userCtx.roles);
         if (!_.include(session.userCtx.roles, "_admin")) {
           if (!_.include(session.userCtx.roles, "admin")) {
             Tangerine.router.navigate("assessments", true);

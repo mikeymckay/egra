@@ -26,13 +26,14 @@ Utils.createResultsDatabase = function(databaseName) {
 };
 
 Utils.createViews = function(databaseName) {
-  $('#message').append("<br/>Creating views for [" + databaseName + "]");
-  return $.couch.db(databaseName).saveDoc({
+  var designDocument;
+  designDocument = {
     "_id": "_design/reports",
     "language": "javascript",
     "views": {
       "fields": {
-        "map": MapReduce.mapFields.toString()
+        "map": MapReduce.mapFields.toString(),
+        "reduce": MapReduce.reduceFields.toString()
       },
       "byEnumerator": {
         "map": MapReduce.mapByEnumerator.toString()
@@ -48,6 +49,23 @@ Utils.createViews = function(databaseName) {
         "map": MapReduce.mapReplicationLog.toString()
       }
     }
+  };
+  return $.couch.db(databaseName).openDoc("_design/reports", {
+    success: function(doc) {
+      designDocument._rev = doc._rev;
+      return $.couch.db(databaseName).saveDoc(designDocument, {
+        success: function() {
+          return $('#message').append("<br/>Views updated for [" + databaseName + "]");
+        }
+      });
+    },
+    error: function() {
+      return $.couch.db(databaseName).saveDoc(designDocument({
+        success: function() {
+          return $('#message').append("<br/>Views created for [" + databaseName + "]");
+        }
+      }));
+    }
   });
 };
 
@@ -61,13 +79,13 @@ MapReduce = (function() {
 
 MapReduce.mapFields = function(doc, req) {
   var concatNodes;
-  concatNodes = function(parent, o) {
-    var index, key, value, _len, _results, _results2;
-    if (o instanceof Array) {
+  concatNodes = function(parent, object) {
+    var index, key, prefix, value, _len, _results, _results2;
+    if (object instanceof Array) {
       _results = [];
-      for (index = 0, _len = o.length; index < _len; index++) {
-        value = o[index];
-        if (typeof o !== "string") {
+      for (index = 0, _len = object.length; index < _len; index++) {
+        value = object[index];
+        if (typeof object !== "string") {
           _results.push(concatNodes(parent + "." + index, value));
         } else {
           _results.push(void 0);
@@ -75,23 +93,36 @@ MapReduce.mapFields = function(doc, req) {
       }
       return _results;
     } else {
-      if (typeof o === "string") {
+      if (typeof object === "boolean") {
         return emit(parent, {
           id: doc._id,
           fieldname: parent,
-          result: o
+          result: object ? "true" : "false"
+        });
+      } else if (typeof object === "string" || typeof object === "number") {
+        return emit(parent, {
+          id: doc._id,
+          fieldname: parent,
+          result: object
         });
       } else {
         _results2 = [];
-        for (key in o) {
-          value = o[key];
-          _results2.push(concatNodes(parent + "." + key, value));
+        for (key in object) {
+          value = object[key];
+          prefix = (parent === "" ? key : parent + "." + key);
+          _results2.push(concatNodes(prefix, value));
         }
         return _results2;
       }
     }
   };
-  return concatNodes("", doc);
+  if (!((doc.type != null) && doc.type === "replicationLog")) {
+    return concatNodes("", doc);
+  }
+};
+
+MapReduce.reduceFields = function(keys, values, rereduce) {
+  return true;
 };
 
 MapReduce.mapByEnumerator = function(doc, req) {

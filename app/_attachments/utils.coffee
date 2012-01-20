@@ -12,15 +12,14 @@ Utils.createResultsDatabase = (databaseName) ->
           Utils.createViews(databaseName)
 
 Utils.createViews = (databaseName) ->
-  $('#message').append("<br/>Creating views for [#{databaseName}]")
-  # Create the view needed to aggregate data in the database
-  $.couch.db(databaseName).saveDoc
+  designDocument = {
     "_id":"_design/reports",
     "language":"javascript",
     "views":
       # Calling toString on a function gets the function definition as a string
       "fields":
         "map": MapReduce.mapFields.toString()
+        "reduce": MapReduce.reduceFields.toString()
       "byEnumerator":
         "map": MapReduce.mapByEnumerator.toString()
       "countByEnumerator":
@@ -30,27 +29,49 @@ Utils.createViews = (databaseName) ->
         "map": MapReduce.mapByTimestamp.toString()
       "replicationLog":
         "map": MapReduce.mapReplicationLog.toString()
+  }
+
+  $.couch.db(databaseName).openDoc "_design/reports",
+    success: (doc) ->
+      designDocument._rev = doc._rev
+      $.couch.db(databaseName).saveDoc designDocument,
+        success: ->
+          $('#message').append("<br/>Views updated for [#{databaseName}]")
+    error: ->
+      $.couch.db(databaseName).saveDoc designDocument
+        success: ->
+          $('#message').append("<br/>Views created for [#{databaseName}]")
 
 class MapReduce
 MapReduce.mapFields = (doc, req) ->
 
   #recursion!
-  concatNodes = (parent,o) ->
-    if o instanceof Array
-      for value, index in o
-        if typeof o != "string"
+  concatNodes = (parent,object) ->
+    if object instanceof Array
+      for value, index in object
+        if typeof object != "string"
           concatNodes(parent+"."+index,value)
     else
-      if typeof o == "string"
+      if typeof object == "boolean"
         emit parent,
           id: doc._id
           fieldname: parent
-          result: o
+          result: if object then "true" else "false"
+      else if typeof object == "string" or typeof object == "number"
+        emit parent,
+          id: doc._id
+          fieldname: parent
+          result: object
       else
-        for key,value of o
-          concatNodes(parent+"."+key,value)
+        for key,value of object
+          prefix  = (if parent == "" then key else parent + "." + key)
+          concatNodes(prefix,value)
 
-  concatNodes("",doc)
+  concatNodes("",doc) unless (doc.type? and doc.type is "replicationLog")
+
+MapReduce.reduceFields = (keys,values,rereduce) ->
+  return true
+
 
 MapReduce.mapByEnumerator = (doc,req) ->
   emit(doc.enumerator,doc) if (doc.enumerator? and doc.timestamp?)

@@ -17,7 +17,8 @@ ManageView = (function(_super) {
   ManageView.prototype.el = $('#content');
 
   ManageView.prototype.render = function(assessmentCollection) {
-    this.el.html("      <h1>Manage</h1>      <button>Update Tangerine</button><br/>      <button href='/" + Tangerine.config.db_name + "/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>      <br/>      Existing Assessments:      <ul id='manage-assessments'></ul>    ");
+    this.assessmentCollection = assessmentCollection;
+    this.el.html("      <h1>Manage</h1>      <div id='message'></div>      <button>Update Tangerine</button><br/>      <button>Update Result Views</button><br/>      <button href='/" + Tangerine.config.db_name + "/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>      <br/>      Existing Assessments:      <ul id='manage-assessments'></ul>    ");
     return $.couch.allDbs({
       success: function(databases) {
         return assessmentCollection.each(function(assessment) {
@@ -38,6 +39,7 @@ ManageView = (function(_super) {
   ManageView.prototype.events = {
     "click button:contains(New Assessment Wizard)": "newAssessmentWizard",
     "click button:contains(Update Tangerine)": "updateTangerine",
+    "click button:contains(Update Result Views)": "updateResultViews",
     "click button:contains(Initialize Database)": "initializeDatabase",
     "click button:contains(Results)": "navigateResult"
   };
@@ -56,6 +58,12 @@ ManageView = (function(_super) {
         $("#message").html("Finished");
         return Tangerine.router.navigate("logout", true);
       }
+    });
+  };
+
+  ManageView.prototype.updateResultViews = function(event) {
+    return this.assessmentCollection.each(function(assessment) {
+      return Utils.createViews(assessment.get("name").toLowerCase().dasherize());
     });
   };
 

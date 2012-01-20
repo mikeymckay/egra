@@ -4,9 +4,12 @@ class ManageView extends Backbone.View
   el: $('#content')
 
   render: (assessmentCollection) =>
+    @assessmentCollection = assessmentCollection
     @el.html "
       <h1>Manage</h1>
+      <div id='message'></div>
       <button>Update Tangerine</button><br/>
+      <button>Update Result Views</button><br/>
       <button href='/#{Tangerine.config.db_name}/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>
       <br/>
       Existing Assessments:
@@ -29,6 +32,7 @@ class ManageView extends Backbone.View
   events:
     "click button:contains(New Assessment Wizard)": "newAssessmentWizard"
     "click button:contains(Update Tangerine)": "updateTangerine"
+    "click button:contains(Update Result Views)": "updateResultViews"
     "click button:contains(Initialize Database)": "initializeDatabase"
     "click button:contains(Results)": "navigateResult"
 
@@ -44,6 +48,10 @@ class ManageView extends Backbone.View
       success: ->
         $("#message").html "Finished"
         Tangerine.router.navigate "logout", true
+
+  updateResultViews: (event) ->
+    @assessmentCollection.each (assessment) ->
+      Utils.createViews assessment.get("name").toLowerCase().dasherize()
 
   initializeDatabase: (event) ->
     databaseName = $(event.target).attr("href")

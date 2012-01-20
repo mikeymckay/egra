@@ -2,6 +2,8 @@ class Router extends Backbone.Router
   routes:
     "assessment/:id": "assessment"
     "result/:database_name/:id": "result"
+    "results/tabular/:database_name": "tabular_results"
+    "results/tabular/:database_name/*options": "tabular_results"
     "results/:database_name": "results"
     "print/:id": "print"
     "student_printout/:id": "student_printout"
@@ -22,6 +24,30 @@ class Router extends Backbone.Router
             Tangerine.resultsView.results.databaseName = database_name
             Tangerine.resultsView.render()
 
+  tabular_results: (database_name) ->
+    @verify_logged_in
+      success: ->
+        view = "reports/fields"
+# TODO - figure out what to do about this limit
+        limit= 10000000
+        $("#content").html("Loading maximum of #{limit} items from view: #{view} from #{database_name}")
+        $.couch.db(database_name).view view,
+          reduce: true
+          group: true
+          success: (result) ->
+            uniqueFields = _.pluck result.rows, "key"
+
+            $.couch.db(database_name).view view,
+              reduce: false
+              limit: limit
+              success: (tableResults) ->
+                Tangerine.resultsView ?= new ResultsView()
+                options = jQuery.deparam.querystring(jQuery.param.fragment())
+                Tangerine.resultsView.uniqueFields = uniqueFields
+                Tangerine.resultsView.tableResults = tableResults
+                Tangerine.resultsView.renderTable(options)
+              
+
   result: (database_name,id) ->
     @verify_logged_in
       success: ->
@@ -34,7 +60,6 @@ class Router extends Backbone.Router
   manage: ->
     @verify_logged_in
       success: (session) ->
-        console.log session.userCtx.roles
         unless _.include(session.userCtx.roles, "_admin")
           Tangerine.router.navigate("assessments", true) unless _.include(session.userCtx.roles, "admin")
           return
@@ -88,6 +113,9 @@ class Router extends Backbone.Router
           Tangerine.router.navigate("login", true)
           return
         options.success(session)
+
+              
+
 
   print: (id) ->
     Assessment.load id, (assessment) ->
