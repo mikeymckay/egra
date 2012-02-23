@@ -131,12 +131,12 @@ class ResultsView extends Backbone.View
         field = combine.alias if _.include(combine.targets, field)
       return field
     uniqueFields = _.unique(uniqueFields)
-    
+
     # Use a hash to collect all of the fieldnames
     # Initialize each table_rows row
     table_rows = {}
     _.each @tableResults.rows, (row) ->
-      table_rows[row.value.id] = {"id":row.value.id}
+      table_rows[row._id] = {"id":row._id}
 
     # Fill the table row object with the appropriate data
     # Note that we can't print the row here because we need to coordinate with all other rows
@@ -144,10 +144,10 @@ class ResultsView extends Backbone.View
       fieldname = row.value.fieldname
       _.each combines, (combine) ->
         fieldname = combine.alias if _.include(combine.targets, fieldname)
-      if table_rows[row.value.id][fieldname]?
-        table_rows[row.value.id][fieldname] += ", " + row.value.result
+      if table_rows[row._id][fieldname]?
+        table_rows[row._id][fieldname] += ", " + row.value.result
       else
-        table_rows[row.value.id][fieldname] = row.value.result
+        table_rows[row._id][fieldname] = row.value.result
 
     table = "
       <table id='results' class='tablesorter'>
@@ -209,5 +209,5 @@ class ResultsView extends Backbone.View
     " + table
 
     $("#results").tablesorter()
-    $("#results").tableFilter()
+#    $("#results").tableFilter()
 

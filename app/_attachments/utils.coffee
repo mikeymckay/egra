@@ -34,6 +34,7 @@ Utils.createViews = (databaseName) ->
   $.couch.db(databaseName).openDoc "_design/reports",
     success: (doc) ->
       designDocument._rev = doc._rev
+      console.log designDocument
       $.couch.db(databaseName).saveDoc designDocument,
         success: ->
           $('#message').append("<br/>Views updated for [#{databaseName}]")
@@ -43,6 +44,7 @@ Utils.createViews = (databaseName) ->
           $('#message').append("<br/>Views created for [#{databaseName}]")
 
 class MapReduce
+
 MapReduce.mapFields = (doc, req) ->
 
   #recursion!
@@ -52,16 +54,18 @@ MapReduce.mapFields = (doc, req) ->
         if typeof object != "string"
           concatNodes(parent+"."+index,value)
     else
-      if typeof object == "boolean"
-        emit parent,
-          id: doc._id
+      typeofobject = typeof object
+
+      if typeofobject == "boolean" or typeofobject == "string" or typeofobject == "number"
+        emitDoc = {
+          studentID: doc.DateTime?["student-id"]
           fieldname: parent
-          result: if object then "true" else "false"
-      else if typeof object == "string" or typeof object == "number"
-        emit parent,
-          id: doc._id
-          fieldname: parent
-          result: object
+        }
+        if typeofobject == "boolean"
+          emitDoc.result = if object then "true" else "false"
+        if typeofobject == "string" or typeofobject == "number"
+          emitDoc.result = object
+        emit parent, emitDoc
       else
         for key,value of object
           prefix  = (if parent == "" then key else parent + "." + key)

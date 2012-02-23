@@ -165,8 +165,8 @@ ResultsView = (function(_super) {
     uniqueFields = _.unique(uniqueFields);
     table_rows = {};
     _.each(this.tableResults.rows, function(row) {
-      return table_rows[row.value.id] = {
-        "id": row.value.id
+      return table_rows[row._id] = {
+        "id": row._id
       };
     });
     _.each(this.tableResults.rows, function(row) {
@@ -177,10 +177,10 @@ ResultsView = (function(_super) {
           return fieldname = combine.alias;
         }
       });
-      if (table_rows[row.value.id][fieldname] != null) {
-        return table_rows[row.value.id][fieldname] += ", " + row.value.result;
+      if (table_rows[row._id][fieldname] != null) {
+        return table_rows[row._id][fieldname] += ", " + row.value.result;
       } else {
-        return table_rows[row.value.id][fieldname] = row.value.result;
+        return table_rows[row._id][fieldname] = row.value.result;
       }
     });
     table = "      <table id='results' class='tablesorter'>        <thead>          <tr>    ";
@@ -201,8 +201,7 @@ ResultsView = (function(_super) {
     });
     table += "        </tbody>      </table>    ";
     $("#content").html(("      <script type='text/javascript' src='js-libraries/table2CSV.js'></script>      <script type='text/javascript' src='js-libraries/picnet.table.filter.min.js'></script>      <style>        form{          font-size:8pt;        }        input{          width: 500px;        }      </style>      <div>Instructions: Ignore the configuration section for now - but it can be used to map column names to specific codes and more - it just needs a better interface. Each column may be sorted by clicking on it. The text box below each column name allows you to filter for results (to search for a specific student ID, or filter by gender). The Download as CSV button takes the current state of the table (including filters and sorting) and creates a CSV text that can be pasted into a spreadsheet for further analysis.</div>      <form>        <fieldset>        <legend>Configuration</legend>          <table id='configuration'>            <tr>              <td>Alias (original_name, display_name)</td><td><input type='text' name='alias' value='" + (options.alias || "") + "'></input></td>            </tr><tr>              <td>Combine (alias: original_name/alias, original_name/alias; alias: orig...) </td><td><input type='text' name='combine' value='" + (options.combine || "") + "'></input></td>            </tr><tr>              <td>Column to Ignore (text to ignore ,i.e. _id) </td><td><input type='text' name='ignoreColumn' value='" + (options.ignoreColumn || "") + "'></input></td>            </tr><tr>              <td>Results to Ignore (text to ignore ,i.e. undefined) </td><td><input type='text' name='ignoreResult' value='" + (options.ignoreResult || "") + "'></input></td>            </table>          </tr>          <button>update table</button>        </fieldset>      </form>      <button>Download as CSV</button>      <div>Total Number of Rows:" + count + "</div>        ") + table);
-    $("#results").tablesorter();
-    return $("#results").tableFilter();
+    return $("#results").tablesorter();
   };
 
   return ResultsView;

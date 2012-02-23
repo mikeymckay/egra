@@ -53,6 +53,7 @@ Utils.createViews = function(databaseName) {
   return $.couch.db(databaseName).openDoc("_design/reports", {
     success: function(doc) {
       designDocument._rev = doc._rev;
+      console.log(designDocument);
       return $.couch.db(databaseName).saveDoc(designDocument, {
         success: function() {
           return $('#message').append("<br/>Views updated for [" + databaseName + "]");
@@ -80,7 +81,7 @@ MapReduce = (function() {
 MapReduce.mapFields = function(doc, req) {
   var concatNodes;
   concatNodes = function(parent, object) {
-    var index, key, prefix, value, _len, _results, _results2;
+    var emitDoc, index, key, prefix, typeofobject, value, _len, _ref, _results, _results2;
     if (object instanceof Array) {
       _results = [];
       for (index = 0, _len = object.length; index < _len; index++) {
@@ -93,18 +94,17 @@ MapReduce.mapFields = function(doc, req) {
       }
       return _results;
     } else {
-      if (typeof object === "boolean") {
-        return emit(parent, {
-          id: doc._id,
-          fieldname: parent,
-          result: object ? "true" : "false"
-        });
-      } else if (typeof object === "string" || typeof object === "number") {
-        return emit(parent, {
-          id: doc._id,
-          fieldname: parent,
-          result: object
-        });
+      typeofobject = typeof object;
+      if (typeofobject === "boolean" || typeofobject === "string" || typeofobject === "number") {
+        emitDoc = {
+          studentID: (_ref = doc.DateTime) != null ? _ref["student-id"] : void 0,
+          fieldname: parent
+        };
+        if (typeofobject === "boolean") emitDoc.result = object ? "true" : "false";
+        if (typeofobject === "string" || typeofobject === "number") {
+          emitDoc.result = object;
+        }
+        return emit(parent, emitDoc);
       } else {
         _results2 = [];
         for (key in object) {
