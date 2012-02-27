@@ -53,7 +53,6 @@ Utils.createViews = function(databaseName) {
   return $.couch.db(databaseName).openDoc("_design/reports", {
     success: function(doc) {
       designDocument._rev = doc._rev;
-      console.log(designDocument);
       return $.couch.db(databaseName).saveDoc(designDocument, {
         success: function() {
           return $('#message').append("<br/>Views updated for [" + databaseName + "]");
@@ -61,11 +60,11 @@ Utils.createViews = function(databaseName) {
       });
     },
     error: function() {
-      return $.couch.db(databaseName).saveDoc(designDocument({
+      return $.couch.db(databaseName).saveDoc(designDocument, {
         success: function() {
           return $('#message').append("<br/>Views created for [" + databaseName + "]");
         }
-      }));
+      });
     }
   });
 };

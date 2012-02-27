@@ -219,8 +219,9 @@ assessmentCollection.fetch
             Utils.createResultsDatabase assessment.targetDatabase()
 # Wait 1.5 seconds for everything to get created, then logout and reload
             setTimeout ->
-              $.couch.logout()
-              location.reload(true)
+              $.couch.logout
+                success: ->
+                  location.reload(true)
             , 1500
     @startApp()
 

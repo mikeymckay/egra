@@ -247,8 +247,11 @@ assessmentCollection.fetch({
           if (errorType === "no_db_file") {
             Utils.createResultsDatabase(assessment.targetDatabase());
             return setTimeout(function() {
-              $.couch.logout();
-              return location.reload(true);
+              return $.couch.logout({
+                success: function() {
+                  return location.reload(true);
+                }
+              });
             }, 1500);
           }
         }

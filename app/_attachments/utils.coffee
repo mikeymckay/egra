@@ -34,12 +34,11 @@ Utils.createViews = (databaseName) ->
   $.couch.db(databaseName).openDoc "_design/reports",
     success: (doc) ->
       designDocument._rev = doc._rev
-      console.log designDocument
       $.couch.db(databaseName).saveDoc designDocument,
         success: ->
           $('#message').append("<br/>Views updated for [#{databaseName}]")
     error: ->
-      $.couch.db(databaseName).saveDoc designDocument
+      $.couch.db(databaseName).saveDoc designDocument,
         success: ->
           $('#message').append("<br/>Views created for [#{databaseName}]")
 
