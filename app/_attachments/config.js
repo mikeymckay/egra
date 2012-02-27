@@ -3,8 +3,8 @@ var Tangerine;
 Tangerine = {};
 
 Tangerine.config = {
-  db_name: "egra",
-  design_doc_name: "app",
+  db_name: "tangerine",
+  design_doc_name: "tangerine",
   user_with_database_create_permission: "tangerine",
   password_with_database_create_permission: "tangytangerine"
 };
