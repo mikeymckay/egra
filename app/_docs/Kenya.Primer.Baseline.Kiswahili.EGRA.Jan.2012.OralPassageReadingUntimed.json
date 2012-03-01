@@ -7,7 +7,7 @@
   "studentDialog": "<b>Hii hapa ni hadithi fupi. Ningependa uisome kwa sauti, haraka iwezekanavyo lakini kwa makini. Ukimaliza kuisoma, nitakuuliza maswali kuhusu yale uliyosoma. Je, umeelewa jinsi unavyopaswa kufanya? Nikisema 'Anza,' isome hadithi vizuri kadri ya uwezo wako. Nitanyamaza nikusilikilize. Uko tayari? Anza.</b>",
   "seconds": 180,
   "autostopAmount" : 10,
-  "letters": [
+  "items": [
     "Wasichana","hupenda","kuruka","kamba.","Nao","wavulana","hupenda","mpira","wa","miguu.","Siku","moja,","wasichana","wakaamua","kucheza","mpira","wa","miguu.","Nao","wavulana","wakaruka","kamba.","Lakini","hakuna","aliyecheza","mchezo","wao","mpya","vizuri.","Kuanzia","siku","hiyo,","wakaamua","kujifunza","kucheza","michezo","mbalimbali.","Si","msichana,","si","mvulana."
   ],
   "couchapp": {

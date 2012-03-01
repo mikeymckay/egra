@@ -6,7 +6,7 @@
   "studentDialog": "Here is a short story. I want you to read it aloud, quickly but carefully. When you have finished, I will ask you some questions about what you have read. Do you understand what you are to do? When I say “begin,” read the story as best as you can.  I will keep quiet & listen to you, unless you need help. Ready? Begin.",
   "seconds": 180,
   "autostopAmount" : 11,
-  "letters": [
+  "items": [
 
 "Moraa","and","her","friends","are","going","to","dance","for","their","school.","They","want","to","be","the","best","dancers.","They","practice","every","day.","When","the","girls","dance,","the","whole","school","claps.","Moraa","and","her","friends","know","they","shall","win."
 
