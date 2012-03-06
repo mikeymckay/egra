@@ -32,6 +32,7 @@ class AssessmentListView extends Backbone.View
     assessmentCollection = new AssessmentCollection()
     assessmentCollection.fetch
       success: =>
+        itemsToProcess = assessmentCollection.length
         assessmentCollection.each (assessment) =>
           $.couch.db(assessment.targetDatabase()).view "reports/countByEnumerator",
             group: true
@@ -42,7 +43,10 @@ class AssessmentListView extends Backbone.View
                 number_completed: result.rows[0]?.value || "0"
                 id: assessment.get("_id")
                 database_name: assessment.targetDatabase()
-              $("#assessments").trigger("update").trigger("sorton",[1,0])
+
+              # Wait until all items have been added before adding the sorting/filtering
+              if --itemsToProcess is 0
+                $('table').tablesorter()
 
   events:
     "click button.assessment-name": "loadAssessment"

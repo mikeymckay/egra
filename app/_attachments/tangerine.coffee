@@ -226,23 +226,23 @@ config.fetch
   success: ->
     Tangerine.config = config.toJSON()
 
-    $.couch.config(
-      {
-        success: (result) ->
-          if _.keys(result).length == 0 # admin party mode
-            $.couch.config({},"admins",Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission)
-        error: ->
-          # Do nothing - we can't access this because we are not admins
-      }
-      "admins"
-    )
+#    $.couch.config(
+#      {
+#        success: (result) ->
+#          if _.keys(result).length == 0 # admin party mode
+#            $.couch.config({},"admins",Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission)
+#        error: ->
+#          # Do nothing - we can't access this because we are not admins
+#      }
+#      "admins"
+#    )
 
 # Should remove later - always make sure the timeout is 28800 (8 hrs)
-    $.ajax "/_config/couch_httpd_auth/timeout",
-    username: Tangerine.config.user_with_database_create_permission
-    password: Tangerine.config.password_with_database_create_permission
-    type: "put"
-    data: '"28800"'
+#    $.ajax "/_config/couch_httpd_auth/timeout",
+#    username: Tangerine.config.user_with_database_create_permission
+#    password: Tangerine.config.password_with_database_create_permission
+#    type: "put"
+#    data: '"28800"'
 
 # Check that all result databases exist
   assessmentCollection = new AssessmentCollection()
@@ -254,11 +254,11 @@ config.fetch
             if errorType == "no_db_file"
               Utils.createResultsDatabase assessment.targetDatabase()
 # Wait 1.5 seconds for everything to get created, then logout and reload
-              setTimeout ->
-                $.couch.logout
-                  success: ->
-                    location.reload(true)
-              , 1500
+#              setTimeout ->
+#                $.couch.logout
+#                  success: ->
+#                    location.reload(true)
+#              , 1500
       @startApp()
 
 

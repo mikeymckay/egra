@@ -17,6 +17,16 @@ ManageView = (function(_super) {
 
   ManageView.prototype.el = $('#content');
 
+  ManageView.prototype.events = {
+    "click button:contains(Update Tangerine)": "updateTangerine",
+    "click button:contains(Update Result Views)": "updateResultViews",
+    "click button:contains(Initialize Database)": "initializeDatabase",
+    "click button:contains(add new assessment)": "showAssessmentForm",
+    "click form.newAssessment button:contains(Add)": "newAssessment",
+    "click #manage-assessments button:contains(Delete)": "revealDelete",
+    "click #manage-assessments .confirm button:contains(Yes)": "delete"
+  };
+
   ManageView.prototype.render = function(assessmentCollection) {
     var _this = this;
     this.assessmentCollection = assessmentCollection;
@@ -24,7 +34,7 @@ ManageView = (function(_super) {
     return $.couch.allDbs({
       success: function(databases) {
         _this.databases = databases;
-        return assessmentCollection.each(function(assessment) {
+        return _this.assessmentCollection.each(function(assessment) {
           return _this.addAssessmentToList(assessment);
         });
       }
@@ -35,15 +45,23 @@ ManageView = (function(_super) {
     var assessmentName, assessmentResultDatabaseName;
     assessmentName = assessment.get("name");
     assessmentResultDatabaseName = assessmentName.toLowerCase().dasherize();
-    return $("#manage-assessments").append("      <tr>        <td>" + assessmentName + "</td>        " + (!_.include(this.databases, assessmentResultDatabaseName) ? "<td>            <button href='" + assessmentResultDatabaseName + "'>Initialize Database</button>          </td>" : void 0) + "        <td>          <a href='#edit/assessment/" + assessment.id + "'>Edit</a>        </td>        <td><button>Delete</button></td>        <td>          <a href='#results/" + assessmentResultDatabaseName + "'>Results</a>        </td>      </tr>    ");
+    return $("#manage-assessments").append("      <tr data-assessment='" + assessment.id + "'>        <td>" + assessmentName + "</td>        " + (!_.include(this.databases, assessmentResultDatabaseName) ? "<td>            <button href='" + assessmentResultDatabaseName + "'>Initialize Database</button>          </td>" : void 0) + "        <td>          <a href='#results/" + assessmentResultDatabaseName + "'>Results</a>        </td>        <td>          <a href='#edit/assessment/" + assessment.id + "'>Edit</a>        </td>        <td>          <button>Delete</button>          <span class='confirm' style='background-color:red; display:none'>            Are you sure?            <button data-assessment='" + assessment.id + "'>Yes</button>          </span>        </td>      </tr>    ");
   };
 
-  ManageView.prototype.events = {
-    "click button:contains(Update Tangerine)": "updateTangerine",
-    "click button:contains(Update Result Views)": "updateResultViews",
-    "click button:contains(Initialize Database)": "initializeDatabase",
-    "click button:contains(add new assessment)": "showAssessmentForm",
-    "click form.newAssessment button:contains(Add)": "newAssessment"
+  ManageView.prototype.revealDelete = function(event) {
+    return $(event.target).next(".confirm").show().fadeOut(5000);
+  };
+
+  ManageView.prototype["delete"] = function(event) {
+    var assessment;
+    assessment = this.assessmentCollection.get($(event.target).attr("data-assessment"));
+    return assessment.destroy({
+      success: function() {
+        return $("tr[data-assessment='" + assessment.id + "']").fadeOut(function() {
+          return $(this).remove();
+        });
+      }
+    });
   };
 
   ManageView.prototype.showAssessmentForm = function() {
@@ -55,10 +73,12 @@ ManageView = (function(_super) {
     name = $("input[name=name]").val();
     assessment = new Assessment({
       name: name,
-      _id: $.enumerator + "." + name
+      _id: $.enumerator + "." + name,
+      urlPathsForPages: []
     });
     assessment.save();
-    return this.addAssessmentToList(assessment);
+    this.addAssessmentToList(assessment);
+    return this.assessmentCollection.add(assessment);
   };
 
   ManageView.prototype.updateTangerine = function(event) {

@@ -42,10 +42,6 @@ $("head").append "
     #content{
       padding: 5px;
     }
-    #manage-assessments button{
-      font-size:50%;
-      margin:10px;
-    }
     #assessments td{
       list-style: none;
       text-decoration:none;

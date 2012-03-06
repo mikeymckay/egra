@@ -276,21 +276,7 @@ config = new Backbone.Model({
 
 config.fetch({
   success: function() {
-    Tangerine.config = config.toJSON();
-    $.couch.config({
-      success: function(result) {
-        if (_.keys(result).length === 0) {
-          return $.couch.config({}, "admins", Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission);
-        }
-      },
-      error: function() {}
-    }, "admins");
-    return $.ajax("/_config/couch_httpd_auth/timeout", {
-      username: Tangerine.config.user_with_database_create_permission,
-      password: Tangerine.config.password_with_database_create_permission,
-      type: "put",
-      data: '"28800"'
-    });
+    return Tangerine.config = config.toJSON();
   }
 }, assessmentCollection = new AssessmentCollection(), assessmentCollection.fetch({
   success: function() {
@@ -298,14 +284,7 @@ config.fetch({
       return $.couch.db(assessment.targetDatabase()).info({
         error: function(a, b, errorType) {
           if (errorType === "no_db_file") {
-            Utils.createResultsDatabase(assessment.targetDatabase());
-            return setTimeout(function() {
-              return $.couch.logout({
-                success: function() {
-                  return location.reload(true);
-                }
-              });
-            }, 1500);
+            return Utils.createResultsDatabase(assessment.targetDatabase());
           }
         }
       });

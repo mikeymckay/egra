@@ -21,20 +21,47 @@ AssessmentEdit = (function(_super) {
 
   AssessmentEdit.prototype.events = {
     "click button:contains(add new subtest)": "showSubtestForm",
-    "click form.newSubtest button:contains(Add)": "newSubtest"
+    "click form.newSubtest button:contains(Add)": "newSubtest",
+    "click .assessment-editor-list button:contains(Remove)": "revealRemove",
+    "click .assessment-editor-list .confirm button:contains(Yes)": "remove",
+    "change form.newSubtest select": "subtestTypeSelected"
+  };
+
+  AssessmentEdit.prototype.subtestTypeSelected = function() {
+    return $("form.newSubtest input[name='_id']").val(this.model.id + "." + $("form.newSubtest option:selected").val());
+  };
+
+  AssessmentEdit.prototype.revealRemove = function(event) {
+    return $(event.target).next(".confirm").show().fadeOut(5000);
+  };
+
+  AssessmentEdit.prototype.remove = function(event) {
+    var subtest_id;
+    subtest_id = $(event.target).attr("data-subtest");
+    this.model.set({
+      urlPathsForPages: _.without(this.model.get("urlPathsForPages"), subtest_id)
+    });
+    this.model.save();
+    return $("li[data-subtest='" + subtest_id + "']").fadeOut(function() {
+      return $(this).remove();
+    });
   };
 
   AssessmentEdit.prototype.showSubtestForm = function() {
     return this.el.find("form.newSubtest").fadeIn();
   };
 
+  AssessmentEdit.prototype.renderSubtestItem = function(subtestId) {
+    return "    <li data-subtest='" + subtestId + "'>      <a href='#edit/assessment/" + this.model.id + "/subtest/" + subtestId + "'>" + subtestId + "</a>      <button type='button'>Remove</button>      <span class='confirm' style='background-color:red; display:none'>        Are you sure?        <button data-subtest='" + subtestId + "'>Yes</button>      </span>    </li>    ";
+  };
+
   AssessmentEdit.prototype.render = function() {
     var _this = this;
     this.el.html("      <a href='#manage'>Return to: <b>Manage</b></a>      <div style='display:none' class='message'></div>      <h2>" + (this.model.get("name")) + "</h2>      <small>Click on a subtest to edit or drag and drop to reorder      <ul class='assessment-editor-list'>" + (_.map(this.model.get("urlPathsForPages"), function(subtestId) {
-      return "<li><a href='#edit/assessment/" + _this.model.id + "/subtest/" + subtestId + "'>" + subtestId + "</a></li>";
-    }).join("")) + "      </ul>      <small><button>add new subtest</button></small>      <form class='newSubtest' style='display:none'>        <label for='_id'>Subtest Name</label>        <input type='text' name='_id' value='" + this.model.id + "'></input>        <label for='pageType'>Type</label>        <select name='pageType'>" + (_.map(this.config.pageTypes, function(pageType) {
+      return _this.renderSubtestItem(subtestId);
+    }).join("")) + "      </ul>      <small><button>add new subtest</button></small>      <form class='newSubtest' style='display:none'>        <label for='pageType'>Type</label>        <select name='pageType'>          <option></option>" + (_.map(this.config.pageTypes, function(pageType) {
       return "<option>" + pageType + "</option>";
-    }).join("")) + "        </select>        <button>Add</button>      </form>    ");
+    }).join("")) + "        </select>        <label for='_id'>Subtest Name</label>        <input style='width:400px' type='text' name='_id'></input>        <button>Add</button>      </form>    ");
     return this.makeSortable();
   };
 
@@ -64,7 +91,8 @@ AssessmentEdit = (function(_super) {
     pageType = $("form.newSubtest select option:selected").val();
     subtest = new Subtest({
       _id: _id,
-      pageType: pageType
+      pageType: pageType,
+      pageId: _id.substring(_id.lastIndexOf(".") + 1)
     });
     pageTypeProperties = _.union(this.config.pageTypeProperties["default"], this.config.pageTypeProperties[pageType]);
     _.each(pageTypeProperties, function(property) {
@@ -74,14 +102,19 @@ AssessmentEdit = (function(_super) {
       result[property] = "";
       return subtest.set(result);
     });
-    console.log(subtest);
     subtest.save();
     this.model.set({
       urlPathsForPages: _.union(this.model.get("urlPathsForPages"), subtest.id)
     });
     this.model.save();
-    $("ul").append("<li><a href='#edit/" + _id + "'>" + _id + "</a></li>");
-    return this.makeSortable();
+    $("ul").append(this.renderSubtestItem(_id));
+    this.makeSortable();
+    return this.clearNewSubtest();
+  };
+
+  AssessmentEdit.prototype.clearNewSubtest = function() {
+    $("form.newSubtest input[name='_id']").val("");
+    return $("form.newSubtest select").val("");
   };
 
   return AssessmentEdit;

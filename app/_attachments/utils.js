@@ -9,18 +9,11 @@ Utils = (function() {
 })();
 
 Utils.createResultsDatabase = function(databaseName) {
-  $('#message').append("<br/>Logging in as administrator");
-  return $.couch.login({
-    name: Tangerine.config.user_with_database_create_permission,
-    password: Tangerine.config.password_with_database_create_permission,
+  var _this = this;
+  $('#message').append("<br/>Creating database [" + databaseName + "]");
+  return $.couch.db(databaseName).create({
     success: function() {
-      var _this = this;
-      $('#message').append("<br/>Creating database [" + databaseName + "]");
-      return $.couch.db(databaseName).create({
-        success: function() {
-          return Utils.createViews(databaseName);
-        }
-      });
+      return Utils.createViews(databaseName);
     }
   });
 };

@@ -1,11 +1,11 @@
 class Utils
 
 Utils.createResultsDatabase = (databaseName) ->
-  $('#message').append("<br/>Logging in as administrator")
-  $.couch.login
-    name: Tangerine.config.user_with_database_create_permission
-    password: Tangerine.config.password_with_database_create_permission
-    success: ->
+#  $('#message').append("<br/>Logging in as administrator")
+#  $.couch.login
+#    name: Tangerine.config.user_with_database_create_permission
+#    password: Tangerine.config.password_with_database_create_permission
+#    success: ->
       $('#message').append("<br/>Creating database [#{databaseName}]")
       $.couch.db(databaseName).create
         success: =>

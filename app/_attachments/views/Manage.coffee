@@ -3,6 +3,16 @@ class ManageView extends Backbone.View
 
   el: $('#content')
 
+  events:
+    "click button:contains(Update Tangerine)": "updateTangerine"
+    "click button:contains(Update Result Views)": "updateResultViews"
+    "click button:contains(Initialize Database)": "initializeDatabase"
+    "click button:contains(add new assessment)": "showAssessmentForm"
+    "click form.newAssessment button:contains(Add)": "newAssessment"
+    "click #manage-assessments button:contains(Delete)": "revealDelete"
+    "click #manage-assessments .confirm button:contains(Yes)": "delete"
+
+
   render: (assessmentCollection) =>
     @assessmentCollection = assessmentCollection
     @el.html "
@@ -25,14 +35,14 @@ class ManageView extends Backbone.View
     $.couch.allDbs
       success: (databases) =>
         @databases = databases
-        assessmentCollection.each (assessment) =>
+        @assessmentCollection.each (assessment) =>
           @addAssessmentToList(assessment)
 
   addAssessmentToList: (assessment) ->
     assessmentName = assessment.get("name")
     assessmentResultDatabaseName = assessmentName.toLowerCase().dasherize()
     $("#manage-assessments").append "
-      <tr>
+      <tr data-assessment='#{assessment.id}'>
         <td>#{assessmentName}</td>
         #{
           "<td>
@@ -40,21 +50,30 @@ class ManageView extends Backbone.View
           </td>" unless _.include(@databases,assessmentResultDatabaseName)
         }
         <td>
+          <a href='#results/#{assessmentResultDatabaseName}'>Results</a>
+        </td>
+        <td>
           <a href='#edit/assessment/#{assessment.id}'>Edit</a>
         </td>
-        <td><button>Delete</button></td>
         <td>
-          <a href='#results/#{assessmentResultDatabaseName}'>Results</a>
+          <button>Delete</button>
+          <span class='confirm' style='background-color:red; display:none'>
+            Are you sure?
+            <button data-assessment='#{assessment.id}'>Yes</button>
+          </span>
         </td>
       </tr>
     "
   
-  events:
-    "click button:contains(Update Tangerine)": "updateTangerine"
-    "click button:contains(Update Result Views)": "updateResultViews"
-    "click button:contains(Initialize Database)": "initializeDatabase"
-    "click button:contains(add new assessment)": "showAssessmentForm"
-    "click form.newAssessment button:contains(Add)": "newAssessment"
+  revealDelete: (event) ->
+    $(event.target).next(".confirm").show().fadeOut(5000)
+
+  delete: (event) ->
+    assessment = @assessmentCollection.get($(event.target).attr("data-assessment"))
+    assessment.destroy
+      success: ->
+        $("tr[data-assessment='#{assessment.id}']").fadeOut ->
+          $(this).remove()
 
   showAssessmentForm: ->
     @el.find("form.newAssessment").fadeIn()
@@ -64,8 +83,10 @@ class ManageView extends Backbone.View
     assessment = new Assessment
       name: name
       _id: $.enumerator + "." + name
+      urlPathsForPages: []
     assessment.save()
     @addAssessmentToList(assessment)
+    @assessmentCollection.add(assessment)
 
   updateTangerine: (event) ->
     source = "http://#{Tangerine.cloud.target}/#{Tangerine.config.db_name}"

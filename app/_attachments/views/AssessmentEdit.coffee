@@ -8,9 +8,38 @@ class AssessmentEdit extends Backbone.View
   events:
     "click button:contains(add new subtest)": "showSubtestForm"
     "click form.newSubtest button:contains(Add)": "newSubtest"
+    "click .assessment-editor-list button:contains(Remove)": "revealRemove"
+    "click .assessment-editor-list .confirm button:contains(Yes)": "remove"
+    "change form.newSubtest select": "subtestTypeSelected"
+
+  subtestTypeSelected: ->
+    $("form.newSubtest input[name='_id']").val(@model.id + "." + $("form.newSubtest option:selected").val())
+
+  revealRemove: (event) ->
+    $(event.target).next(".confirm").show().fadeOut(5000)
+
+  remove: (event) ->
+    subtest_id = $(event.target).attr("data-subtest")
+    @model.set
+      urlPathsForPages: _.without(@model.get("urlPathsForPages"), subtest_id)
+    @model.save()
+    $("li[data-subtest='#{subtest_id}']").fadeOut ->
+      $(this).remove()
 
   showSubtestForm: ->
     @el.find("form.newSubtest").fadeIn()
+
+  renderSubtestItem: (subtestId) ->
+    "
+    <li data-subtest='#{subtestId}'>
+      <a href='#edit/assessment/#{@model.id}/subtest/#{subtestId}'>#{subtestId}</a>
+      <button type='button'>Remove</button>
+      <span class='confirm' style='background-color:red; display:none'>
+        Are you sure?
+        <button data-subtest='#{subtestId}'>Yes</button>
+      </span>
+    </li>
+    "
 
   render: =>
     @el.html "
@@ -20,21 +49,22 @@ class AssessmentEdit extends Backbone.View
       <small>Click on a subtest to edit or drag and drop to reorder
       <ul class='assessment-editor-list'>#{
         _.map(@model.get("urlPathsForPages"), (subtestId) =>
-          "<li><a href='#edit/assessment/#{@model.id}/subtest/#{subtestId}'>#{subtestId}</a></li>"
+          @renderSubtestItem(subtestId)
         ).join("")
       }
       </ul>
       <small><button>add new subtest</button></small>
       <form class='newSubtest' style='display:none'>
-        <label for='_id'>Subtest Name</label>
-        <input type='text' name='_id' value='#{@model.id}'></input>
         <label for='pageType'>Type</label>
-        <select name='pageType'>#{
+        <select name='pageType'>
+          <option></option>#{
           _.map(@config.pageTypes, (pageType) ->
             "<option>#{pageType}</option>"
           ).join("")
         }
         </select>
+        <label for='_id'>Subtest Name</label>
+        <input style='width:400px' type='text' name='_id'></input>
         <button>Add</button>
       </form>
     "
@@ -59,6 +89,8 @@ class AssessmentEdit extends Backbone.View
     subtest = new Subtest
       _id: _id
       pageType: pageType
+      #Use the id to start with a nice default for the pageId
+      pageId: _id.substring(_id.lastIndexOf(".")+1)
 
     # Combine default properties with the pagetype properties
     pageTypeProperties = _.union(@config.pageTypeProperties.default, @config.pageTypeProperties[pageType])
@@ -67,11 +99,15 @@ class AssessmentEdit extends Backbone.View
       result = {}
       result[property] = ""
       subtest.set result
-    console.log subtest
     subtest.save()
     @model.set
       urlPathsForPages: _.union(@model.get("urlPathsForPages"), subtest.id)
     @model.save()
 
-    $("ul").append "<li><a href='#edit/#{_id}'>#{_id}</a></li>"
+    $("ul").append @renderSubtestItem(_id)
     @makeSortable()
+    @clearNewSubtest()
+
+  clearNewSubtest: ->
+    $("form.newSubtest input[name='_id']").val("")
+    $("form.newSubtest select").val("")
