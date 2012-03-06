@@ -193,7 +193,9 @@ button::-moz-focus-inner, input::-moz-focus-inner { border: 0; padding: 0; }
  * 2. Allow only vertical resizing
  */
 
+/*
 textarea { overflow: auto; vertical-align: top; resize: vertical; }
+*/
 
 /* Colors for form validity */
 input:valid, textarea:valid {  }

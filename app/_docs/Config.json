@@ -1,0 +1,98 @@
+{
+    "name":"Config",
+
+    "comment": "Having these here is a security fail - should limit read access to this file",
+    "db_name": "tangerine",
+    "design_doc_name": "tangerine",
+    "user_with_database_create_permission": "tangerine",
+    "password_with_database_create_permission" : "tangytangerine",
+
+    "Subtest": {
+      "ignore": [
+          "_id",
+          "_rev",
+          "couchapp",
+          "pageType",
+          "collection"
+      ],
+      "htmlTextarea": [
+          "enumeratorHelp",
+          "studentDialog",
+          "content"
+      ],
+      "textarea": [
+          "items"
+      ],
+      "boolean": [
+          "includeAutostop"
+      ],
+      "number": [
+          "timer",
+          "numberOfColumns"
+      ],
+      "pageTypes": [
+          "ConsentPage",
+          "DateTimePage",
+          "Interview",
+          "ResultsPage",
+          "SchoolPage",
+          "StudentInformationPage",
+          "ToggleGridWithTimer",
+          "UntimedSubtest",
+          "UntimedSubtestLinked"
+      ],
+      "pageTypeProperties": {
+          "default": [
+              "pageId"
+          ],
+          "ConsentPage": [
+              "content"
+          ],
+          "DateTimePage": [
+              
+          ],
+          "Interview": [
+              "questions"
+          ],
+          "ResultsPage": [
+              
+          ],
+          "SchoolPage": [
+              "districtText",
+              "nameText",
+              "provinceText",
+              "schoolIdText",
+              "schools"
+          ],
+          "StudentInformationPage": [
+              "enumeratorHelp",
+              "questions",
+              "studentDialog",
+              "timer"
+          ],
+          "ToggleGridWithTimer": [
+              "enumeratorHelp",
+              "includeAutostop",
+              "items",
+              "numberOfColumns",
+              "studentDialog"
+          ],
+          "UntimedSubtest": [
+              "allowSkip",
+              "answerOptions",
+              "enumeratorHelp",
+              "questions",
+              "studentDialog"
+          ],
+          "UntimedSubtestLinked": [
+              "allowSkip",
+              "answerOptions",
+              "enumeratorHelp",
+              "linkedToPageId",
+              "questionIndices",
+              "questions",
+              "studentDialog"
+          ]
+      }
+    }
+}

@@ -4,6 +4,8 @@ This appraoch allows colors to be stored as constants
 
 blue = "#5E87B0"
 yellow = "#F7C942"
+orange = "#f2672c"
+orangerind= "#f6e97f"
 first_click_color = yellow
 second_click_color = blue
 red = "red"
@@ -16,7 +18,7 @@ $("head").append "
     }
 
     body.flash{
-      background-color:red;
+      background-color: #{yellow};
     }
 
     #navigation{
@@ -209,6 +211,63 @@ $("head").append "
       padding: 0px 0px 0px 20px;
       background: url(images/spindown-open.gif) no-repeat left;
     }
+
+    a{
+      -webkit-appearance: button;
+      -webkit-box-align: center;
+      background-color: #DDD;
+      border-bottom-color: #DDD;
+      border-bottom-style: outset;
+      border-bottom-width: 2px;
+      border-left-color: #DDD;
+      border-left-style: outset;
+      border-left-width: 2px;
+      border-right-color: #DDD;
+      border-right-style: outset;
+      border-right-width: 2px;
+      border-top-color: #DDD;
+      border-top-style: outset;
+      border-top-width: 2px;
+      box-sizing: border-box;
+      color: #222;
+      cursor: pointer;
+      display: inline-block;
+      font-family: sans-serif;
+      font-size: 24px;
+      height: 34px;
+      letter-spacing: normal;
+      line-height: normal;
+      margin-bottom: 10px;
+      margin-left: 10px;
+      margin-right: 10px;
+      margin-top: 10px;
+      overflow-y: visible;
+      padding-bottom: 1px;
+      padding-left: 6px;
+      padding-right: 6px;
+      padding-top: 1px;
+      vertical-align: baseline;
+      text-decoration:none;
+    }
+      a:visited { 
+        text-decoration:none;
+        color: #222;
+      }
+
+
+      a:hover { 
+        border-color: #ccc; 
+        color: #222;
+      }
+
+      .message{
+        color: #{orangerind};
+        background-color: #{orange};
+        position: absolute;
+        right: 100px;
+        top: 100px;
+
+      }
 
   </style>
   "

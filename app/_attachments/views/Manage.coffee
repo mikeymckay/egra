@@ -10,34 +10,62 @@ class ManageView extends Backbone.View
       <div id='message'></div>
       <button>Update Tangerine</button><br/>
       <button>Update Result Views</button><br/>
-      <button href='/#{Tangerine.config.db_name}/_design/tangerine-cloud/index.html'>New Assessment Wizard</button><br/>
+      <button>New Assessment</button><br/>
       <br/>
-      Existing Assessments:
-      <ul id='manage-assessments'></ul>
+      Existing Assessments:<br/>
+      <table id='manage-assessments'></table>
+      <small><button>add new assessment</button></small>
+      <form class='newAssessment' style='display:none'>
+        <label for='_id'>Assessment Name</label>
+        <input type='text' name='name' value=''></input>
+        <button>Add</button>
+      </form>
     "
 
     $.couch.allDbs
-      success: (databases)->
-        assessmentCollection.each (assessment) ->
-          assessmentName = assessment.get("name")
-          assessmentResultDatabaseName = assessmentName.toLowerCase().dasherize()
-          assessmentElement = "<li>#{assessmentName}"
-          assessmentElement += "<button href='#{assessmentResultDatabaseName}'>Initialize Database</button>" unless _.include(databases,assessmentResultDatabaseName)
-          assessmentElement += "<button class='disabled'>Edit</button>
-                                <button class='disabled'>Delete Database</button>
-                                <button href='#{assessmentResultDatabaseName}'>Results</button>
-                              </li>"
-          $("#manage-assessments").append(assessmentElement)
+      success: (databases) =>
+        @databases = databases
+        assessmentCollection.each (assessment) =>
+          @addAssessmentToList(assessment)
 
+  addAssessmentToList: (assessment) ->
+    assessmentName = assessment.get("name")
+    assessmentResultDatabaseName = assessmentName.toLowerCase().dasherize()
+    $("#manage-assessments").append "
+      <tr>
+        <td>#{assessmentName}</td>
+        #{
+          "<td>
+            <button href='#{assessmentResultDatabaseName}'>Initialize Database</button>
+          </td>" unless _.include(@databases,assessmentResultDatabaseName)
+        }
+        <td>
+          <a href='#edit/assessment/#{assessment.id}'>Edit</a>
+        </td>
+        <td><button>Delete</button></td>
+        <td>
+          <a href='#results/#{assessmentResultDatabaseName}'>Results</a>
+        </td>
+      </tr>
+    "
+  
   events:
-    "click button:contains(New Assessment Wizard)": "newAssessmentWizard"
     "click button:contains(Update Tangerine)": "updateTangerine"
     "click button:contains(Update Result Views)": "updateResultViews"
     "click button:contains(Initialize Database)": "initializeDatabase"
-    "click button:contains(Results)": "navigateResult"
+    "click button:contains(add new assessment)": "showAssessmentForm"
+    "click form.newAssessment button:contains(Add)": "newAssessment"
 
-  newAssessmentWizard: (event) ->
-    document.location = $(event.target).attr("href")
+  showAssessmentForm: ->
+    @el.find("form.newAssessment").fadeIn()
+
+  newAssessment: () =>
+    name = $("input[name=name]").val()
+    assessment = new Assessment
+      name: name
+      _id: $.enumerator + "." + name
+    assessment.save()
+    @addAssessmentToList(assessment)
 
   updateTangerine: (event) ->
     source = "http://#{Tangerine.cloud.target}/#{Tangerine.config.db_name}"
@@ -58,6 +86,3 @@ class ManageView extends Backbone.View
     Utils.createResultsDatabase databaseName
     $("#message").html "Database '#{databaseName}' Initialized"
     $(event.target).hide()
-
-  navigateResult: (event) ->
-    Tangerine.router.navigate "results/#{$(event.target).attr("href")}", true

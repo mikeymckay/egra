@@ -1,4 +1,4 @@
-var Router, assessmentCollection, startApp,
+var Router, assessmentCollection, config, startApp,
   __hasProp = Object.prototype.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; },
   _this = this;
@@ -22,8 +22,57 @@ Router = (function(_super) {
     "login": "login",
     "logout": "logout",
     "manage": "manage",
+    "edit/assessment/:assessment_id/subtest/:subtest_id": "editSubtest",
+    "edit/assessment/:assessment_id": "editAssessment",
     "assessments": "assessments",
     "": "assessments"
+  };
+
+  Router.prototype.editSubtest = function(assessment_id, subtest_id) {
+    return this.verify_logged_in({
+      success: function() {
+        var assessment;
+        assessment = new Assessment({
+          _id: assessment_id
+        });
+        return assessment.fetch({
+          success: function() {
+            if (Tangerine.subtestEdit == null) {
+              Tangerine.subtestEdit = new SubtestEdit();
+            }
+            Tangerine.subtestEdit.assessment = assessment;
+            Tangerine.subtestEdit.model = new Subtest({
+              _id: subtest_id
+            });
+            return Tangerine.subtestEdit.model.fetch({
+              success: function() {
+                return Tangerine.subtestEdit.render();
+              }
+            });
+          }
+        });
+      }
+    });
+  };
+
+  Router.prototype.editAssessment = function(assessment_id) {
+    return this.verify_logged_in({
+      success: function() {
+        var assessment;
+        assessment = new Assessment({
+          _id: assessment_id
+        });
+        return assessment.fetch({
+          success: function() {
+            if (Tangerine.assessmentEdit == null) {
+              Tangerine.assessmentEdit = new AssessmentEdit();
+            }
+            Tangerine.assessmentEdit.model = new Assessment(assessment.attributes);
+            return Tangerine.assessmentEdit.render();
+          }
+        });
+      }
+    });
   };
 
   Router.prototype.results = function(database_name) {
@@ -221,25 +270,29 @@ startApp = function() {
   return Backbone.history.start();
 };
 
-$.couch.config({
-  success: function(result) {
-    if (_.keys(result).length === 0) {
-      return $.couch.config({}, "admins", Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission);
-    }
-  },
-  error: function() {}
-}, "admins");
-
-$.ajax("/_config/couch_httpd_auth/timeout", {
-  username: Tangerine.config.user_with_database_create_permission,
-  password: Tangerine.config.password_with_database_create_permission,
-  type: "put",
-  data: '"28800"'
+config = new Backbone.Model({
+  _id: "Config"
 });
 
-assessmentCollection = new AssessmentCollection();
-
-assessmentCollection.fetch({
+config.fetch({
+  success: function() {
+    Tangerine.config = config.toJSON();
+    $.couch.config({
+      success: function(result) {
+        if (_.keys(result).length === 0) {
+          return $.couch.config({}, "admins", Tangerine.config.user_with_database_create_permission, Tangerine.config.password_with_database_create_permission);
+        }
+      },
+      error: function() {}
+    }, "admins");
+    return $.ajax("/_config/couch_httpd_auth/timeout", {
+      username: Tangerine.config.user_with_database_create_permission,
+      password: Tangerine.config.password_with_database_create_permission,
+      type: "put",
+      data: '"28800"'
+    });
+  }
+}, assessmentCollection = new AssessmentCollection(), assessmentCollection.fetch({
   success: function() {
     assessmentCollection.each(function(assessment) {
       return $.couch.db(assessment.targetDatabase()).info({
@@ -259,4 +312,4 @@ assessmentCollection.fetch({
     });
     return _this.startApp();
   }
-});
+}));

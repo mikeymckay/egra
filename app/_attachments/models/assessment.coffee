@@ -55,9 +55,6 @@ class Assessment extends Backbone.Model
     @pages.splice(pageNumber,0,page)
     @setPages(@pages)
 
-  url: ->
-    "#{@urlScheme}://#{@urlPath}"
-
   loginPage: ->
     $.assessment.pages[0]
 
@@ -100,23 +97,6 @@ class Assessment extends Backbone.Model
   reset: ->
     document.location = @resetURL()
     
-  toJSON: ->
-    JSON.stringify
-      name: @name,
-      urlPathsForPages: @urlPathsForPages
-
-  save: ->
-    switch @urlScheme
-      when "localstorage"
-        return @saveToLocalStorage()
-      else
-        throw "URL type not yet implemented: #{@urlScheme}"
-
-  saveToLocalStorage: ->
-    @urlScheme = "localstorage"
-    localStorage[@urlPath] = @toJSON()
-    page.saveToLocalStorage() for page in @pages
-
   onReady: (callback) ->
     maxTries = 10
     timesTried = 0

@@ -100,10 +100,6 @@ Assessment = (function(_super) {
     return this.setPages(this.pages);
   };
 
-  Assessment.prototype.url = function() {
-    return "" + this.urlScheme + "://" + this.urlPath;
-  };
-
   Assessment.prototype.loginPage = function() {
     return $.assessment.pages[0];
   };
@@ -166,35 +162,6 @@ Assessment = (function(_super) {
 
   Assessment.prototype.reset = function() {
     return document.location = this.resetURL();
-  };
-
-  Assessment.prototype.toJSON = function() {
-    return JSON.stringify({
-      name: this.name,
-      urlPathsForPages: this.urlPathsForPages
-    });
-  };
-
-  Assessment.prototype.save = function() {
-    switch (this.urlScheme) {
-      case "localstorage":
-        return this.saveToLocalStorage();
-      default:
-        throw "URL type not yet implemented: " + this.urlScheme;
-    }
-  };
-
-  Assessment.prototype.saveToLocalStorage = function() {
-    var page, _i, _len, _ref, _results;
-    this.urlScheme = "localstorage";
-    localStorage[this.urlPath] = this.toJSON();
-    _ref = this.pages;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      page = _ref[_i];
-      _results.push(page.saveToLocalStorage());
-    }
-    return _results;
   };
 
   Assessment.prototype.onReady = function(callback) {
