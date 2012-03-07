@@ -416,6 +416,7 @@ SchoolPage = (function(_super) {
       }
       return _results;
     });
+    console.log("div#" + this.pageId + " li");
     $("div#" + this.pageId + " li").live("click", function(eventData) {
       var dataAttribute, school, selectedElement, _l, _len4, _len5, _m, _ref, _ref2, _results;
       _ref = $("div#" + _this.pageId + " li");

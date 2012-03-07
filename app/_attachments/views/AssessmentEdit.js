@@ -85,7 +85,7 @@ AssessmentEdit = (function(_super) {
   };
 
   AssessmentEdit.prototype.newSubtest = function() {
-    var pageType, pageTypeProperties, subtest, _id,
+    var pageType, subtest, _id,
       _this = this;
     _id = $("form.newSubtest input[name=_id]").val();
     pageType = $("form.newSubtest select option:selected").val();
@@ -94,14 +94,9 @@ AssessmentEdit = (function(_super) {
       pageType: pageType,
       pageId: _id.substring(_id.lastIndexOf(".") + 1)
     });
-    pageTypeProperties = _.union(this.config.pageTypeProperties["default"], this.config.pageTypeProperties[pageType]);
-    _.each(pageTypeProperties, function(property) {
-      var result;
-      console.log(property);
-      result = {};
-      result[property] = "";
-      return subtest.set(result);
-    });
+    subtest.set(_.reduce(this.config.pageTypeProperties[pageType], function(result, property) {
+      return result[property] = "";
+    }, {}));
     subtest.save();
     this.model.set({
       urlPathsForPages: _.union(this.model.get("urlPathsForPages"), subtest.id)

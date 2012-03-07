@@ -354,6 +354,7 @@ class SchoolPage extends AssessmentPage
         school.hide()
         school.show() if school.html().match(new RegExp(currentName, "i"))
 
+    console.log "div##{@pageId} li"
     $("div##{@pageId} li").live "click", (eventData) =>
       $(school).hide() for school in $("div##{@pageId} li")
       selectedElement = $(eventData.currentTarget)
@@ -482,7 +483,6 @@ class ResultsPage extends AssessmentPage
 
       $('button:contains(Start another assessment)').live "click", ->
         location.reload(true)
-
 
 class TextPage extends AssessmentPage
   propertiesForSerialization: ->

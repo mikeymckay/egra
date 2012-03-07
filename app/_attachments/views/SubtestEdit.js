@@ -43,21 +43,6 @@ SubtestEdit = (function(_super) {
     return $("textarea.html").cleditor();
   };
 
-  SubtestEdit.prototype.newSubtest = function(pageType) {
-    var pageTypeProperties,
-      _this = this;
-    pageTypeProperties = _.union(this.config.pageTypeProperties["default"], this.config.pageTypeProperties[pageType]);
-    this.model = new Subtest({
-      pageType: pageType
-    });
-    return _.each(pageTypeProperties, function(property) {
-      var result;
-      result = {};
-      result[property] = "";
-      return _this.model.set(result);
-    });
-  };
-
   SubtestEdit.prototype.save = function() {
     var result;
     result = $('form').toObject();

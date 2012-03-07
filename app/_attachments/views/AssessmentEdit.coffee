@@ -92,13 +92,11 @@ class AssessmentEdit extends Backbone.View
       #Use the id to start with a nice default for the pageId
       pageId: _id.substring(_id.lastIndexOf(".")+1)
 
-    # Combine default properties with the pagetype properties
-    pageTypeProperties = _.union(@config.pageTypeProperties.default, @config.pageTypeProperties[pageType])
-    _.each pageTypeProperties, (property) =>
-      console.log property
-      result = {}
-      result[property] = ""
-      subtest.set result
+    subtest.set _.reduce(
+      @config.pageTypeProperties[pageType], (result,property) =>
+        result[property] = ""
+      {}
+    )
     subtest.save()
     @model.set
       urlPathsForPages: _.union(@model.get("urlPathsForPages"), subtest.id)

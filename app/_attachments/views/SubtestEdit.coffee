@@ -57,17 +57,6 @@ class SubtestEdit extends Backbone.View
 
     $("textarea.html").cleditor()
 
-  newSubtest: (pageType) ->
-
-    # Combine default properties with the pagetype properties
-    pageTypeProperties = _.union(@config.pageTypeProperties.default, @config.pageTypeProperties[pageType])
-    @model = new Subtest
-      pageType: pageType
-    _.each pageTypeProperties, (property) =>
-      result = {}
-      result[property] = ""
-      @model.set result
-
   save: ->
     result = $('form').toObject()
     # Clean up stuff form2js missed

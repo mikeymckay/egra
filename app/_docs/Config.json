@@ -42,9 +42,6 @@
           "UntimedSubtestLinked"
       ],
       "pageTypeProperties": {
-          "default": [
-              "pageId"
-          ],
           "ConsentPage": [
               "content"
           ],
