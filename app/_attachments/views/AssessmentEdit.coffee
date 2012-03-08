@@ -22,9 +22,14 @@ class AssessmentEdit extends Backbone.View
     subtest_id = $(event.target).attr("data-subtest")
     @model.set
       urlPathsForPages: _.without(@model.get("urlPathsForPages"), subtest_id)
-    @model.save()
-    $("li[data-subtest='#{subtest_id}']").fadeOut ->
-      $(this).remove()
+    @model.save null,
+      success: ->
+        $("li[data-subtest='#{subtest_id}']").effect("highlight", {color: "#F7C942"}, 2000).fadeOut ->
+          $(this).remove()
+      error: ->
+        $("div.message").html("Error saving changes").show().fadeOut(3000)
+
+
 
   showSubtestForm: ->
     @el.find("form.newSubtest").fadeIn()
@@ -78,9 +83,12 @@ class AssessmentEdit extends Backbone.View
             $(subtest).text()
           )
         $.model = @model
-        @model.save()
-        $("ul").effect "highlight", {color: "#F7C942"}, 2000
-        $("div.message").html("Saved").show().fadeOut(3000)
+        @model.save null,
+          success: ->
+            $("ul").effect "highlight", {color: "#F7C942"}, 2000
+            $("div.message").html("Saved").show().fadeOut(3000)
+          error: ->
+            $("div.message").html("Error saving changes").show().fadeOut(3000)
 
   newSubtest: ->
     _id = $("form.newSubtest input[name=_id]").val()
@@ -95,16 +103,28 @@ class AssessmentEdit extends Backbone.View
     subtest.set _.reduce(
       @config.pageTypeProperties[pageType], (result,property) =>
         result[property] = ""
+        result
       {}
     )
-    subtest.save()
-    @model.set
-      urlPathsForPages: _.union(@model.get("urlPathsForPages"), subtest.id)
-    @model.save()
-
-    $("ul").append @renderSubtestItem(_id)
-    @makeSortable()
-    @clearNewSubtest()
+    subtest.save null,
+      success: =>
+        @model.set
+          urlPathsForPages: _.union(@model.get("urlPathsForPages"), subtest.id)
+        @model.save null,
+          success: =>
+            $("ul").append @renderSubtestItem(_id)
+            @makeSortable()
+            @clearNewSubtest()
+          error: ->
+            messages = $("<span class='error'>Error while updating #{@model.get "name"}</span>")
+            $('button:contains(Add)').after(messages)
+            messages.fadeOut (2000), ->
+              messages.remove()
+      error: =>
+        messages = $("<span class='error'>Invalid new subtest</span>")
+        $('button:contains(Add)').after(messages)
+        messages.fadeOut (2000), ->
+          messages.remove()
 
   clearNewSubtest: ->
     $("form.newSubtest input[name='_id']").val("")

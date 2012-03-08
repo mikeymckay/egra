@@ -69,16 +69,34 @@ ManageView = (function(_super) {
   };
 
   ManageView.prototype.newAssessment = function() {
-    var assessment, name;
+    var assessment, name,
+      _this = this;
     name = $("input[name=name]").val();
     assessment = new Assessment({
       name: name,
       _id: $.enumerator + "." + name,
       urlPathsForPages: []
     });
-    assessment.save();
-    this.addAssessmentToList(assessment);
-    return this.assessmentCollection.add(assessment);
+    return assessment.save(null, {
+      success: function() {
+        var messages;
+        _this.addAssessmentToList(assessment);
+        _this.assessmentCollection.add(assessment);
+        messages = $("<span class='error'>" + (assessment.get("name")) + " added</span>");
+        $('button:contains(Add)').after(messages);
+        return messages.fadeOut(2000., function() {
+          return messages.remove();
+        });
+      },
+      error: function() {
+        var messages;
+        messages = $("<span class='error'>Invalid new assessment</span>");
+        $('button:contains(Add)').after(messages);
+        return messages.fadeOut(2000., function() {
+          return messages.remove();
+        });
+      }
+    });
   };
 
   ManageView.prototype.updateTangerine = function(event) {

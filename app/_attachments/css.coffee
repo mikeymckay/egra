@@ -262,7 +262,10 @@ $("head").append "
         position: absolute;
         right: 100px;
         top: 100px;
-
+      }
+      .error{
+        color: #{orangerind};
+        background-color: #{orange};
       }
 
   </style>

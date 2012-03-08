@@ -84,9 +84,19 @@ class ManageView extends Backbone.View
       name: name
       _id: $.enumerator + "." + name
       urlPathsForPages: []
-    assessment.save()
-    @addAssessmentToList(assessment)
-    @assessmentCollection.add(assessment)
+    assessment.save null,
+      success: =>
+        @addAssessmentToList(assessment)
+        @assessmentCollection.add(assessment)
+        messages = $("<span class='error'>#{assessment.get "name"} added</span>")
+        $('button:contains(Add)').after(messages)
+        messages.fadeOut (2000), ->
+          messages.remove()
+      error: ->
+        messages = $("<span class='error'>Invalid new assessment</span>")
+        $('button:contains(Add)').after(messages)
+        messages.fadeOut (2000), ->
+          messages.remove()
 
   updateTangerine: (event) ->
     source = "http://#{Tangerine.cloud.target}/#{Tangerine.config.db_name}"

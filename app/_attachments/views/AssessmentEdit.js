@@ -41,9 +41,17 @@ AssessmentEdit = (function(_super) {
     this.model.set({
       urlPathsForPages: _.without(this.model.get("urlPathsForPages"), subtest_id)
     });
-    this.model.save();
-    return $("li[data-subtest='" + subtest_id + "']").fadeOut(function() {
-      return $(this).remove();
+    return this.model.save(null, {
+      success: function() {
+        return $("li[data-subtest='" + subtest_id + "']").effect("highlight", {
+          color: "#F7C942"
+        }, 2000).fadeOut(function() {
+          return $(this).remove();
+        });
+      },
+      error: function() {
+        return $("div.message").html("Error saving changes").show().fadeOut(3000);
+      }
     });
   };
 
@@ -75,11 +83,17 @@ AssessmentEdit = (function(_super) {
           })
         });
         $.model = _this.model;
-        _this.model.save();
-        $("ul").effect("highlight", {
-          color: "#F7C942"
-        }, 2000);
-        return $("div.message").html("Saved").show().fadeOut(3000);
+        return _this.model.save(null, {
+          success: function() {
+            $("ul").effect("highlight", {
+              color: "#F7C942"
+            }, 2000);
+            return $("div.message").html("Saved").show().fadeOut(3000);
+          },
+          error: function() {
+            return $("div.message").html("Error saving changes").show().fadeOut(3000);
+          }
+        });
       }
     });
   };
@@ -95,16 +109,39 @@ AssessmentEdit = (function(_super) {
       pageId: _id.substring(_id.lastIndexOf(".") + 1)
     });
     subtest.set(_.reduce(this.config.pageTypeProperties[pageType], function(result, property) {
-      return result[property] = "";
+      result[property] = "";
+      return result;
     }, {}));
-    subtest.save();
-    this.model.set({
-      urlPathsForPages: _.union(this.model.get("urlPathsForPages"), subtest.id)
+    return subtest.save(null, {
+      success: function() {
+        _this.model.set({
+          urlPathsForPages: _.union(_this.model.get("urlPathsForPages"), subtest.id)
+        });
+        return _this.model.save(null, {
+          success: function() {
+            $("ul").append(_this.renderSubtestItem(_id));
+            _this.makeSortable();
+            return _this.clearNewSubtest();
+          },
+          error: function() {
+            var messages;
+            messages = $("<span class='error'>Error while updating " + (this.model.get("name")) + "</span>");
+            $('button:contains(Add)').after(messages);
+            return messages.fadeOut(2000., function() {
+              return messages.remove();
+            });
+          }
+        });
+      },
+      error: function() {
+        var messages;
+        messages = $("<span class='error'>Invalid new subtest</span>");
+        $('button:contains(Add)').after(messages);
+        return messages.fadeOut(2000., function() {
+          return messages.remove();
+        });
+      }
     });
-    this.model.save();
-    $("ul").append(this.renderSubtestItem(_id));
-    this.makeSortable();
-    return this.clearNewSubtest();
   };
 
   AssessmentEdit.prototype.clearNewSubtest = function() {
