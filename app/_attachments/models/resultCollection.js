@@ -32,7 +32,7 @@ ResultCollection = (function(_super) {
   };
 
   ResultCollection.prototype.lastCloudReplication = function(options) {
-    return $.couch.db(this.databaseName).view("reports/replicationLog", {
+    return $.couch.db(this.databaseName).view("results/replicationLog", {
       success: function(result) {
         var latestTimestamp;
         latestTimestamp = _.max(_.pluck(result.rows, "key"));

@@ -209,13 +209,8 @@ Router = (function(_super) {
     console.log("verifying logged in");
     return $.couch.session({
       success: function(session) {
-        $.enumerator = session.userCtx.name;
-        console.log(document.location);
-        console.log(document.location.hash);
         Tangerine.router.targetroute = document.location.hash;
-        console.log("session.userCtx.name");
-        console.log(session.userCtx.name);
-        if (!session.userCtx.name) {
+        if (!$.enumerator) {
           console.log("sending back to login");
           Tangerine.router.navigate("login", true);
           return;

@@ -20,7 +20,7 @@ Utils.createResultsDatabase = function(databaseName) {
 
 Utils.createResultViews = function(databaseName) {
   var designDocument;
-  return designDocument = {
+  designDocument = {
     "_id": "_design/results",
     "language": "javascript",
     "views": {
@@ -33,6 +33,7 @@ Utils.createResultViews = function(databaseName) {
       }
     }
   };
+  return Utils.createDesignDocumentViews(databaseName, designDocument);
 };
 
 Utils.createReportViews = function(databaseName) {
@@ -47,7 +48,11 @@ Utils.createReportViews = function(databaseName) {
       }
     }
   };
-  return $.couch.db(databaseName).openDoc("_design/reports", {
+  return Utils.createDesignDocumentViews(databaseName, designDocument);
+};
+
+Utils.createDesignDocumentViews = function(databaseName, designDocument) {
+  return $.couch.db(databaseName).openDoc(designDocument["_id"], {
     success: function(doc) {
       designDocument._rev = doc._rev;
       return $.couch.db(databaseName).saveDoc(designDocument, {

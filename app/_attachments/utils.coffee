@@ -24,6 +24,7 @@ Utils.createResultViews = (databaseName) ->
       "replicationLog":
         "map": MapReduce.mapReplicationLog.toString()
   }
+  Utils.createDesignDocumentViews(databaseName,designDocument)
 
 Utils.createReportViews = (databaseName) ->
   designDocument = {
@@ -35,8 +36,10 @@ Utils.createReportViews = (databaseName) ->
         "map": MapReduce.mapFields.toString()
         "reduce": MapReduce.reduceFields.toString()
   }
+  Utils.createDesignDocumentViews(databaseName,designDocument)
 
-  $.couch.db(databaseName).openDoc "_design/reports",
+Utils.createDesignDocumentViews = (databaseName,designDocument) ->
+  $.couch.db(databaseName).openDoc designDocument["_id"],
     success: (doc) ->
       designDocument._rev = doc._rev
       $.couch.db(databaseName).saveDoc designDocument,

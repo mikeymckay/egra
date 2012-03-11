@@ -18,7 +18,7 @@ ResultsView = (function(_super) {
     var _this = this;
     this.el.html("      <div id='message'></div>      <h2>" + this.databaseName + "</h2>      <div>Last save to cloud: <span id='lastCloudReplicationTime'></span></div>      <button>Detect save options</button>      <div id='saveOptions'>      </div>      <button>CSV/Excel</button>      <hr/>      Results saved by " + $.enumerator + ":      <div id='results'></div>    ");
     this.detectCloud();
-    $.couch.db(this.databaseName).view("reports/byEnumerator", {
+    $.couch.db(this.databaseName).view("results/byEnumerator", {
       key: $.enumerator,
       reduce: false,
       success: function(result) {

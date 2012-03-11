@@ -18,7 +18,7 @@ class ResultsView extends Backbone.View
 
     @detectCloud()
 
-    $.couch.db(@databaseName).view "reports/byEnumerator",
+    $.couch.db(@databaseName).view "results/byEnumerator",
       key: $.enumerator
       reduce: false
       success: (result) =>

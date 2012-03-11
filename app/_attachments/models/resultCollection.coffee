@@ -18,7 +18,7 @@ class ResultCollection extends Backbone.Collection
         $("#message").html "Error: #{res}"
 
   lastCloudReplication: (options) ->
-    $.couch.db(@databaseName).view "reports/replicationLog",
+    $.couch.db(@databaseName).view "results/replicationLog",
       success: (result) ->
         latestTimestamp = _.max(_.pluck(result.rows, "key"))
         if latestTimestamp?

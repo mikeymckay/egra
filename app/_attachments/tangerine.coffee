@@ -134,13 +134,18 @@ class Router extends Backbone.Router
     console.log "verifying logged in"
     $.couch.session
       success: (session) ->
-        $.enumerator = session.userCtx.name
-        console.log document.location
-        console.log document.location.hash
+#        $.enumerator = session.userCtx.name
+#        console.log document.location
+#        console.log document.location.hash
         Tangerine.router.targetroute = document.location.hash
-        console.log "session.userCtx.name"
-        console.log session.userCtx.name
-        unless session.userCtx.name
+#        console.log window.document.cookie
+#        console.log "session.userCtx.name"
+#        console.log session.userCtx.name
+#        unless session.userCtx.name
+#          console.log "sending back to login"
+#          Tangerine.router.navigate("login", true)
+#          return
+        unless $.enumerator
           console.log "sending back to login"
           Tangerine.router.navigate("login", true)
           return

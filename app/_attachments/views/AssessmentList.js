@@ -33,7 +33,7 @@ AssessmentListView = (function(_super) {
             itemsToProcess--;
             return;
           }
-          return $.couch.db(assessment.targetDatabase()).view("reports/byEnumerator", {
+          return $.couch.db(assessment.targetDatabase()).view("results/byEnumerator", {
             group: true,
             key: $.enumerator,
             success: function(result) {
