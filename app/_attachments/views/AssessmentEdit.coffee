@@ -11,6 +11,15 @@ class AssessmentEdit extends Backbone.View
     "click .assessment-editor-list button:contains(Remove)": "revealRemove"
     "click .assessment-editor-list .confirm button:contains(Yes)": "remove"
     "change form.newSubtest select": "subtestTypeSelected"
+    "change #edit-archive": "updateArchive"
+
+  updateArchive: ->
+    @model.save {archived: $("#edit-archive").is(":checked")},
+      success: ->
+        $("#edit-archive").effect "highlight", {color: "#F7C942"}, 2000
+        $("div.message").html("Saved").show().fadeOut(3000)
+      error: ->
+        $("div.message").html("Error saving changes").show().fadeOut(3000)
 
   subtestTypeSelected: ->
     $("form.newSubtest input[name='_id']").val(@model.id + "." + $("form.newSubtest option:selected").val())
@@ -28,8 +37,6 @@ class AssessmentEdit extends Backbone.View
           $(this).remove()
       error: ->
         $("div.message").html("Error saving changes").show().fadeOut(3000)
-
-
 
   showSubtestForm: ->
     @el.find("form.newSubtest").fadeIn()
@@ -51,6 +58,8 @@ class AssessmentEdit extends Backbone.View
       <a href='#manage'>Return to: <b>Manage</b></a>
       <div style='display:none' class='message'></div>
       <h2>#{@model.get("name")}</h2>
+      <label for='edit-archive'>Archived</label>
+      <input type='checkbox' id='edit-archive' name='archived' value='#{if @model.get "archived" is true then "checked" else ""}'></input><br/>
       <small>Click on a subtest to edit or drag and drop to reorder
       <ul class='assessment-editor-list'>#{
         _.map(@model.get("urlPathsForPages"), (subtestId) =>
@@ -82,7 +91,6 @@ class AssessmentEdit extends Backbone.View
           urlPathsForPages: (_.map $("li a"), (subtest) ->
             $(subtest).text()
           )
-        $.model = @model
         @model.save null,
           success: ->
             $("ul").effect "highlight", {color: "#F7C942"}, 2000

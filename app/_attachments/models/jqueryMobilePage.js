@@ -1090,7 +1090,7 @@ Interview = (function(_super) {
       question.options = _.map(question.options, function(option) {
         return {
           text: option,
-          id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/, "")).toLowerCase()
+          id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/g, "")).toLowerCase()
         };
       });
       if (question.onChange != null) {

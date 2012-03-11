@@ -45,13 +45,10 @@ class Router extends Backbone.Router
   results: (database_name) ->
     @verify_logged_in
       success: ->
-        $.couch.db(database_name).view "reports/byEnumerator",
-          key: $.enumerator
-          success: (result) =>
-            Tangerine.resultsView ?= new ResultsView()
-            Tangerine.resultsView.results = new ResultCollection(_.pluck(result.rows, "value"))
-            Tangerine.resultsView.results.databaseName = database_name
-            Tangerine.resultsView.render()
+        Tangerine.resultsView ?= new ResultsView()
+        Tangerine.resultsView.databaseName = database_name
+        Tangerine.resultsView.render()
+
 
   tabular_results: (database_name) ->
     @verify_logged_in
@@ -101,8 +98,8 @@ class Router extends Backbone.Router
   assessments: ->
     @verify_logged_in
       success: ->
+        console.log "SUCCESS! logged in and setting up assessments"
         $('#current-student-id').html ""
-        $('#enumerator').html $.enumerator
 
         Tangerine.assessmentListView ?= new AssessmentListView()
         Tangerine.assessmentListView.render()
@@ -134,17 +131,21 @@ class Router extends Backbone.Router
             Tangerine.assessment.render()
 
   verify_logged_in: (options) ->
+    console.log "verifying logged in"
     $.couch.session
       success: (session) ->
         $.enumerator = session.userCtx.name
+        console.log document.location
+        console.log document.location.hash
         Tangerine.router.targetroute = document.location.hash
+        console.log "session.userCtx.name"
+        console.log session.userCtx.name
         unless session.userCtx.name
+          console.log "sending back to login"
           Tangerine.router.navigate("login", true)
           return
+        $('#enumerator').html $.enumerator
         options.success(session)
-
-              
-
 
   print: (id) ->
     Assessment.load id, (assessment) ->

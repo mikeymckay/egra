@@ -29,7 +29,11 @@ AssessmentListView = (function(_super) {
         var itemsToProcess;
         itemsToProcess = assessmentCollection.length;
         return assessmentCollection.each(function(assessment) {
-          return $.couch.db(assessment.targetDatabase()).view("reports/countByEnumerator", {
+          if (assessment.get("archived") === true) {
+            itemsToProcess--;
+            return;
+          }
+          return $.couch.db(assessment.targetDatabase()).view("reports/byEnumerator", {
             group: true,
             key: $.enumerator,
             success: function(result) {

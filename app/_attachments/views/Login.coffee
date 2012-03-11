@@ -5,14 +5,17 @@ class LoginView extends Backbone.View
 
   render: =>
     @el.html "
-      <form id='login-form'>
-        <label for='name'>Enumerator Name</label>
-        <input id='name' name='name'></input>
-        <label for='password'>Password</label>
-        <input id='password' type='password' name='password'></input>
-        <div id='message'></div>
-        <input type='submit' value='Login'></input>
-      </form>
+      <div style='margin:0px auto; width:300px'>
+        <img src='images/tangerinelogo300w.png'/>
+        <form id='login-form'>
+          <label for='name'>Enumerator Name</label>
+          <input id='name' name='name'></input>
+          <label for='password'>Password</label>
+          <input id='password' type='password' name='password'></input>
+          <div id='message'></div>
+          <input type='submit' value='Login'></input>
+        </form>
+      </div>
     "
 
   events:

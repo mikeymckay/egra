@@ -21,7 +21,7 @@ ManageView = (function(_super) {
     "click button:contains(Update Tangerine)": "updateTangerine",
     "click button:contains(Update Result Views)": "updateResultViews",
     "click button:contains(Initialize Database)": "initializeDatabase",
-    "click button:contains(add new assessment)": "showAssessmentForm",
+    "click button:contains(Add New Assessment)": "showAssessmentForm",
     "click form.newAssessment button:contains(Add)": "newAssessment",
     "click #manage-assessments button:contains(Delete)": "revealDelete",
     "click #manage-assessments .confirm button:contains(Yes)": "delete"
@@ -30,7 +30,7 @@ ManageView = (function(_super) {
   ManageView.prototype.render = function(assessmentCollection) {
     var _this = this;
     this.assessmentCollection = assessmentCollection;
-    this.el.html("      <h1>Manage</h1>      <div id='message'></div>      <button>Update Tangerine</button><br/>      <button>Update Result Views</button><br/>      <button>New Assessment</button><br/>      <br/>      Existing Assessments:<br/>      <table id='manage-assessments'></table>      <small><button>add new assessment</button></small>      <form class='newAssessment' style='display:none'>        <label for='_id'>Assessment Name</label>        <input type='text' name='name' value=''></input>        <button>Add</button>      </form>    ");
+    this.el.html("      <h1>Manage</h1>      <div id='message'></div>      <button>Update Result Views</button><br/>      <!--      <button>Update Tangerine</button><br/>      <button>New Assessment</button><br/>      -->      <button>Add New Assessment</button>      <form class='newAssessment' style='display:none'>        <label for='_id'>Assessment Name</label>        <input type='text' name='name' value=''></input>        <button>Add</button>      </form>      <br/>      <h2>Existing Assessments:</h2>      <table id='manage-assessments'></table>    ");
     return $.couch.allDbs({
       success: function(databases) {
         _this.databases = databases;
@@ -69,9 +69,17 @@ ManageView = (function(_super) {
   };
 
   ManageView.prototype.newAssessment = function() {
-    var assessment, name,
+    var assessment, messages, name,
       _this = this;
     name = $("input[name=name]").val();
+    if (name.match(/[^A-Za-z ]/)) {
+      messages = $("<span class='error'>Invalid character for assessment</span>");
+      $('button:contains(Add)').after(messages);
+      messages.fadeOut(2000., function() {
+        return messages.remove();
+      });
+      return;
+    }
     assessment = new Assessment({
       name: name,
       _id: $.enumerator + "." + name,
@@ -79,7 +87,6 @@ ManageView = (function(_super) {
     });
     return assessment.save(null, {
       success: function() {
-        var messages;
         _this.addAssessmentToList(assessment);
         _this.assessmentCollection.add(assessment);
         messages = $("<span class='error'>" + (assessment.get("name")) + " added</span>");
@@ -89,7 +96,6 @@ ManageView = (function(_super) {
         });
       },
       error: function() {
-        var messages;
         messages = $("<span class='error'>Invalid new assessment</span>");
         $('button:contains(Add)').after(messages);
         return messages.fadeOut(2000., function() {
@@ -114,7 +120,7 @@ ManageView = (function(_super) {
 
   ManageView.prototype.updateResultViews = function(event) {
     return this.assessmentCollection.each(function(assessment) {
-      return Utils.createViews(assessment.get("name").toLowerCase().dasherize());
+      return Utils.createResultViews(assessment.get("name").toLowerCase().dasherize());
     });
   };
 

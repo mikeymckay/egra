@@ -44,6 +44,7 @@ class SubtestEdit extends Backbone.View
         _.chain(@model.attributes)
           .map (value,key) =>
             return null if _.include(@config.ignore, key)
+            console.log key + typeof value
             label = "<label for='#{key}'>#{key.underscore().humanize()}</label>"
             formElement =
               if _.include(@config.htmlTextarea, key)
@@ -52,8 +53,6 @@ class SubtestEdit extends Backbone.View
                 "<input id='#{key}' name='#{key}' type='checkbox'></input>"
               else if _.include(@config.number, key)
                 "<input id='#{key}' name='#{key}' type='number'></input>"
-              else if _.include(@config.textarea, key)
-                "<textarea id='#{key}' name='#{key}'></textarea>"
               else if key is "pageType"
                 "<select id='#{key}' name='#{key}'>
                   #{_.map @config.pageTypes, (type) ->
@@ -63,6 +62,8 @@ class SubtestEdit extends Backbone.View
                     .join("")
                   }
                 </select>"
+              else if _.include(@config.textarea, key) or typeof value is "object"
+                "<textarea id='#{key}' name='#{key}'></textarea>"
               else
                 "<input id='#{key}' name='#{key}' type='text'></input>"
             return label + formElement
@@ -84,10 +85,15 @@ class SubtestEdit extends Backbone.View
           $('#items').val value.join(" ")
         else if property is "includeAutostop" and value is "on"
           $('#includeAutostop').prop("checked", true)
+        else if typeof value is "object"
+          $("[name='#{property}']").val JSON.stringify value,undefined,2
         else
+          console.log property
+          console.log value
           $("[name='#{property}']").val value
 
-    $("textarea.html").cleditor()[0].updateFrame()
+    _.each $("textarea.html").cleditor(), (cleditor) ->
+      cleditor.updateFrame()
 
   save: ->
     result = $('form#subtestEdit').toObject {skipEmpty: false}

@@ -13,12 +13,29 @@ Utils.createResultsDatabase = function(databaseName) {
   $('#message').append("<br/>Creating database [" + databaseName + "]");
   return $.couch.db(databaseName).create({
     success: function() {
-      return Utils.createViews(databaseName);
+      return Utils.createResultViews(databaseName);
     }
   });
 };
 
-Utils.createViews = function(databaseName) {
+Utils.createResultViews = function(databaseName) {
+  var designDocument;
+  return designDocument = {
+    "_id": "_design/results",
+    "language": "javascript",
+    "views": {
+      "byEnumerator": {
+        "map": MapReduce.mapByEnumerator.toString(),
+        "reduce": MapReduce.countByEnumerator.toString()
+      },
+      "replicationLog": {
+        "map": MapReduce.mapReplicationLog.toString()
+      }
+    }
+  };
+};
+
+Utils.createReportViews = function(databaseName) {
   var designDocument;
   designDocument = {
     "_id": "_design/reports",
@@ -27,19 +44,6 @@ Utils.createViews = function(databaseName) {
       "fields": {
         "map": MapReduce.mapFields.toString(),
         "reduce": MapReduce.reduceFields.toString()
-      },
-      "byEnumerator": {
-        "map": MapReduce.mapByEnumerator.toString()
-      },
-      "countByEnumerator": {
-        "map": MapReduce.mapCountByEnumerator.toString(),
-        "reduce": MapReduce.reduceCountByEnumerator.toString()
-      },
-      "byTimestamp": {
-        "map": MapReduce.mapByTimestamp.toString()
-      },
-      "replicationLog": {
-        "map": MapReduce.mapReplicationLog.toString()
       }
     }
   };
@@ -119,24 +123,12 @@ MapReduce.reduceFields = function(keys, values, rereduce) {
 
 MapReduce.mapByEnumerator = function(doc, req) {
   if ((doc.enumerator != null) && (doc.timestamp != null)) {
-    return emit(doc.enumerator, doc);
+    return emit(doc.enumerator, null);
   }
 };
 
-MapReduce.mapCountByEnumerator = function(doc, req) {
-  if ((doc.enumerator != null) && (doc.timestamp != null)) {
-    return emit(doc.enumerator, 1);
-  }
-};
-
-MapReduce.reduceCountByEnumerator = function(keys, values, rereduce) {
-  return sum(values);
-};
-
-MapReduce.mapByTimestamp = function(doc, req) {
-  if ((doc.enumerator != null) && (doc.timestamp != null)) {
-    return emit(doc.timestamp, doc);
-  }
+MapReduce.countByEnumerator = function(keys, values, rereduce) {
+  return keys.length;
 };
 
 MapReduce.mapReplicationLog = function(doc, req) {

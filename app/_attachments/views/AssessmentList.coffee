@@ -34,7 +34,10 @@ class AssessmentListView extends Backbone.View
       success: =>
         itemsToProcess = assessmentCollection.length
         assessmentCollection.each (assessment) =>
-          $.couch.db(assessment.targetDatabase()).view "reports/countByEnumerator",
+          if assessment.get("archived") is true
+            itemsToProcess--
+            return
+          $.couch.db(assessment.targetDatabase()).view "reports/byEnumerator",
             group: true
             key: $.enumerator
             success: (result) =>

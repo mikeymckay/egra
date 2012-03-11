@@ -5,7 +5,7 @@ class ResultsView extends Backbone.View
 
     @el.html "
       <div id='message'></div>
-      <h2>#{@results.databaseName}</h2>
+      <h2>#{@databaseName}</h2>
       <div>Last save to cloud: <span id='lastCloudReplicationTime'></span></div>
       <button>Detect save options</button>
       <div id='saveOptions'>
@@ -16,17 +16,30 @@ class ResultsView extends Backbone.View
       <div id='results'></div>
     "
 
-    @results.each (result) =>
-      Tangerine.resultView ?= new ResultView()
-      Tangerine.resultView.model = result
-      finishTime = new moment(result.get("timestamp"))
-      $("#results").append "
-        <div><button>#{finishTime.format("D-MMM-YY")} (#{finishTime.fromNow()})</button></div>
-        <div class='result'>#{Tangerine.resultView.render()}</div>
-      "
-
-    @updateLastCloudReplication()
     @detectCloud()
+
+    $.couch.db(@databaseName).view "reports/byEnumerator",
+      key: $.enumerator
+      reduce: false
+      success: (result) =>
+        console.log result
+        $.couch.db(@databaseName).allDocs
+          keys: _.pluck result.rows, "id"
+          include_docs: true
+          success: (docs) =>
+            @results = new ResultCollection _.pluck docs.rows, "doc"
+            @results.databaseName = @databaseName
+
+            @results.each (result) =>
+              Tangerine.resultView ?= new ResultView()
+              Tangerine.resultView.model = result
+              finishTime = new moment(result.get("timestamp"))
+              $("#results").append "
+                <div><button>#{finishTime.format("D-MMM-YY")} (#{finishTime.fromNow()})</button></div>
+                <div class='result'>#{Tangerine.resultView.render()}</div>
+              "
+            @updateLastCloudReplication()
+
 
     $("#results").accordion
       collapsible: true
@@ -94,7 +107,7 @@ class ResultsView extends Backbone.View
         @updateLastCloudReplication()
 
   csv: ->
-    Tangerine.router.navigate("results/tabular/#{@results.databaseName}",true)
+    Tangerine.router.navigate("results/tabular/#{@databaseName}",true)
 
   updateTable: ->
     tableConfigQueryString = $('form').serialize()

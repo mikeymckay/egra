@@ -50,10 +50,11 @@ SubtestEdit = (function(_super) {
     this.el.html(("       <a href='#edit/assessment/" + this.assessment.id + "'>Return to: <b>" + (this.assessment.get("name")) + "</b></a>      <div style='display:none' class='message'></div>      <h2>" + (this.model.get("pageType")) + "</h2>      <button>Paste a subtest</button>      <form style='display:none' id='paste-from'>        Select an existing subtest and it will fill in all blank elements below with that subtest's contents        <div>          <select id='existing-subtests'></select>        </div>        <button>paste</button>      </form>      <form id='subtestEdit'>") + _.chain(this.model.attributes).map(function(value, key) {
       var formElement, label;
       if (_.include(_this.config.ignore, key)) return null;
+      console.log(key + typeof value);
       label = "<label for='" + key + "'>" + (key.underscore().humanize()) + "</label>";
-      formElement = _.include(_this.config.htmlTextarea, key) ? "<textarea class='html' id='" + key + "' name='" + key + "'></textarea>" : _.include(_this.config.boolean, key) ? "<input id='" + key + "' name='" + key + "' type='checkbox'></input>" : _.include(_this.config.number, key) ? "<input id='" + key + "' name='" + key + "' type='number'></input>" : _.include(_this.config.textarea, key) ? "<textarea id='" + key + "' name='" + key + "'></textarea>" : key === "pageType" ? "<select id='" + key + "' name='" + key + "'>                  " + (_.map(_this.config.pageTypes, function(type) {
+      formElement = _.include(_this.config.htmlTextarea, key) ? "<textarea class='html' id='" + key + "' name='" + key + "'></textarea>" : _.include(_this.config.boolean, key) ? "<input id='" + key + "' name='" + key + "' type='checkbox'></input>" : _.include(_this.config.number, key) ? "<input id='" + key + "' name='" + key + "' type='number'></input>" : key === "pageType" ? "<select id='" + key + "' name='" + key + "'>                  " + (_.map(_this.config.pageTypes, function(type) {
         return "<option value=" + type + ">                        " + (type.underscore().humanize()) + "                      </option>";
-      }).join("")) + "                </select>" : "<input id='" + key + "' name='" + key + "' type='text'></input>";
+      }).join("")) + "                </select>" : _.include(_this.config.textarea, key) || typeof value === "object" ? "<textarea id='" + key + "' name='" + key + "'></textarea>" : "<input id='" + key + "' name='" + key + "' type='text'></input>";
       return label + formElement;
     }).compact().value().join("") + "        <button type='button'>Save</button>        </form>");
     $("textarea.html").cleditor();
@@ -69,12 +70,18 @@ SubtestEdit = (function(_super) {
           return $('#items').val(value.join(" "));
         } else if (property === "includeAutostop" && value === "on") {
           return $('#includeAutostop').prop("checked", true);
+        } else if (typeof value === "object") {
+          return $("[name='" + property + "']").val(JSON.stringify(value, void 0, 2));
         } else {
+          console.log(property);
+          console.log(value);
           return $("[name='" + property + "']").val(value);
         }
       }
     });
-    return $("textarea.html").cleditor()[0].updateFrame();
+    return _.each($("textarea.html").cleditor(), function(cleditor) {
+      return cleditor.updateFrame();
+    });
   };
 
   SubtestEdit.prototype.save = function() {

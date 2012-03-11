@@ -913,7 +913,7 @@ class Interview extends AssessmentPage
     for question in @questions
       question.options = _.map(question.options, (option) ->
         text: option
-        id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/,"")).toLowerCase()
+        id: (question.name + "-" + option.replace(/[^a-zA-Z0-9]/g,"")).toLowerCase()
       )
       if question.onChange?
         question.onChange = Handlebars.compile(question.onChange)(question)

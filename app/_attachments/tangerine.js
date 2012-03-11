@@ -78,18 +78,11 @@ Router = (function(_super) {
   Router.prototype.results = function(database_name) {
     return this.verify_logged_in({
       success: function() {
-        var _this = this;
-        return $.couch.db(database_name).view("reports/byEnumerator", {
-          key: $.enumerator,
-          success: function(result) {
-            if (Tangerine.resultsView == null) {
-              Tangerine.resultsView = new ResultsView();
-            }
-            Tangerine.resultsView.results = new ResultCollection(_.pluck(result.rows, "value"));
-            Tangerine.resultsView.results.databaseName = database_name;
-            return Tangerine.resultsView.render();
-          }
-        });
+        if (Tangerine.resultsView == null) {
+          Tangerine.resultsView = new ResultsView();
+        }
+        Tangerine.resultsView.databaseName = database_name;
+        return Tangerine.resultsView.render();
       }
     });
   };
@@ -170,8 +163,8 @@ Router = (function(_super) {
   Router.prototype.assessments = function() {
     return this.verify_logged_in({
       success: function() {
+        console.log("SUCCESS! logged in and setting up assessments");
         $('#current-student-id').html("");
-        $('#enumerator').html($.enumerator);
         if (Tangerine.assessmentListView == null) {
           Tangerine.assessmentListView = new AssessmentListView();
         }
@@ -213,14 +206,21 @@ Router = (function(_super) {
   };
 
   Router.prototype.verify_logged_in = function(options) {
+    console.log("verifying logged in");
     return $.couch.session({
       success: function(session) {
         $.enumerator = session.userCtx.name;
+        console.log(document.location);
+        console.log(document.location.hash);
         Tangerine.router.targetroute = document.location.hash;
+        console.log("session.userCtx.name");
+        console.log(session.userCtx.name);
         if (!session.userCtx.name) {
+          console.log("sending back to login");
           Tangerine.router.navigate("login", true);
           return;
         }
+        $('#enumerator').html($.enumerator);
         return options.success(session);
       }
     });

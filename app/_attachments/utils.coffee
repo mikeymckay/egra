@@ -9,9 +9,23 @@ Utils.createResultsDatabase = (databaseName) ->
       $('#message').append("<br/>Creating database [#{databaseName}]")
       $.couch.db(databaseName).create
         success: =>
-          Utils.createViews(databaseName)
+          Utils.createResultViews(databaseName)
 
-Utils.createViews = (databaseName) ->
+
+Utils.createResultViews = (databaseName) ->
+  designDocument = {
+    "_id":"_design/results",
+    "language":"javascript",
+    "views":
+      # Calling toString on a function gets the function definition as a string
+      "byEnumerator":
+        "map": MapReduce.mapByEnumerator.toString()
+        "reduce": MapReduce.countByEnumerator.toString()
+      "replicationLog":
+        "map": MapReduce.mapReplicationLog.toString()
+  }
+
+Utils.createReportViews = (databaseName) ->
   designDocument = {
     "_id":"_design/reports",
     "language":"javascript",
@@ -20,15 +34,6 @@ Utils.createViews = (databaseName) ->
       "fields":
         "map": MapReduce.mapFields.toString()
         "reduce": MapReduce.reduceFields.toString()
-      "byEnumerator":
-        "map": MapReduce.mapByEnumerator.toString()
-      "countByEnumerator":
-        "map": MapReduce.mapCountByEnumerator.toString()
-        "reduce": MapReduce.reduceCountByEnumerator.toString()
-      "byTimestamp":
-        "map": MapReduce.mapByTimestamp.toString()
-      "replicationLog":
-        "map": MapReduce.mapReplicationLog.toString()
   }
 
   $.couch.db(databaseName).openDoc "_design/reports",
@@ -77,16 +82,14 @@ MapReduce.reduceFields = (keys,values,rereduce) ->
 
 
 MapReduce.mapByEnumerator = (doc,req) ->
-  emit(doc.enumerator,doc) if (doc.enumerator? and doc.timestamp?)
+  emit(doc.enumerator,null) if (doc.enumerator? and doc.timestamp?)
 
-MapReduce.mapCountByEnumerator = (doc,req) ->
-  emit(doc.enumerator,1) if (doc.enumerator? and doc.timestamp?)
+MapReduce.countByEnumerator = (keys,values,rereduce) ->
+  keys.length
 
-MapReduce.reduceCountByEnumerator = (keys,values,rereduce) ->
-  sum(values)
-
-MapReduce.mapByTimestamp = (doc,req) ->
-  emit(doc.timestamp,doc) if (doc.enumerator? and doc.timestamp?)
+# Not using this, so removed
+#MapReduce.mapByTimestamp = (doc,req) ->
+#  emit(doc.timestamp,doc) if (doc.enumerator? and doc.timestamp?)
 
 MapReduce.mapReplicationLog = (doc,req) ->
   emit(doc.timestamp,doc) if doc.type == "replicationLog"

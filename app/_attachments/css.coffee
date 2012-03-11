@@ -268,5 +268,23 @@ $("head").append "
         background-color: #{orange};
       }
 
+    form#subtestEdit textarea{
+      width: 500px;
+      height:200px;
+    }
+
+    table#manage-assessments{
+      border: solid 1px;
+    }
+    table#manage-assessments tr{
+      border: solid 1px;
+    }
+    table#manage-assessments td{
+      vertical-align: middle;
+    }
+    label[for='edit-archive']{
+      display:inline;
+    }
+
   </style>
   "

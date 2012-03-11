@@ -24,7 +24,24 @@ AssessmentEdit = (function(_super) {
     "click form.newSubtest button:contains(Add)": "newSubtest",
     "click .assessment-editor-list button:contains(Remove)": "revealRemove",
     "click .assessment-editor-list .confirm button:contains(Yes)": "remove",
-    "change form.newSubtest select": "subtestTypeSelected"
+    "change form.newSubtest select": "subtestTypeSelected",
+    "change #edit-archive": "updateArchive"
+  };
+
+  AssessmentEdit.prototype.updateArchive = function() {
+    return this.model.save({
+      archived: $("#edit-archive").is(":checked")
+    }, {
+      success: function() {
+        $("#edit-archive").effect("highlight", {
+          color: "#F7C942"
+        }, 2000);
+        return $("div.message").html("Saved").show().fadeOut(3000);
+      },
+      error: function() {
+        return $("div.message").html("Error saving changes").show().fadeOut(3000);
+      }
+    });
   };
 
   AssessmentEdit.prototype.subtestTypeSelected = function() {
@@ -65,7 +82,7 @@ AssessmentEdit = (function(_super) {
 
   AssessmentEdit.prototype.render = function() {
     var _this = this;
-    this.el.html("      <a href='#manage'>Return to: <b>Manage</b></a>      <div style='display:none' class='message'></div>      <h2>" + (this.model.get("name")) + "</h2>      <small>Click on a subtest to edit or drag and drop to reorder      <ul class='assessment-editor-list'>" + (_.map(this.model.get("urlPathsForPages"), function(subtestId) {
+    this.el.html("      <a href='#manage'>Return to: <b>Manage</b></a>      <div style='display:none' class='message'></div>      <h2>" + (this.model.get("name")) + "</h2>      <label for='edit-archive'>Archived</label>      <input type='checkbox' id='edit-archive' name='archived' value='" + (this.model.get("archived" === true) ? "checked" : "") + "'></input><br/>      <small>Click on a subtest to edit or drag and drop to reorder      <ul class='assessment-editor-list'>" + (_.map(this.model.get("urlPathsForPages"), function(subtestId) {
       return _this.renderSubtestItem(subtestId);
     }).join("")) + "      </ul>      <small><button>add new subtest</button></small>      <form class='newSubtest' style='display:none'>        <label for='pageType'>Type</label>        <select name='pageType'>          <option></option>" + (_.map(this.config.pageTypes, function(pageType) {
       return "<option>" + pageType + "</option>";
@@ -82,7 +99,6 @@ AssessmentEdit = (function(_super) {
             return $(subtest).text();
           })
         });
-        $.model = _this.model;
         return _this.model.save(null, {
           success: function() {
             $("ul").effect("highlight", {

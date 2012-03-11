@@ -7,7 +7,7 @@ class ManageView extends Backbone.View
     "click button:contains(Update Tangerine)": "updateTangerine"
     "click button:contains(Update Result Views)": "updateResultViews"
     "click button:contains(Initialize Database)": "initializeDatabase"
-    "click button:contains(add new assessment)": "showAssessmentForm"
+    "click button:contains(Add New Assessment)": "showAssessmentForm"
     "click form.newAssessment button:contains(Add)": "newAssessment"
     "click #manage-assessments button:contains(Delete)": "revealDelete"
     "click #manage-assessments .confirm button:contains(Yes)": "delete"
@@ -18,18 +18,20 @@ class ManageView extends Backbone.View
     @el.html "
       <h1>Manage</h1>
       <div id='message'></div>
-      <button>Update Tangerine</button><br/>
       <button>Update Result Views</button><br/>
+      <!--
+      <button>Update Tangerine</button><br/>
       <button>New Assessment</button><br/>
-      <br/>
-      Existing Assessments:<br/>
-      <table id='manage-assessments'></table>
-      <small><button>add new assessment</button></small>
+      -->
+      <button>Add New Assessment</button>
       <form class='newAssessment' style='display:none'>
         <label for='_id'>Assessment Name</label>
         <input type='text' name='name' value=''></input>
         <button>Add</button>
       </form>
+      <br/>
+      <h2>Existing Assessments:</h2>
+      <table id='manage-assessments'></table>
     "
 
     $.couch.allDbs
@@ -80,6 +82,13 @@ class ManageView extends Backbone.View
 
   newAssessment: () =>
     name = $("input[name=name]").val()
+    if name.match(/[^A-Za-z ]/)
+      messages = $("<span class='error'>Invalid character for assessment</span>")
+      $('button:contains(Add)').after(messages)
+      messages.fadeOut (2000), ->
+        messages.remove()
+      return
+
     assessment = new Assessment
       name: name
       _id: $.enumerator + "." + name
@@ -110,7 +119,7 @@ class ManageView extends Backbone.View
 
   updateResultViews: (event) ->
     @assessmentCollection.each (assessment) ->
-      Utils.createViews assessment.get("name").toLowerCase().dasherize()
+      Utils.createResultViews assessment.get("name").toLowerCase().dasherize()
 
   initializeDatabase: (event) ->
     databaseName = $(event.target).attr("href")
