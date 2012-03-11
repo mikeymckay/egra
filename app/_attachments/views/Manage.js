@@ -91,9 +91,10 @@ ManageView = (function(_super) {
         _this.assessmentCollection.add(assessment);
         messages = $("<span class='error'>" + (assessment.get("name")) + " added</span>");
         $('button:contains(Add)').after(messages);
-        return messages.fadeOut(2000., function() {
+        messages.fadeOut(2000., function() {
           return messages.remove();
         });
+        return Utils.createResultsDatabase(assessment.targetDatabase());
       },
       error: function() {
         messages = $("<span class='error'>Invalid new assessment</span>");

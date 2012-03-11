@@ -101,6 +101,7 @@ class ManageView extends Backbone.View
         $('button:contains(Add)').after(messages)
         messages.fadeOut (2000), ->
           messages.remove()
+        Utils.createResultsDatabase assessment.targetDatabase()
       error: ->
         messages = $("<span class='error'>Invalid new assessment</span>")
         $('button:contains(Add)').after(messages)
